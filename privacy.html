@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — GA4 Name Changer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text:   #1d1d1f;
+      --text-2: #6e6e73;
+      --accent: #4F46E5;
+      --border: #e8e8ed;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text);
+      background: #f5f5f7;
+      padding: 0 24px 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 56px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent);
+      background: rgba(79,70,229,0.08);
+      border-radius: 20px;
+      padding: 4px 12px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    .meta {
+      font-size: 14px;
+      color: var(--text-2);
+      margin-top: 10px;
+    }
+
+    section {
+      margin-bottom: 36px;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 15px;
+      color: #3a3a3c;
+      margin-bottom: 12px;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    ul {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      font-size: 15px;
+      color: #3a3a3c;
+      margin-bottom: 6px;
+    }
+
+    .highlight-box {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .highlight-box p {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin: 0;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      font-size: 13px;
+      color: var(--text-2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="badge">Privacy Policy</div>
+      <h1>GA4 Name Changer</h1>
+      <p class="meta">Effective date: June 2026 &nbsp;·&nbsp; Chrome Extension</p>
+    </header>
+
+    <div class="highlight-box">
+      <p>This extension does not collect, transmit, or share any personal data. Ever.</p>
+    </div>
+
+    <section>
+      <h2>What data does this extension access?</h2>
+      <p>GA4 Name Changer reads the text content of the Google Analytics interface
+         (<code>analytics.google.com</code>) to locate and replace property slugs with your
+         custom names. This processing happens entirely within your browser — no data is
+         extracted or sent anywhere.</p>
+    </section>
+
+    <section>
+      <h2>What data does this extension store?</h2>
+      <p>The only data stored is the slug-to-name mapping you create in the Settings page.
+         This is stored using Chrome's built-in
+         <strong><code>chrome.storage.sync</code></strong> API, which means:</p>
+      <ul>
+        <li>Your mappings are saved locally in your Chrome browser profile.</li>
+        <li>If you are signed into Chrome, Google may sync this data to your other
+            devices through your Google account, subject to
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">
+            Google's own privacy policy</a>.</li>
+        <li>This extension never reads, copies, or transmits your mappings to any
+            server operated by this extension's developer.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Does this extension send any data to external servers?</h2>
+      <p>No. The extension has no backend, no analytics, no tracking, and makes
+         zero network requests. It operates entirely offline after installation.</p>
+    </section>
+
+    <section>
+      <h2>Permissions used</h2>
+      <ul>
+        <li><strong>storage</strong> — to save your slug-to-name mappings.</li>
+        <li><strong>Host permission for analytics.google.com</strong> — to inject the
+            content script that performs text replacement on the GA4 interface.</li>
+      </ul>
+      <p>No other permissions are requested.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>If you have questions about this privacy policy, please open an issue on the
+         extension's support page in the Chrome Web Store.</p>
+    </section>
+
+    <footer>
+      <p>GA4 Name Changer is an independent tool and is not affiliated with or endorsed by Google.</p>
+    </footer>
+
+  </div>
+</body>
+</html>

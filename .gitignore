@@ -1,0 +1,11 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / packaging artifacts
+*.zip
+*.crx
+*.pem
+
+# Dev guides (not part of the extension)
+agent_docs_guide.md

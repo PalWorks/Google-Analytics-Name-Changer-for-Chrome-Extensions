@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GA4 Name Changer — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="header-content">
+        <img src="../icons/icon48.png" alt="GA4 Name Changer" class="logo">
+        <div class="header-text">
+          <h1>GA4 Name Changer</h1>
+          <p class="subtitle">Map GA4 account numbers and property slugs to readable names</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="cards-grid">
+
+        <!-- GA4 Account Number mappings -->
+        <div class="card">
+          <div class="card-header">
+            <span class="col-label">GA4 Account Number</span>
+            <span class="col-label">Display Name</span>
+            <span class="col-action-header"></span>
+          </div>
+
+          <div id="account-list">
+            <!-- Rows injected by options.js -->
+          </div>
+
+          <div class="card-footer">
+            <button id="add-account-btn" class="btn-ghost" type="button">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              Add Mapping
+            </button>
+          </div>
+        </div>
+
+        <!-- GA4 Property Name mappings -->
+        <div class="card">
+          <div class="card-header">
+            <span class="col-label">GA4 Property Name</span>
+            <span class="col-label">Display Name</span>
+            <span class="col-action-header"></span>
+          </div>
+
+          <div id="mappings-list">
+            <!-- Rows injected by options.js -->
+          </div>
+
+          <div class="card-footer">
+            <button id="add-btn" class="btn-ghost" type="button">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              Add Mapping
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <button id="import-btn" class="btn-text" type="button">Import JSON</button>
+        <button id="export-btn" class="btn-text" type="button">Export JSON</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
+      </div>
+      <div class="footer-right">
+        <span id="status-msg" class="status-msg" aria-live="polite"></span>
+        <button id="save-btn" class="btn-primary" type="button">Save Changes</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

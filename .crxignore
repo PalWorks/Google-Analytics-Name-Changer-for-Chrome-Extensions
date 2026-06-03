@@ -1,0 +1,9 @@
+# Files excluded from the Chrome Web Store submission package.
+# (These are useful in the repo but should not be shipped in the .crx)
+
+*.md
+.git
+.gitignore
+.crxignore
+icons/generate-icons.html
+agent_docs_guide.md
