@@ -106,8 +106,8 @@
   // GA4 labels every CWS developer account as "Chrome Web Store developer
   // properties" — same text for all accounts, differentiated only by the
   // numeric account ID in a sibling text node. This pass finds that pair in
-  // the DOM and replaces the generic label with the user's chosen display name,
-  // then clears the raw account ID (now redundant).
+  // the DOM and replaces the generic label with the user's chosen display name.
+  // The raw numeric ID is left in place so it remains visible below the label.
 
   const ACCOUNT_LABEL = 'Chrome Web Store developer properties';
 
@@ -135,6 +135,7 @@
       }
     }
 
+    let replaced = 0;
     for (const labelNode of labels) {
       const match = findAccountIdNear(labelNode, 8);
       if (!match) continue;
@@ -144,10 +145,14 @@
       ourWrittenNodes.add(labelNode);
       labelNode.nodeValue = labelNode.nodeValue.replace(ACCOUNT_LABEL, match.name);
 
-      // Clear the raw numeric ID — it is now conveyed by the label text
-      processedNodes.add(match.node);
-      ourWrittenNodes.add(match.node);
-      match.node.nodeValue = '';
+      // Leave the raw numeric ID in place so it renders below the display name
+      replaced++;
+    }
+
+    // Record a heartbeat so the popup can warn if this label stops being found
+    // (e.g. Google renames the UI element in a future update).
+    if (replaced > 0) {
+      chrome.storage.local.set({ accountLabelLastMatched: Date.now() });
     }
   }
 
@@ -162,7 +167,12 @@
   }
 
   function firstAccountIdIn(container, excludeNode) {
-    const w = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const w = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const tag = node.parentElement && node.parentElement.tagName;
+        return SKIP_TAGS.has(tag) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      }
+    });
     let node;
     while ((node = w.nextNode())) {
       if (node === excludeNode) continue;
@@ -251,6 +261,50 @@
     if (changes.mappings)        { rebuildMap(changes.mappings.newValue);              changed = true; }
     if (changes.accountMappings) { rebuildAccountMap(changes.accountMappings.newValue); changed = true; }
     if (changed) replaceAll();
+  });
+
+  // ── Popup message handler ──────────────────────────────────────────────────
+  // Responds to the popup's request for the current GA4 page context.
+  // Returns the account ID from the URL and any unmapped property slugs
+  // visible in the DOM, then caches the result for non-GA4-tab sessions.
+
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action !== 'getGA4Data') return false;
+
+    // Account ID sits in the URL hash as: #a376297388p515458307/...
+    // Check window.location.hash first (direct), then fall back to full href.
+    // Use a permissive pattern: just 'a' followed by 7+ digits (account IDs are 9 digits).
+    const urlForParsing = window.location.hash || window.location.href;
+    const accountMatch = urlForParsing.match(/a(\d{7,})/);
+    const accountId = accountMatch ? accountMatch[1] : null;
+
+    // Find property slugs visible in the DOM that aren't yet mapped.
+    // GA4 property slugs are 20+ character all-lowercase strings.
+    const slugs = [];
+    const seen = new Set(slugMap.keys());
+    const slugWalker = document.createTreeWalker(
+      document.body, NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const tag = node.parentElement && node.parentElement.tagName;
+          return SKIP_TAGS.has(tag) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    let sn;
+    while ((sn = slugWalker.nextNode())) {
+      const val = sn.nodeValue && sn.nodeValue.trim();
+      if (val && /^[a-z]{20,}$/.test(val) && !seen.has(val)) {
+        slugs.push(val);
+        seen.add(val);
+      }
+    }
+
+    // Cache detected context so the popup can show it on non-GA4 tabs
+    chrome.storage.local.set({ lastGA4Context: { accountId, slugs } });
+
+    sendResponse({ accountId, slugs });
+    return true;
   });
 
   // ── Bootstrap ─────────────────────────────────────────────────────────────

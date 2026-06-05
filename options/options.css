@@ -383,6 +383,19 @@ footer {
   animation: row-in 0.18s ease forwards;
 }
 
+/* ── Support link (footer anchor styled as btn-text) ── */
+
+a.support-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-2);
+}
+
+a.support-link:hover {
+  color: var(--accent);
+}
+
 /* ── Responsive (narrow windows) ── */
 
 @media (max-width: 800px) {

@@ -1,5 +1,2 @@
 'use strict';
-
-chrome.action.onClicked.addListener(() => {
-  chrome.runtime.openOptionsPage();
-});
+// Popup is defined in manifest (action.default_popup) — no onClicked handler needed.

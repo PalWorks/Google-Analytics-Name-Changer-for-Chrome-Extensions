@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GA4 Name Changer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-wrap">
+
+    <header class="popup-header">
+      <div class="header-brand">
+        <img src="../icons/icon48.png" alt="" class="brand-logo">
+        <div class="brand-info">
+          <span class="brand-name">GA4 Name Changer</span>
+          <span class="brand-sub">Alias names for GA4</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="open-options-btn" class="btn-icon-text" type="button" title="Open full settings page">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Full Settings
+        </button>
+        <button id="close-btn" class="btn-close" type="button" aria-label="Close">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- GA4 detection banner (hidden until detection result is known) -->
+    <div id="detection-banner" class="detection-banner is-hidden" role="status">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" class="detection-svg">
+        <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M4.5 7l1.8 1.8L9.5 5" stroke="currentColor" stroke-width="1.4"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="detection-text"></span>
+    </div>
+
+    <div class="popup-body">
+
+      <!-- GA4 Account Number mappings -->
+      <section class="popup-section">
+        <div class="section-head">
+          <span class="section-title">Account Numbers</span>
+          <button id="add-account-btn" class="btn-add" type="button">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add
+          </button>
+        </div>
+        <div class="col-labels">
+          <span>Account Number</span>
+          <span>Display Name</span>
+        </div>
+        <!-- Shown if the GA4 account label hasn't been matched in 90+ days -->
+        <div id="label-warning" class="label-warning is-hidden" role="alert">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" flex-shrink="0">
+            <path d="M7 1.5L12.5 11.5H1.5L7 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M7 5.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="7" cy="10" r="0.6" fill="currentColor"/>
+          </svg>
+          <span id="label-warning-text"></span>
+        </div>
+        <div id="account-list" class="mapping-list"></div>
+      </section>
+
+      <!-- GA4 Property Slug mappings -->
+      <section class="popup-section">
+        <div class="section-head">
+          <span class="section-title">Property Slugs</span>
+          <button id="add-btn" class="btn-add" type="button">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add
+          </button>
+        </div>
+        <div class="col-labels">
+          <span>Property Slug</span>
+          <span>Display Name</span>
+        </div>
+        <div id="mappings-list" class="mapping-list"></div>
+        <!-- Shown when detection found more slugs than the 3-row cap -->
+        <div id="slug-overflow-note" class="overflow-note is-hidden"></div>
+      </section>
+
+    </div><!-- /.popup-body -->
+
+    <footer class="popup-footer">
+      <div class="footer-left">
+        <button id="import-btn" class="btn-text" type="button">Import</button>
+        <button id="export-btn" class="btn-text" type="button">Export</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
+      </div>
+      <div class="footer-right">
+        <span id="status-msg" class="status-msg" aria-live="polite"></span>
+        <button id="save-btn" class="btn-primary" type="button">Save</button>
+      </div>
+    </footer>
+
+  </div><!-- /.popup-wrap -->
+
+  <script src="popup.js"></script>
+</body>
+</html>
