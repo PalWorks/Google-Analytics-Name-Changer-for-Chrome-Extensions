@@ -9,3 +9,6 @@ Thumbs.db
 
 # Dev guides (not part of the extension)
 agent_docs_guide.md
+
+# Distribution build (zip this folder for CWS upload)
+dist/
