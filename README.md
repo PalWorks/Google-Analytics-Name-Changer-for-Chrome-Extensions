@@ -1,110 +1,112 @@
-# Google Analytics Alias Names
+# Google Analytics Name Changer for Chrome Extensions
 
-A Manifest V3 Chrome extension that replaces opaque Google Analytics 4 property slugs and numeric account IDs with the human-readable names you choose — directly inside the GA4 interface.
+> Replace unreadable GA4 property slugs and account numbers with human-friendly display names — directly inside [analytics.google.com](https://analytics.google.com), in real time.
 
 ---
 
-## The Problem
+## The problem
 
-When Google shares GA4 analytics properties with Chrome Web Store developers, it uses internal identifiers:
+When Google shares GA4 analytics with Chrome Web Store developers, every property appears as an opaque 32-character slug (`egedbdckafdbomehjaihjhbcgmngmlah`) and every account carries the same generic label — "Chrome Web Store developer properties" — differentiated only by a 9-digit ID. Managing more than a handful of extensions means constant cross-referencing to figure out which property belongs to which extension.
 
-- **Property slugs** — 32-character hex strings like `egedbdckafdbomehjaihjhbcgmngmlah`
-- **Account labels** — generic "Chrome Web Store developer properties" with a 9-digit account ID
+## The solution
 
-At a glance, you cannot tell which extension owns which property.
-
-## The Solution
-
-GA4 Name Changer lets you map each identifier to a name you recognise. Changes take effect in real time on the GA4 page — no reload required.
+This extension intercepts GA4's rendered text and swaps those identifiers for names you choose — with no page reload, no changes to your GA4 configuration, and nothing ever leaving your browser.
 
 ---
 
 ## Features
 
-- **Property name mapping** — map 32-char extension slugs (or any GA4 property identifier) to readable names
-- **Account label mapping** — replace the generic "Chrome Web Store developer properties" label with the name of the extension that owns each account
-- **Persists across sessions** — mappings stored in `chrome.storage.sync` and synced across your Chrome profiles
-- **Works with GA4's SPA** — MutationObserver + characterData tracking catches every re-render without page reload
-- **Import / Export** — back up or share mappings as JSON
-- **Zero data collection** — all processing is local; no data ever leaves your browser
+- **Live text replacement** — slugs and account labels replaced as GA4 renders; works seamlessly across SPA navigation without requiring a page reload
+- **Toolbar popup** — left-click the extension icon to view and edit mappings from any tab without leaving your current page
+- **GA4 auto-detection** — when you open the popup on a GA4 tab, it reads the current account ID from the URL and scans the DOM for unmapped property slugs, pre-filling rows ready for you to name
+- **Full settings page** — a dedicated full-tab settings page for managing all mappings with more room; reachable from the popup header or from `chrome://extensions`
+- **Cross-device sync** — mappings stored in `chrome.storage.sync` and synced across your signed-in Chrome profiles automatically
+- **Import / Export** — back up or transfer all mappings as a single JSON file
+- **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
+- **Zero data collection** — all text processing is local; the extension makes no network requests after installation
 
 ---
 
 ## Installation
 
-### From the Chrome Web Store *(recommended)*
+### Chrome Web Store *(recommended)*
 
 *Coming soon.*
 
-### Load unpacked (for development)
+### Load unpacked (development)
 
 1. Clone this repository
 2. Open `chrome://extensions` in Chrome
-3. Enable **Developer mode** (top right)
-4. Click **Load unpacked** and select the repo folder
-5. Click the extension icon in the toolbar to open Settings
+3. Enable **Developer mode** (top-right toggle)
+4. Click **Load unpacked** and select the repository root
+5. Pin the extension via the puzzle-piece icon in the toolbar
 
 ---
 
 ## Usage
 
-1. Click the extension icon in the Chrome toolbar (or right-click → Options)
-2. In the **GA4 Account Number** table, add your 9-digit GA4 account IDs and the name you want to see
-3. In the **GA4 Property Name** table, add your 32-char extension slugs and the name you want to see
-4. Click **Save Changes**
-5. Navigate to [analytics.google.com](https://analytics.google.com) — identifiers are replaced immediately
+### Quick path — popup
+
+Click the extension icon in the Chrome toolbar. If the active tab is a GA4 page, the popup auto-detects your current account ID and any unmapped property slugs and pre-populates them with the slug already filled in — type a display name and click **Save**.
+
+If you are not on a GA4 tab, the popup shows the last detected GA4 context so you can still review or edit existing mappings.
+
+### Full settings page
+
+Click **Full Settings** in the popup header, or right-click the extension icon → **Options**.
 
 ### Finding your identifiers
 
-| Identifier | Where to find it |
-|---|---|
-| GA4 Account Number | Left panel of the account switcher (9-digit number below the account name) |
-| GA4 Property Slug | GA4 URL: `analytics.google.com/…#/a{accountId}p{propertyId}/…` — or the 32-char hex string shown as the property name |
+| Identifier | Format | Where to find it |
+|---|---|---|
+| Account number | 9-digit integer | Left panel of the GA4 account switcher, beneath the account name |
+| Property slug | 32-char lowercase string | Displayed as the property name in the GA4 interface; also embedded in the URL hash as `#a{accountId}p{propertyId}/…` |
 
 ### Import / Export
 
-Use **Export JSON** to download your current mappings. The file format is:
+Click **Export** to download a JSON backup of all your mappings. Click **Import** to bulk-load from a previously exported file. File format:
 
 ```json
 {
   "mappings": {
-    "egedbdckafdbomehjaihjhbcgmngmlah": "Favicon Changer"
+    "egedbdckafdbomehjaihjhbcgmngmlah": "My Extension Name"
   },
   "accountMappings": {
-    "376297388": "Gmail Labels"
+    "376297388": "Main CWS Account"
   }
 }
 ```
-
-Use **Import JSON** to restore or bulk-load mappings from a file.
 
 ---
 
 ## Privacy
 
-This extension collects no data. All text replacement happens locally in your browser. Your mappings are stored in `chrome.storage.sync` — if you are signed into Chrome, Google may sync this data between your devices per [Google's privacy policy](https://policies.google.com/privacy).
+The extension processes page text locally inside your browser and stores only the display names you type. No data is ever sent to any external server. If you are signed into Chrome, `chrome.storage.sync` may sync your mappings between your devices via your Google account, subject to [Google's privacy policy](https://policies.google.com/privacy).
 
-See [privacy.html](privacy.html) for the full privacy policy.
+Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html)
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
-├── manifest.json          # MV3 manifest
-├── background.js          # Service worker: opens Options on icon click
+├── manifest.json               MV3 manifest
 ├── content/
-│   └── content.js         # Content script: MutationObserver + text replacement
+│   └── content.js              Content script — MutationObserver + text replacement engine
+├── popup/
+│   ├── popup.html
+│   ├── popup.css
+│   └── popup.js                Toolbar popup — GA4 auto-detection and quick mapping editor
 ├── options/
-│   ├── options.html        # Settings page
-│   ├── options.css         # Styles
-│   └── options.js          # Settings page logic
+│   ├── options.html
+│   ├── options.css
+│   └── options.js              Full-tab settings page
 ├── icons/
 │   ├── icon16.png
 │   ├── icon48.png
 │   ├── icon128.png
-│   └── generate-icons.html # Dev tool: generates icon PNGs via Canvas API
-└── privacy.html            # Privacy policy (host at a public URL for CWS submission)
+│   └── generate-icons.html     Dev tool — generates icon PNGs via Canvas API (no build step)
+└── privacy.html                Hosted privacy policy page
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the technical design.
@@ -113,7 +115,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the technical design.
 
 ## Development
 
-No build tools required. The extension runs directly from source.
+No build tools are required. The extension runs directly from source — load unpacked and edit files normally.
 
 To regenerate the icon PNGs, open `icons/generate-icons.html` in Chrome and download the three files.
 
@@ -121,7 +123,13 @@ To regenerate the icon PNGs, open `icons/generate-icons.html` in Chrome and down
 
 ## Contributing
 
-Pull requests are welcome. Please keep changes focused and test against a live GA4 account before submitting.
+Pull requests are welcome. Keep changes focused and test against a live GA4 account before submitting. Please check `ARCHITECTURE.md` for context on the content script design before modifying `content/content.js` — the mutation loop prevention and node-tracking invariants are non-obvious.
+
+---
+
+## Support
+
+Open an issue on [GitHub](https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions/issues) or email [support@palworks.ai](mailto:support@palworks.ai).
 
 ---
 

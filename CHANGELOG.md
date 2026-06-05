@@ -4,30 +4,31 @@ All notable changes to GA4 Name Changer are documented here.
 
 ---
 
-## [1.0.0] — 2026-06-03
+## [1.0.0] — 2026-06-05
 
-### Added
+Initial public release.
 
-- **GA4 Property Name mapping** — map 32-char extension slugs (or any property identifier) to readable names
-- **GA4 Account Number mapping** — replace the generic "Chrome Web Store developer properties" label with a custom name per account, keyed on the 9-digit GA4 account ID
-- **Compound account-label pass** — `pairAccountLabels()` finds the "Chrome Web Store developer properties" text node that is adjacent to a known account ID in the DOM and replaces them as a pair, giving each account row a unique readable label
-- **SPA-aware content script** — MutationObserver with `characterData: true` catches GA4's React re-renders that update text nodes in-place (not just newly inserted nodes)
-- **Loop prevention** — `ourWrittenNodes` WeakSet distinguishes extension-originated `characterData` mutations from GA4-originated ones, preventing infinite replacement loops
-- **Longest-slug-first matching** — slugMap entries sorted by descending key length to prevent partial-match collisions between overlapping slugs
-- **Two-column Options page** — separate cards for Account Number mappings and Property Name mappings, rendered side-by-side
-- **Explicit Save button** with `beforeunload` guard to prevent accidental data loss
-- **Import / Export JSON** — round-trips both `mappings` and `accountMappings` keys
-- **Storage quota pre-check** — validates serialised byte size against `chrome.storage.sync.QUOTA_BYTES_PER_ITEM` before attempting to save
-- **Import validation** — file size cap (512 KB), entry count cap (200 per table), string length cap (256 chars)
-- **Toolbar icon action** — clicking the extension icon opens the Options page directly via `background.js` service worker
-- **Canvas-based icon generator** — `icons/generate-icons.html` produces icon PNGs at 16 px, 48 px, and 128 px without a build tool
-- **Privacy policy page** — `privacy.html` ready for hosting as a Chrome Web Store privacy policy URL
+### Extension features
+
+- **GA4 property slug mapping** — map any GA4 property slug (32-char lowercase strings shared with CWS developers) to a human-readable name; replacements applied live as GA4 renders
+- **GA4 account number mapping** — replace the generic "Chrome Web Store developer properties" label with a per-account display name, keyed on the 9-digit GA4 account ID; the numeric ID is preserved and rendered beneath the display name
+- **Toolbar popup** — left-clicking the extension icon opens a compact 460 px popup with the full mapping editor; includes a close button and Full Settings shortcut
+- **GA4 auto-detection** — on a GA4 tab, the popup queries the content script for the current account ID (parsed from the URL hash) and any unmapped property slugs visible in the DOM, pre-filling rows for immediate naming
+- **Non-GA4 tab fallback** — when the popup is opened on a non-GA4 tab, it shows the most recently cached GA4 context (`chrome.storage.local.lastGA4Context`) so mappings remain accessible from any tab
+- **Slug overflow note** — if more than three unmapped slugs are detected, an overflow notice in the popup tells the user how many additional slugs were found and directs them to Full Settings
+- **Full settings page** — dedicated full-tab page (`open_in_tab: true`) with the same mapping editor and additional vertical space; reachable from the popup header or `chrome://extensions` → Options
+- **Account-label health monitor** — the content script writes a `accountLabelLastMatched` heartbeat to `chrome.storage.local` whenever it successfully replaces a GA4 account label; the popup reads this on open and surfaces an orange warning if the label has not matched in 90+ days (early signal that Google renamed the UI element)
+- **Import / Export JSON** — round-trips both `mappings` and `accountMappings` keys; import validates entry count (max 200), key/value length (max 256 chars), and file size (max 512 KB) before reading
 
 ### Technical notes
 
-- Manifest V3 with `permissions: ["storage"]` and `host_permissions` scoped to `analytics.google.com`
-- `chrome.storage.sync` for cross-profile persistence; keys: `mappings` and `accountMappings`
-- `NodeFilter.SHOW_TEXT` TreeWalker; `SKIP_TAGS` covers `SCRIPT`, `STYLE`, `TEXTAREA`, `NOSCRIPT`, `IFRAME`, `INPUT`, `SELECT`, `OPTION`, `BUTTON`
-- Pending debounce batch cancelled on full `replaceAll()` to avoid redundant post-flush work
-- `chrome.storage.onChanged` listener guarded against startup race (`if (!observer) return`)
+- Manifest V3; `permissions: ["storage"]`; `host_permissions` scoped to `https://analytics.google.com/*`; explicit `content_security_policy: script-src 'self'`
+- MutationObserver configured with `childList + subtree + characterData` to catch both new DOM nodes and GA4's React-driven in-place text node updates
+- `ourWrittenNodes` WeakSet prevents infinite characterData mutation loops from the extension's own `nodeValue` writes
+- `slugMap` sorted longest-key-first to prevent partial-match collisions across overlapping slugs
+- 80 ms debounce aggregates rapid React render bursts; `replaceAll()` cancels any pending debounce before executing a full-page pass
+- `chrome.storage.onChanged` listener guarded against startup race: ignored if the MutationObserver hasn't been created yet
+- `chrome.storage.sync.QUOTA_BYTES_PER_ITEM` pre-check before every save to surface quota errors explicitly
+- `chrome.runtime.lastError` guards on all async storage and messaging callbacks
+- `chrome.tabs.query` used for popup → content script messaging; `tabs` permission not required (only `tab.id` is accessed, not `url` or `title`)
 - `minimum_chrome_version: "88"` declared in manifest

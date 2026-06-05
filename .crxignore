@@ -5,5 +5,5 @@
 .git
 .gitignore
 .crxignore
+dist/
 icons/generate-icons.html
-agent_docs_guide.md
