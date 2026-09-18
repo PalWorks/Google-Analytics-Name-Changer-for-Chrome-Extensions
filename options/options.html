@@ -112,52 +112,32 @@
         </div>
       </details>
 
-      <div class="cards-grid">
-
-        <!-- GA4 Account Number mappings -->
-        <div class="card">
-          <div class="card-header">
-            <span class="col-label">GA4 Account Number</span>
-            <span class="col-label">Display Name</span>
-            <span class="col-action-header"></span>
-          </div>
-
-          <div id="account-list">
-            <!-- Rows injected by options.js -->
-          </div>
-
-          <div class="card-footer">
-            <button id="add-account-btn" class="btn-ghost" type="button">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-              Add Mapping
-            </button>
-          </div>
+      <!-- One table: accounts, each with the properties it holds beneath it -->
+      <div class="card">
+        <div class="card-header">
+          <span class="col-label">Account number &nbsp;/&nbsp; Property slug</span>
+          <span class="col-label">Display name</span>
+          <span class="col-action-header"></span>
         </div>
 
-        <!-- GA4 Property Name mappings -->
-        <div class="card">
-          <div class="card-header">
-            <span class="col-label">GA4 Property Name</span>
-            <span class="col-label">Display Name</span>
-            <span class="col-action-header"></span>
-          </div>
-
-          <div id="mappings-list">
-            <!-- Rows injected by options.js -->
-          </div>
-
-          <div class="card-footer">
-            <button id="add-btn" class="btn-ghost" type="button">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-              Add Mapping
-            </button>
-          </div>
+        <div id="groups-list">
+          <!-- Account groups injected by options.js -->
         </div>
 
+        <div class="card-footer">
+          <button id="add-account-btn" class="btn-ghost" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add account
+          </button>
+          <button id="add-btn" class="btn-ghost" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add property
+          </button>
+        </div>
       </div>
     </main>
 
@@ -188,11 +168,6 @@
               <span class="field-label">Email <span class="req">required</span></span>
               <input id="fb-email" class="input field-input" type="email" autocomplete="email"
                      maxlength="150" placeholder="you@example.com" required>
-            </label>
-            <label class="field">
-              <span class="field-label">Phone <span class="opt">optional</span></span>
-              <input id="fb-phone" class="input field-input" type="tel" autocomplete="tel"
-                     maxlength="40" placeholder="+61 …">
             </label>
           </div>
 

@@ -2,8 +2,7 @@
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
-const list           = document.getElementById('mappings-list');
-const accountList    = document.getElementById('account-list');
+const groupsList     = document.getElementById('groups-list');
 const addBtn         = document.getElementById('add-btn');
 const addAccountBtn  = document.getElementById('add-account-btn');
 const saveBtn        = document.getElementById('save-btn');
@@ -73,65 +72,73 @@ const LISTING_SVG = `
       stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
-// ── Generic row factory ───────────────────────────────────────────────────────
+const ADD_SVG = `
+  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+    <path d="M7 2.5v9M2.5 7h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`;
 
-function makeRow({ slug, name, animate, isDetected, isAuto, parentList, slugPlaceholder, slugAriaLabel }) {
+// ── One table, grouped by account ─────────────────────────────────────────────
+//
+// Storage keeps two flat maps — slug -> name and accountId -> name — because
+// that is all the replacement engine needs, and that shape is what the popup,
+// the content script and Import/Export all agree on. It is NOT changed here.
+//
+// What changed is only how it is drawn: accounts and properties used to be two
+// separate cards, which left the user to work out by eye which extension sat
+// under which account. Now each account is a group head with its properties
+// nested beneath it, sharing the same two columns, so the account number lines
+// up with the property slugs and the account's display name with theirs.
+//
+// The pairing itself comes from `local.propertyAccounts`, which the content
+// script mirrors out of GA4's own account tree. Properties whose account is not
+// known yet fall into a catch-all group at the bottom; they are perfectly
+// usable there, they are just not filed.
+
+const UNGROUPED = '';   // data-account value of the catch-all group
+
+/** slug -> accountId, as last seen on a GA4 page. Grouping only, never saved. */
+let propertyAccounts = {};
+
+// ── Row factory ───────────────────────────────────────────────────────────────
+
+/**
+ * One editable identifier/name pair. Accounts and properties differ only in
+ * their placeholders, their labels and which actions they carry, so they share
+ * this factory and therefore share their column widths exactly.
+ */
+function makeRow({ kind, key, name, animate, isDetected, isAuto,
+                   keyPlaceholder, keyAriaLabel, namePlaceholder, nameAriaLabel }) {
   const row = document.createElement('div');
-  let cls = 'mapping-row';
+  let cls = `mapping-row ${kind}-row`;
   if (animate)    cls += ' is-new';
   if (isDetected) cls += ' is-detected';
   if (isAuto)     cls += ' is-auto';
   row.className = cls;
 
-  const slugInput = document.createElement('input');
-  slugInput.type = 'text';
-  slugInput.className = 'input slug-input';
-  slugInput.placeholder = slugPlaceholder;
-  slugInput.value = slug;
-  slugInput.spellcheck = false;
-  slugInput.autocomplete = 'off';
-  slugInput.setAttribute('aria-label', slugAriaLabel);
+  const keyInput = document.createElement('input');
+  keyInput.type = 'text';
+  keyInput.className = 'input slug-input';
+  keyInput.placeholder = keyPlaceholder;
+  keyInput.value = key;
+  keyInput.spellcheck = false;
+  keyInput.autocomplete = 'off';
+  keyInput.setAttribute('aria-label', keyAriaLabel);
 
   const nameInput = document.createElement('input');
   nameInput.type = 'text';
   nameInput.className = 'input name-input';
-  nameInput.placeholder = 'Display name';
+  nameInput.placeholder = namePlaceholder;
   nameInput.value = name;
-  nameInput.setAttribute('aria-label', 'Display name');
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.type = 'button';
-  deleteBtn.className = 'delete-btn';
-  deleteBtn.setAttribute('aria-label', 'Remove this mapping');
-  deleteBtn.innerHTML = TRASH_SVG;
-
-  deleteBtn.addEventListener('click', () => {
-    row.remove();
-    if (parentList.children.length === 0) renderEmptyState(parentList);
-    markDirty();
-  });
+  nameInput.setAttribute('aria-label', nameAriaLabel);
 
   // Clear the detected/suggested highlights once the user edits the row
   const clearHints = () => { row.classList.remove('is-detected', 'is-suggested'); markDirty(); };
-  slugInput.addEventListener('input', clearHints);
+  keyInput.addEventListener('input', clearHints);
   nameInput.addEventListener('input', clearHints);
 
   if (animate) {
     row.addEventListener('animationend', () => row.classList.remove('is-new'), { once: true });
   }
-
-  // Chrome forbids extensions from fetching the Web Store, so a slug we could
-  // not resolve locally gets a link the user can follow to read the name.
-  const listingBtn = document.createElement('button');
-  listingBtn.type = 'button';
-  listingBtn.className = 'listing-btn is-hidden';
-  listingBtn.title = 'Open this extension\'s Chrome Web Store listing';
-  listingBtn.setAttribute('aria-label', 'Open Chrome Web Store listing');
-  listingBtn.innerHTML = LISTING_SVG;
-  listingBtn.addEventListener('click', () => {
-    const id = slugInput.value.trim();
-    if (id) chrome.tabs.create({ url: LISTING_URL(id) });
-  });
 
   const actions = document.createElement('div');
   actions.className = 'row-actions';
@@ -142,40 +149,199 @@ function makeRow({ slug, name, animate, isDetected, isAuto, parentList, slugPlac
     badge.title = 'Worked out automatically. Edit and Save to make it yours.';
     actions.appendChild(badge);
   }
-  actions.appendChild(listingBtn);
-  actions.appendChild(deleteBtn);
 
-  row.appendChild(slugInput);
+  row.appendChild(keyInput);
   row.appendChild(nameInput);
   row.appendChild(actions);
   return row;
 }
 
-function createRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
-  return makeRow({
-    slug, name, animate, isDetected, isAuto,
-    parentList: list,
-    slugPlaceholder: 'egedbdckafdbomehjaihjhbcgmngmlah',
-    slugAriaLabel: 'GA4 property name',
+/** A property row: an extension ID and the name to show in its place. */
+function makePropertyRow(slug = '', name = '', opts = {}) {
+  const row = makeRow({
+    kind: 'property',
+    key: slug,
+    name,
+    animate: opts.animate,
+    isDetected: opts.isDetected,
+    isAuto: opts.isAuto,
+    keyPlaceholder: 'egedbdckafdbomehjaihjhbcgmngmlah',
+    keyAriaLabel: 'GA4 property slug',
+    namePlaceholder: 'Property display name',
+    nameAriaLabel: 'Property display name',
   });
+
+  const actions = row.querySelector('.row-actions');
+
+  // Chrome forbids extensions from fetching the Web Store, so a slug we could
+  // not resolve locally gets a link the user can follow to read the name.
+  const listingBtn = document.createElement('button');
+  listingBtn.type = 'button';
+  listingBtn.className = 'listing-btn is-hidden';
+  listingBtn.title = 'Open this extension\'s Chrome Web Store listing';
+  listingBtn.setAttribute('aria-label', 'Open Chrome Web Store listing');
+  listingBtn.innerHTML = LISTING_SVG;
+  listingBtn.addEventListener('click', () => {
+    const id = row.querySelector('.slug-input').value.trim();
+    if (id) chrome.tabs.create({ url: LISTING_URL(id) });
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.setAttribute('aria-label', 'Remove this property mapping');
+  deleteBtn.title = 'Remove this property mapping';
+  deleteBtn.innerHTML = TRASH_SVG;
+  deleteBtn.addEventListener('click', () => {
+    row.remove();
+    tidy();
+    markDirty();
+  });
+
+  actions.appendChild(listingBtn);
+  actions.appendChild(deleteBtn);
+  return row;
 }
 
-function createAccountRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
-  return makeRow({
-    slug, name, animate, isDetected, isAuto,
-    parentList: accountList,
-    slugPlaceholder: '376297388',
-    slugAriaLabel: 'GA4 account number',
+/** An account row: the group head. Its delete keeps the properties it holds. */
+function makeAccountRow(accountId = '', name = '', opts = {}) {
+  const row = makeRow({
+    kind: 'account',
+    key: accountId,
+    name,
+    animate: opts.animate,
+    isDetected: opts.isDetected,
+    isAuto: opts.isAuto,
+    keyPlaceholder: '376297388',
+    keyAriaLabel: 'GA4 account number',
+    namePlaceholder: 'Account display name',
+    nameAriaLabel: 'Account display name',
   });
+
+  const actions = row.querySelector('.row-actions');
+
+  const addPropBtn = document.createElement('button');
+  addPropBtn.type = 'button';
+  addPropBtn.className = 'add-prop-btn';
+  addPropBtn.title = 'Add a property under this account';
+  addPropBtn.setAttribute('aria-label', 'Add a property under this account');
+  addPropBtn.innerHTML = ADD_SVG;
+  addPropBtn.addEventListener('click', () => {
+    const group = row.closest('.account-group');
+    const added = addPropertyRow(group, '', '', { animate: true });
+    added.querySelector('.slug-input').focus();
+    markDirty();
+    added.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.setAttribute('aria-label', 'Remove this account. Its properties are kept.');
+  deleteBtn.title = 'Remove this account. Its properties are kept.';
+  deleteBtn.innerHTML = TRASH_SVG;
+  deleteBtn.addEventListener('click', () => {
+    // Deleting the account must not silently delete the properties under it:
+    // those are separate mappings the user may well still want. They move to
+    // the catch-all group instead.
+    const group = row.closest('.account-group');
+    const orphans = Array.from(group.querySelectorAll('.property-row'));
+    if (orphans.length > 0) {
+      const target = ensureGroup(UNGROUPED).querySelector('.group-props');
+      orphans.forEach(p => target.appendChild(p));
+    }
+    group.remove();
+    tidy();
+    markDirty();
+  });
+
+  // Keep the group keyed by what is actually typed. Without this, a group the
+  // user just added stays keyed by its placeholder, and the popup handoff would
+  // build a second group for the same account.
+  row.querySelector('.slug-input').addEventListener('input', (e) => {
+    const typed = e.target.value.trim();
+    const group = row.closest('.account-group');
+    if (group && typed) group.dataset.account = typed;
+  });
+
+  actions.appendChild(addPropBtn);
+  actions.appendChild(deleteBtn);
+  return row;
+}
+
+// ── Groups ────────────────────────────────────────────────────────────────────
+
+function groupFor(accountId) {
+  const key = accountId || UNGROUPED;
+  return groupsList.querySelector(`.account-group[data-account="${CSS.escape(key)}"]`);
+}
+
+function makeGroupHead() {
+  const head = document.createElement('div');
+  head.className = 'group-head-plain';
+  head.innerHTML = `
+    <span class="group-head-label">Not linked to an account</span>
+    <span class="group-head-note">Open these properties in Google Analytics once and they file themselves.</span>`;
+  return head;
+}
+
+function makeGroup(accountId, accountName, opts) {
+  const group = document.createElement('section');
+  group.className = 'account-group' + (accountId ? '' : ' is-ungrouped');
+  group.dataset.account = accountId || UNGROUPED;
+
+  group.appendChild(accountId
+    ? makeAccountRow(accountId, accountName || '', opts)
+    : makeGroupHead());
+
+  const props = document.createElement('div');
+  props.className = 'group-props';
+  group.appendChild(props);
+  return group;
+}
+
+/** The group for this account, created if it is not on the page yet. */
+function ensureGroup(accountId, accountName = '', opts = {}) {
+  const found = groupFor(accountId);
+  if (found) return found;
+
+  const empty = document.getElementById('empty-state');
+  if (empty) empty.remove();
+
+  const group = makeGroup(accountId, accountName, opts);
+
+  // The catch-all always sits last, so real accounts stay together at the top.
+  const catchAll = accountId ? groupFor(UNGROUPED) : null;
+  if (catchAll) groupsList.insertBefore(group, catchAll);
+  else groupsList.appendChild(group);
+
+  return group;
+}
+
+function addPropertyRow(group, slug = '', name = '', opts = {}) {
+  const row = makePropertyRow(slug, name, opts);
+  group.querySelector('.group-props').appendChild(row);
+  return row;
+}
+
+/**
+ * Drop a catch-all group that has nothing left in it, and fall back to the
+ * empty state once the table holds no rows at all. Called after every removal.
+ */
+function tidy() {
+  groupsList.querySelectorAll('.account-group.is-ungrouped').forEach((g) => {
+    if (g.querySelectorAll('.property-row').length === 0) g.remove();
+  });
+  if (groupsList.querySelectorAll('.mapping-row').length === 0) renderEmptyState();
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function renderEmptyState(targetList) {
-  const isAccount = targetList === accountList;
+function renderEmptyState() {
+  if (document.getElementById('empty-state')) return;
   const div = document.createElement('div');
   div.className = 'empty-state';
-  div.id = isAccount ? 'account-empty-state' : 'empty-state';
+  div.id = 'empty-state';
   div.innerHTML = `
     <svg class="empty-icon" viewBox="0 0 40 40" fill="none" aria-hidden="true">
       <rect x="4" y="8" width="32" height="24" rx="5" stroke="currentColor" stroke-width="1.8"/>
@@ -184,46 +350,76 @@ function renderEmptyState(targetList) {
       <rect x="15" y="20" width="10" height="2.5" rx="1.25" fill="currentColor" opacity="0.25"/>
       <rect x="15" y="26" width="12" height="2.5" rx="1.25" fill="currentColor" opacity="0.2"/>
     </svg>
-    <h2>No mappings yet</h2>
-    <p>${isAccount
-      ? 'Add your GA4 account numbers to rename account labels.'
-      : 'Click "Add Mapping" to rename your first property slug.'
-    }</p>`;
-  targetList.appendChild(div);
+    <h2>No names yet</h2>
+    <p>Open one of your Chrome Web Store properties in Google Analytics and it
+       names itself, or add one here by hand.</p>`;
+  groupsList.appendChild(div);
 }
 
 // ── Render all rows ───────────────────────────────────────────────────────────
 
+function uniqueKeys(...objects) {
+  const out = [];
+  const seen = new Set();
+  objects.forEach((obj) => {
+    Object.keys(obj || {}).forEach((k) => {
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(k);
+    });
+  });
+  return out;
+}
+
 /**
- * Render the user's own mappings together with the ones the extension derived
- * for itself. Auto rows are badged and shown last; they are ordinary editable
- * rows, so pressing Save promotes them into the user's own mappings.
+ * Draw the whole table from storage's four maps plus the pairing.
+ *
+ * The user's own names and the ones the extension derived are rendered as the
+ * same kind of editable row; derived ones simply carry an `auto` badge. A user
+ * name always wins over a derived one for the same key, which mirrors exactly
+ * what the content script does when it replaces text on the page.
  */
-function renderInto(targetList, factory, userMappings, autoMappings) {
-  targetList.innerHTML = '';
-  const user = Object.entries(userMappings || {});
-  const auto = Object.entries(autoMappings || {})
-    .filter(([key]) => !(userMappings || {})[key]);
+function renderAll({ mappings, accountMappings, autoMappings, autoAccountMappings, pairs }) {
+  groupsList.innerHTML = '';
 
-  if (user.length === 0 && auto.length === 0) { renderEmptyState(targetList); return; }
+  const userProps = mappings || {};
+  const autoProps = autoMappings || {};
+  const userAccs  = accountMappings || {};
+  const autoAccs  = autoAccountMappings || {};
+  const parent    = pairs || {};
 
-  user.forEach(([key, name]) => targetList.appendChild(factory(key, name)));
-  auto.forEach(([key, name]) => targetList.appendChild(factory(key, name, false, false, true)));
-}
+  const propKeys = uniqueKeys(userProps, autoProps);
+  const accKeys  = uniqueKeys(userAccs, autoAccs);
 
-function renderMappings(mappings, auto) {
-  renderInto(list, createRow, mappings, auto);
-}
+  // An account earns a group if it is named, or if it holds a known property
+  propKeys.forEach((slug) => {
+    const id = parent[slug];
+    if (id && !accKeys.includes(id)) accKeys.push(id);
+  });
 
-function renderAccountMappings(mappings, auto) {
-  renderInto(accountList, createAccountRow, mappings, auto);
+  if (propKeys.length === 0 && accKeys.length === 0) { renderEmptyState(); return; }
+
+  accKeys.forEach((id) => {
+    const owned = Object.prototype.hasOwnProperty.call(userAccs, id);
+    ensureGroup(id, owned ? userAccs[id] : (autoAccs[id] || ''), { isAuto: !owned && id in autoAccs });
+  });
+
+  propKeys.forEach((slug) => {
+    const owned = Object.prototype.hasOwnProperty.call(userProps, slug);
+    addPropertyRow(
+      ensureGroup(parent[slug] || UNGROUPED),
+      slug,
+      owned ? userProps[slug] : (autoProps[slug] || ''),
+      { isAuto: !owned && slug in autoProps }
+    );
+  });
 }
 
 // ── Read current DOM state ────────────────────────────────────────────────────
 
 function getMappingsFromDOM() {
   const mappings = {};
-  list.querySelectorAll('.mapping-row').forEach((row) => {
+  groupsList.querySelectorAll('.property-row').forEach((row) => {
     const slug = row.querySelector('.slug-input').value.trim();
     const name = row.querySelector('.name-input').value.trim();
     if (slug && name) mappings[slug] = name;
@@ -233,7 +429,7 @@ function getMappingsFromDOM() {
 
 function getAccountMappingsFromDOM() {
   const mappings = {};
-  accountList.querySelectorAll('.mapping-row').forEach((row) => {
+  groupsList.querySelectorAll('.account-row').forEach((row) => {
     const id   = row.querySelector('.slug-input').value.trim();
     const name = row.querySelector('.name-input').value.trim();
     if (id && name) mappings[id] = name;
@@ -272,25 +468,28 @@ function save() {
   });
 }
 
-// ── Add mapping buttons ───────────────────────────────────────────────────────
-
-addBtn.addEventListener('click', () => {
-  const empty = document.getElementById('empty-state');
-  if (empty) empty.remove();
-
-  const row = createRow('', '', true);
-  list.appendChild(row);
-  row.querySelector('.slug-input').focus();
-  markDirty();
-  row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-});
+// ── Add buttons ───────────────────────────────────────────────────────────────
 
 addAccountBtn.addEventListener('click', () => {
-  const empty = document.getElementById('account-empty-state');
-  if (empty) empty.remove();
+  // A blank account number cannot key a group, so the new group is parked under
+  // a placeholder key until the user types a real one.
+  let key = 'new';
+  let n = 1;
+  while (groupFor(key)) key = `new-${++n}`;
 
-  const row = createAccountRow('', '', true);
-  accountList.appendChild(row);
+  const group = ensureGroup(key, '', { animate: true });
+  const input = group.querySelector('.account-row .slug-input');
+  input.value = '';
+  input.focus();
+  markDirty();
+  group.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+addBtn.addEventListener('click', () => {
+  // With no account chosen, a new property goes to the catch-all. Use the plus
+  // on an account row to add one directly under that account.
+  const group = ensureGroup(UNGROUPED);
+  const row = addPropertyRow(group, '', '', { animate: true });
   row.querySelector('.slug-input').focus();
   markDirty();
   row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -376,8 +575,16 @@ importFile.addEventListener('change', () => {
         throw new Error('File must contain at least one of: mappings, accountMappings.');
       }
 
-      if (parsed.mappings)        renderMappings(parsed.mappings, {});
-      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings, {});
+      // An import replaces only what the file carries; anything it leaves out
+      // keeps whatever is on the page. Derived names are dropped from the view
+      // so the user sees exactly what they imported.
+      renderAll({
+        mappings:            parsed.mappings        || getMappingsFromDOM(),
+        accountMappings:     parsed.accountMappings || getAccountMappingsFromDOM(),
+        autoMappings:        {},
+        autoAccountMappings: {},
+        pairs:               propertyAccounts
+      });
 
       const total = Object.keys(parsed.mappings || {}).length
                   + Object.keys(parsed.accountMappings || {}).length;
@@ -399,40 +606,57 @@ importFile.addEventListener('change', () => {
 
 const HANDOFF_TTL_MS = 10 * 60 * 1000;
 
-function mergeHandoffRows(entries, targetList, factory, emptyStateId) {
-  if (!Array.isArray(entries) || entries.length === 0) return 0;
+function mergeHandoffAccounts(entries) {
+  let touched = 0;
+  (entries || []).forEach(({ key, name }) => {
+    if (!key) return;
 
+    const group = groupFor(key);
+    if (group) {
+      // Already on the page: only fill a name the user has not set here
+      const input = group.querySelector('.account-row .name-input');
+      if (name && input && !input.value.trim()) {
+        input.value = name;
+        input.closest('.mapping-row').classList.add('is-detected');
+        touched++;
+      }
+      return;
+    }
+
+    ensureGroup(key, name || '', { isDetected: true, animate: true });
+    touched++;
+  });
+  return touched;
+}
+
+function mergeHandoffProperties(entries) {
   const existing = new Map();
-  targetList.querySelectorAll('.mapping-row').forEach((row) => {
+  groupsList.querySelectorAll('.property-row').forEach((row) => {
     existing.set(row.querySelector('.slug-input').value.trim(), row);
   });
 
   let touched = 0;
-  // Reversed, because each new row is inserted at the top: iterating backwards
-  // leaves the incoming rows in their original popup order.
-  entries.slice().reverse().forEach(({ key, name }) => {
+  (entries || []).forEach(({ key, name }) => {
     if (!key) return;
-    const row = existing.get(key);
 
+    const row = existing.get(key);
     if (row) {
-      // Already on the page: only fill a name the user has not set here
-      const nameInput = row.querySelector('.name-input');
-      if (name && !nameInput.value.trim()) {
-        nameInput.value = name;
+      const input = row.querySelector('.name-input');
+      if (name && !input.value.trim()) {
+        input.value = name;
         row.classList.add('is-detected');
         touched++;
       }
       return;
     }
 
-    const empty = document.getElementById(emptyStateId);
-    if (empty) empty.remove();
-    const newRow = factory(key, name || '', true, true);
-    targetList.insertBefore(newRow, targetList.firstChild);
-    existing.set(key, newRow);
+    // Rows are appended in the order the popup sent them, so that order is
+    // what the user sees. The group comes from the pairing the content script
+    // recorded; without one the row lands in the catch-all.
+    const group = ensureGroup(propertyAccounts[key] || UNGROUPED);
+    existing.set(key, addPropertyRow(group, key, name || '', { isDetected: true, animate: true }));
     touched++;
   });
-
   return touched;
 }
 
@@ -449,13 +673,13 @@ function consumeHandoff(done) {
       return;
     }
 
-    const props = mergeHandoffRows(
-      (pending.properties || []).map(p => ({ key: p.slug, name: p.name })),
-      list, createRow, 'empty-state'
+    // Accounts first, so a property handed over with a known account has a
+    // group waiting for it rather than falling into the catch-all.
+    const accounts = mergeHandoffAccounts(
+      (pending.accounts || []).map(a => ({ key: a.id, name: a.name }))
     );
-    const accounts = mergeHandoffRows(
-      (pending.accounts || []).map(a => ({ key: a.id, name: a.name })),
-      accountList, createAccountRow, 'account-empty-state'
+    const props = mergeHandoffProperties(
+      (pending.properties || []).map(p => ({ key: p.slug, name: p.name }))
     );
 
     if (props + accounts > 0) {
@@ -571,7 +795,7 @@ autonameToggle.addEventListener('change', () => {
 /** Rows that carry a valid extension ID but no display name yet. */
 function rowsAwaitingNames() {
   const out = [];
-  list.querySelectorAll('.mapping-row').forEach((row) => {
+  groupsList.querySelectorAll('.property-row').forEach((row) => {
     const slug = row.querySelector('.slug-input').value.trim();
     const name = row.querySelector('.name-input').value.trim();
     if (slug && !name && EXTENSION_ID_RE.test(slug)) out.push({ row, slug });
@@ -793,25 +1017,30 @@ function initWelcome(autoNameIsOn) {
 // ── Load on startup ───────────────────────────────────────────────────────────
 
 chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
-  if (chrome.runtime.lastError) {
-    showStatus('Could not load saved mappings.', 'error');
-    renderMappings({}, {});
-    renderAccountMappings({}, {});
-    return;
-  }
+  const mappings        = (!chrome.runtime.lastError && result.mappings)        || {};
+  const accountMappings = (!chrome.runtime.lastError && result.accountMappings) || {};
+  if (chrome.runtime.lastError) showStatus('Could not load saved mappings.', 'error');
 
-  chrome.storage.local.get(['autoMappings', 'autoAccountMappings'], (local) => {
-    const auto     = (!chrome.runtime.lastError && local.autoMappings) || {};
-    const autoAccs = (!chrome.runtime.lastError && local.autoAccountMappings) || {};
+  chrome.storage.local.get(
+    ['autoMappings', 'autoAccountMappings', 'propertyAccounts'],
+    (local) => {
+      const ok = !chrome.runtime.lastError;
+      propertyAccounts = (ok && local.propertyAccounts) || {};
 
-    renderMappings(result.mappings, auto);
-    renderAccountMappings(result.accountMappings, autoAccs);
-    markClean();
+      renderAll({
+        mappings,
+        accountMappings,
+        autoMappings:        (ok && local.autoMappings)        || {},
+        autoAccountMappings: (ok && local.autoAccountMappings) || {},
+        pairs:               propertyAccounts
+      });
+      markClean();
 
-    // Strictly sequenced: the handoff rows must exist before initWelcome is
-    // allowed to reach fillMissingNames(), or there is nothing for it to name.
-    consumeHandoff(() => initAutoNameState(initWelcome));
-  });
+      // Strictly sequenced: the handoff rows must exist before initWelcome is
+      // allowed to reach fillMissingNames(), or there is nothing for it to name.
+      consumeHandoff(() => initAutoNameState(initWelcome));
+    }
+  );
 });
 
 // ── Feedback form ─────────────────────────────────────────────────────────────
@@ -832,7 +1061,6 @@ const FEEDBACK_TO       = 'palaniappan.tn2@gmail.com';
 const fbForm    = document.getElementById('feedback-form');
 const fbName    = document.getElementById('fb-name');
 const fbEmail   = document.getElementById('fb-email');
-const fbPhone   = document.getElementById('fb-phone');
 const fbMessage = document.getElementById('fb-message');
 const fbSubmit  = document.getElementById('fb-submit');
 const fbStatus  = document.getElementById('fb-status');
@@ -907,7 +1135,6 @@ function feedbackBody() {
   const lines = [
     `Name:  ${fbName.value.trim() || '(not given)'}`,
     `Email: ${fbEmail.value.trim()}`,
-    `Phone: ${fbPhone.value.trim() || '(not given)'}`,
     '',
     fbMessage.value.trim(),
     '',
@@ -937,7 +1164,6 @@ function sendByEndpoint() {
     body: JSON.stringify({
       name: fbName.value.trim(),
       email: fbEmail.value.trim(),
-      phone: fbPhone.value.trim(),
       message: fbMessage.value.trim(),
       diagnostics
     })

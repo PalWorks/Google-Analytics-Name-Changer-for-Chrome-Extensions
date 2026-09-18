@@ -103,14 +103,12 @@ export default {
     }
 
     const name = String(payload.name || '').trim() || '(not given)';
-    const phone = String(payload.phone || '').trim() || '(not given)';
 
     const html = `
       <h2 style="margin:0 0 12px;font:600 17px system-ui">GA4 Name Changer feedback</h2>
       <table style="border-collapse:collapse;font-size:14px;margin-bottom:16px">
         <tr><td style="padding:2px 10px 2px 0;color:#6e6e73">Name</td><td>${esc(name)}</td></tr>
         <tr><td style="padding:2px 10px 2px 0;color:#6e6e73">Email</td><td><a href="mailto:${esc(email)}">${esc(email)}</a></td></tr>
-        <tr><td style="padding:2px 10px 2px 0;color:#6e6e73">Phone</td><td>${esc(phone)}</td></tr>
       </table>
       <div style="white-space:pre-wrap;font-size:14px;line-height:1.6;padding:14px;
                   background:#f5f5f7;border-radius:8px">${esc(message)}</div>

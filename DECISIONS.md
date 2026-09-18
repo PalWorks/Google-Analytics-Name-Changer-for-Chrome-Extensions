@@ -331,12 +331,128 @@ machine, not in a user's browser.
 **Rejected.**
 
 * *Ship the API key in the extension.* Refused outright, for the reasons above.
-* *A third-party form service.* Routes the user's name, email and phone through someone else,
+* *A third-party form service.* Routes the user's name and email through someone else,
   which then needs its own disclosure.
 
 **Consequence.** Until the Worker is deployed the form uses `mailto:`, which needs no
 endpoint, no permission and no network request from the extension, and therefore keeps the
 unconditional privacy claim intact. Switching to the endpoint means adding its origin to
 `optional_host_permissions`, updating `privacy.html`, and declaring the collected fields in the
-Chrome Web Store data disclosure, because name, email and phone are personal data.
+Chrome Web Store data disclosure, because name and email are personal data.
 
+**Amended 2026-09-18.** The phone field was removed. It was optional, never going to be
+used to answer anyone, and it added a whole extra personal-data category to the Chrome Web
+Store disclosure for nothing. Email plus the diagnostics is enough to reproduce a problem
+and reply to it.
+
+---
+
+## ADR-012 — One settings table, grouped by account, not two side-by-side
+
+**Date.** 2026-09-18 · **Status.** Accepted
+
+**Decision.** The settings page shows a single table. Each account is a group head row and
+the properties it holds are nested beneath it, sharing the same two columns: identifier and
+display name. Properties whose account is not known yet fall into a catch-all group at the
+bottom.
+
+**Why.** The two cards were `accountMappings` and `mappings` drawn side by side, which is
+the shape of the *storage*, not the shape of the user's problem. A developer with three
+accounts and five extensions had to pair them up by eye, and nothing on the page said which
+extension sat under which account. The extension already knows: GA4 ships an inline
+`accountTree` that pairs them exactly (see ADR-008).
+
+**What did NOT change: the storage shape.** Storage stays two flat maps, `sync.mappings`
+(slug → name) and `sync.accountMappings` (accountId → name). The replacement engine, the
+popup, Import and Export all agree on that shape, and re-nesting it would have broken every
+exported file users already hold. The pairing that drives the grouping lives separately in
+`local.propertyAccounts` and is **presentation only** — the content script never reads it.
+Losing it degrades the table to a flat list, which is exactly the old behaviour, not a bug.
+
+**Rejected.**
+
+* *A real `<table>` with `rowspan` on the account cell.* Semantically tidy, but every add or
+  delete forces the rowspan to be recomputed, and that arithmetic is precisely the sort of
+  bookkeeping that goes wrong quietly.
+* *Indenting property rows with left padding.* The obvious way to show nesting, but padding
+  shifts every grid track, so the display-name column would no longer line up between an
+  account row and the property rows under it — losing the one thing the merge was for. The
+  indent is applied as a margin on the slug input alone, which leaves the tracks alone.
+* *Repeating the account number on every property row.* Four true columns, but it reads as
+  noise the moment an account holds more than one extension, which is the case the merge
+  exists to clarify.
+
+**Consequence (a).** Deleting an account no longer deletes anything else: its properties move to
+the catch-all group, because they are independent mappings the user may still want. Accounts
+render in ascending numeric order, since JavaScript orders integer-like object keys that way;
+this is stable and predictable, but it is not insertion order.
+
+
+
+---
+
+## ADR-013 — A harvested name is attributed only after the reports settle
+
+**Date.** 2026-09-18 · **Status.** Accepted
+
+**Decision.** After an in-page property switch, a name harvested from GA4's reports is
+attributed only once the report candidates have **changed** from what they showed at the
+moment of the switch **and then held still** for one further pass. A full page load skips the
+"changed" requirement, because a fresh document cannot be showing a previous property's data.
+If the reports never settle, nothing is recorded.
+
+**Why.** Reported from live use: after switching property, the breadcrumb showed a different
+extension's name, a refresh fixed it, and names sometimes went wrong or vanished on returning
+to a property.
+
+Google Analytics is a single-page app. Switching property rewrites the URL **immediately** and
+refetches the report widgets **asynchronously**. Measured live, that window is about four
+seconds. Harvesting inside it reads the new property's slug from the URL and the previous
+property's name from the reports, writes that pairing to `autoMappings`, and the wrong name
+then sticks — it is persisted, so it survives until something overwrites it.
+
+"Held still for a pass" alone is not sufficient and was tried first: reports that have not
+started refreshing also hold still, which is exactly the stale case. Requiring a change from
+the pre-switch fingerprint is what proves the refetch actually happened.
+
+**Also decided: one extension, one name.** If a harvested name is already attributed to a
+different slug, one of the two is a stale read, because two Chrome Web Store extensions do not
+carry byte-identical names. A slug taken from GA4's own account tree is exact and evicts the
+other claim; anything less certain yields. Without the eviction, a single bad pairing written
+before this existed would lock the rightful property out of its own name permanently.
+
+**Rejected.**
+
+* *A fixed delay after a switch.* A guess about someone else's network. Too short and it
+  still writes the wrong name; too long and naming feels broken.
+* *Trusting GA4's loading spinners.* Class-name dependent, which ADR-003 invariant 3 refuses.
+
+**Consequence.** A name now appears a second or two later than before, and a property whose
+reports never settle is left unnamed. Both are the right trade: an unnamed property is
+recoverable by typing, a wrongly named one is silently misleading.
+
+**Not our lag.** GA4's own breadcrumb keeps showing the *previous* property for about four
+seconds after the URL changes. Measured with replacement disabled entirely, the raw slug on
+the page is still the old property's for ~4s. The extension renders whatever GA4 currently
+shows, so that delay is visible through it and cannot be fixed from here.
+
+---
+
+## ADR-014 — Property-to-account pairing is recorded from the URL, not only the tree
+
+**Date.** 2026-09-18 · **Status.** Accepted
+
+**Decision.** `local.propertyAccounts` is written from two sources: GA4's inline `accountTree`
+(bulk) and the account and property in the URL of whatever page the user is on (exact).
+
+**Why.** The tree was the obvious single source, and ADR-008 established it as authoritative.
+It is not complete: measured on a live profile, `window.preload` carried **18 accounts** while
+the user holds more, and the account being viewed was **absent from its own page's tree**. Any
+account outside that preloaded set would never be paired, so the settings table introduced in
+ADR-012 would file those properties into the catch-all forever.
+
+The URL has no such limit. `#/a<accountId>p<propertyId>` names both, for every page the user
+actually opens, and it is read at the same settled moment as the name.
+
+**Consequence.** A property is filed the first time it is opened. Until then it sits in the
+catch-all group, which is a display difference only — nothing about replacement depends on it.

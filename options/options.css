@@ -248,7 +248,7 @@ summary:hover > .accordion-chevron { opacity: 1; }
 
 .field-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -638,15 +638,6 @@ summary:hover > .accordion-chevron { opacity: 1; }
 .modal-nav .is-hidden,
 .slide-actions .is-hidden { display: none; }
 
-/* ── Two-card grid ── */
-
-.cards-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: start;
-}
-
 /* ── Header ── */
 
 header {
@@ -688,7 +679,10 @@ h1 {
 /* ── Card ── */
 
 main {
-  flex: 1;
+  /* Deliberately not flex:1. The page holds one table now, so growing main to
+     fill the viewport opened a large blank band above the feedback card on a
+     short list. Everything stacks from the top instead. */
+  flex: 0 0 auto;
 }
 
 .card {
@@ -701,7 +695,7 @@ main {
 
 .card-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 72px;
+  grid-template-columns: 1fr 1fr 104px;
   gap: 12px;
   padding: 10px 16px;
   background: var(--bg);
@@ -720,7 +714,7 @@ main {
 
 .mapping-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 72px;
+  grid-template-columns: 1fr 1fr 104px;
   gap: 12px;
   padding: 8px 16px;
   align-items: center;
@@ -843,6 +837,132 @@ main {
   box-shadow: inset 3px 0 0 rgba(79, 70, 229, 0.45);
 }
 
+/* ── Account groups ──
+   One table, not two. Each account is a group head and the properties it holds
+   are nested beneath it, sharing the same two columns, so an account number
+   lines up with the property slugs and an account name with the property names.
+   The nesting is shown with a rail and a small offset on the slug input alone,
+   which keeps the second column in exact alignment across both row kinds. */
+
+.account-group {
+  border-bottom: 1px solid var(--border);
+}
+
+.account-group:last-child {
+  border-bottom: none;
+}
+
+.account-row {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.account-row .slug-input {
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+
+.account-row .name-input {
+  font-weight: 600;
+}
+
+/* Nesting rail. Offsetting the input by margin rather than padding the row
+   keeps every grid track in the same place on both row kinds. */
+.property-row {
+  position: relative;
+}
+
+.property-row::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--border-strong, #d8d8de);
+}
+
+.property-row .slug-input {
+  margin-left: 16px;
+  width: auto;
+}
+
+/* Properties with no account yet are not nested under anything */
+.account-group.is-ungrouped .property-row::before {
+  display: none;
+}
+
+.account-group.is-ungrouped .property-row .slug-input {
+  margin-left: 0;
+  width: 100%;
+}
+
+.group-props .property-row:last-child {
+  border-bottom: none;
+}
+
+.group-props:empty::after {
+  content: "No properties under this account yet.";
+  display: block;
+  padding: 11px 16px 11px 38px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* Head of the catch-all group: nothing here is nameable, so it is a label */
+.group-head-plain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.group-head-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-2);
+}
+
+.group-head-note {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* Add-a-property button on an account row. Deliberately not .listing-btn: that
+   class doubles as the "could not be resolved" marker on property rows. */
+.add-prop-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-3);
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.add-prop-btn:hover {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.add-prop-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Empty state ── */
 
 .empty-state {
@@ -873,6 +993,9 @@ main {
 /* ── Card footer (Add button) ── */
 
 .card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   background: var(--bg);
@@ -1028,10 +1151,6 @@ a.support-link:hover {
 /* ── Responsive (narrow windows) ── */
 
 @media (max-width: 800px) {
-  .cards-grid {
-    grid-template-columns: 1fr;
-  }
-
   .toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -1054,7 +1173,7 @@ a.support-link:hover {
 
   .card-header,
   .mapping-row {
-    grid-template-columns: 1fr 1fr 64px;
+    grid-template-columns: 1fr 1fr 92px;
     gap: 8px;
     padding: 8px 12px;
   }

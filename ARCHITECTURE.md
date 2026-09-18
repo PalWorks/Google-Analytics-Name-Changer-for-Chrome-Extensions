@@ -157,6 +157,7 @@ An account row is additionally suggested from its property's name, shortened, wh
 | `autoMappings` | local | `{ [slug]: name }` | Derived property names, applied with no save. Merged **under** `mappings`. |
 | `autoAccountMappings` | local | `{ [accountId]: name }` | Derived account names, merged under `accountMappings`. |
 | `autoNamingEnabled` | local | `boolean` | On-page automatic naming. Absent or `true` means on. |
+| `propertyAccounts` | local | `{ [slug]: accountId }` | Which account each property sits under, from GA4's inline account tree **and** from the account/property in the URL (the tree is capped and omits accounts, see ADR-014). Presentation only: it groups the settings table and is never read by the replacement engine. Merged, never replaced. |
 
 `mappings` and `accountMappings` are each stored as a single `chrome.storage.sync` item. A pre-save byte-size check against `QUOTA_BYTES_PER_ITEM` (8 192 bytes) surfaces quota errors before Chrome silently rejects them. The other two sync keys are scalars and are not size-checked.
 
@@ -245,12 +246,14 @@ popup.js                                  options.js
   │    └─ + detectedSlugs beyond the 3-row cap │
   ├─ storage.local.set({ pendingDetection }) ──┼──▶ consumeHandoff()
   ├─ openOptionsPage() / tabs.create(#hash)    │      ├─ discard if older than 10 min
-  └─ window.close()                            │      ├─ mergeHandoffRows() into each list
+  └─ window.close()                            │      ├─ mergeHandoffAccounts() then …Properties()
                                                │      ├─ storage.local.remove(key)
                                                │      └─ markDirty() + status message
 ```
 
-**Merge semantics are conservative.** An incoming row whose slug is already on the options page only fills a display name that is currently empty; it never overwrites one. New slugs are inserted at the top of the list with the `is-detected` highlight.
+**Merge semantics are conservative.** An incoming row whose slug is already on the options page only fills a display name that is currently empty; it never overwrites one. New slugs are appended, in the order the popup sent them, with the `is-detected` highlight.
+
+Accounts are merged **before** properties, so that a property whose account is known by `propertyAccounts` finds its group already built rather than dropping into the catch-all.
 
 The handoff is consumed exactly once and cleared immediately, so it cannot replay. The 10-minute TTL bounds how stale an injection can be.
 

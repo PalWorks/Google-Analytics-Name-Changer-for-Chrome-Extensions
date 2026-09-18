@@ -95,6 +95,29 @@ Do not relax the single-slug check. Do not add a class-name-based fallback.
 User supplied values reach the DOM exclusively through `.value`, `.textContent`,
 or `.nodeValue`. Keep it that way.
 
+### 9. Never attribute a name while the reports may still be the previous property's
+
+Google Analytics rewrites the URL on a property switch immediately and refetches its report
+widgets about four seconds later. `harvestNameHint()` therefore refuses to attribute anything
+until the candidate set has **changed** since the switch and then **held still** for a pass.
+See [DECISIONS.md](DECISIONS.md) ADR-013.
+
+Do not replace that with a fixed delay, and do not weaken it to "held still" alone: reports
+that have not begun refreshing also hold still, which is the exact failure this prevents. It
+was a live bug, not a theoretical one.
+
+### 10. The settings table's grouping is presentation, not storage
+
+Storage is two flat maps: `sync.mappings` (slug → name) and `sync.accountMappings`
+(accountId → name). The settings page *draws* them as one table grouped by account, using
+`local.propertyAccounts` for the pairing, but it saves those same two flat maps and nothing
+else. See [DECISIONS.md](DECISIONS.md) ADR-012.
+
+Do not nest the saved shape to match the table. The content script, the popup and every
+JSON file a user has already exported depend on the flat shape. `propertyAccounts` is
+disposable: if it is missing the table degrades to a flat list, which is correct, not broken,
+so nothing may read it for replacement.
+
 ---
 
 ## Coding conventions

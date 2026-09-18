@@ -176,6 +176,28 @@ currently nothing does.
 authenticated GA4 SPA. Meaningful coverage needs a DOM harness with recorded GA4
 fixtures, which is a larger piece of work than the extension itself.
 
+### GA4's own breadcrumb lags a property switch by about four seconds
+
+Switching property rewrites the URL at once, but Google Analytics keeps rendering the
+**previous** property's name in its breadcrumb for roughly four seconds before catching up.
+Measured directly: with this extension's replacement switched off, the raw slug on the page is
+still the old property's at t+3s and has changed by t+5s.
+
+The extension renders whatever GA4 currently shows, so for those few seconds it shows the
+previous extension's display name. There is no fix from inside a content script that does not
+involve inventing text GA4 has not rendered, which the design refuses. A page refresh resolves
+it immediately.
+
+This is distinct from the bug fixed in ADR-013, where the wrong name was *persisted* rather
+than merely displayed late.
+
+### A property is filed under its account only once it has been opened
+
+`propertyAccounts` is built from GA4's preloaded account tree, which is capped (18 accounts on
+a live profile that holds more), plus the account in the URL of each page actually visited.
+A property in neither source sits in the settings table's catch-all group until the user opens
+it once. Nothing about replacement depends on this; only the grouping does.
+
 ### The popup and options page duplicate logic
 
 `makeRow`, `renderEmptyState`, `getMappingsFromDOM`, `save`, and the entire import and

@@ -242,6 +242,10 @@
 
   function initObserver() {
     observer = new MutationObserver((mutations) => {
+      // A single-page property switch shows up here first. Seeing it late is how
+      // the previous property's reports get attributed to the new one.
+      noticePropertySwitch();
+
       // Harvesting is independent of the mapping state: a user with no mappings
       // yet is exactly who benefits most from name hints. Throttled internally.
       maybeHarvest();
@@ -502,6 +506,68 @@
     return map;
   }
 
+  /**
+   * Mirror which account each property belongs to into local storage.
+   *
+   * The two name maps are deliberately flat (slug -> name, accountId -> name)
+   * because that is all the replacement engine needs. The settings page shows
+   * both in one table grouped by account, and nothing in the extension knows
+   * that pairing: only GA4's own inline tree does. So it is recorded here, as
+   * a plain slug -> accountId map, whenever a GA4 page is open.
+   *
+   * Merged, never replaced: one page's tree only carries the accounts that page
+   * can see, and dropping the rest on every navigation would make the settings
+   * table regroup itself at random.
+   *
+   * This is structure, not a name, so it is recorded even when automatic naming
+   * is switched off. It stays in `local` (derived, per-device) and is never
+   * sent anywhere.
+   */
+  /**
+   * Record one property against its account.
+   *
+   * The tree above is the bulk source, but it is not complete: GA4 preloads a
+   * capped set of accounts, measured at 18 on a live profile holding more, and
+   * an account outside that set never appears in it. The URL, by contrast, names
+   * the account and property of whatever the user is actually looking at, every
+   * time. So every property the user visits is filed from the URL, and the tree
+   * fills in the rest for free.
+   */
+  function persistPropertyAccount(slug, accountId) {
+    if (!slug || !accountId || !SLUG_RE.test(slug)) return;
+
+    chrome.storage.local.get(['propertyAccounts'], (result) => {
+      if (chrome.runtime.lastError) return;
+      const known = result.propertyAccounts || {};
+      if (known[slug] === accountId) return;
+      known[slug] = accountId;
+      chrome.storage.local.set({ propertyAccounts: known });
+    });
+  }
+
+  function persistAccountTree() {
+    const pairs = accountToSlugs();
+    if (pairs.size === 0) return;
+
+    chrome.storage.local.get(['propertyAccounts'], (result) => {
+      if (chrome.runtime.lastError) return;
+
+      const known = result.propertyAccounts || {};
+      let changed = false;
+
+      for (const [accountId, slugs] of pairs) {
+        if (!accountId) continue;
+        for (const slug of slugs) {
+          if (!SLUG_RE.test(slug) || known[slug] === accountId) continue;
+          known[slug] = accountId;
+          changed = true;
+        }
+      }
+
+      if (changed) chrome.storage.local.set({ propertyAccounts: known });
+    });
+  }
+
   // ── Harvesting extension names from GA4's own reports ──────────────────────
   //
   // GA4's "Page title and screen class" report for a Chrome Web Store developer
@@ -525,7 +591,87 @@
   ]);
 
   const HARVEST_INTERVAL_MS = 5000;
+
+  // While the reports for a newly selected property have not settled yet, look
+  // more often: settling costs two passes, and 10 seconds of a stale or missing
+  // name is far too long to wait on an ordinary property switch.
+  const SETTLE_INTERVAL_MS = 1200;
+
   let lastHarvestAt = 0;
+
+  // ── Settle tracking ────────────────────────────────────────────────────────
+  //
+  // Google Analytics is a single-page app. Switching property rewrites the URL
+  // immediately but refetches the report widgets asynchronously, so for a second
+  // or so the page shows the NEW property in its URL and the OLD property's data
+  // in its reports. Harvesting in that window pairs the new property's slug with
+  // the previous extension's name and writes that pairing to storage, where it
+  // sticks: the breadcrumb then shows the wrong extension until something
+  // happens to overwrite it. This was reported from live use.
+  //
+  // So after an in-page switch a name is attributed only once the reports have
+  // BOTH changed from what they showed before the switch AND then held still for
+  // a pass. "Held still" alone is not enough: reports that have not started
+  // refreshing yet also hold still, which is precisely the stale case. Requiring
+  // a change proves the refresh actually happened.
+  //
+  // That requirement applies only to an in-page switch. A full page load cannot
+  // be showing a previous property's data, so there is nothing to change from
+  // and the reports are trusted as soon as they stop moving.
+  //
+  // If they never settle, nothing is recorded, which is the correct outcome: an
+  // unnamed property beats a wrongly named one.
+  let settleProperty    = null;   // the property the fingerprint below belongs to
+  let settleFingerprint = null;   // what its reports looked like on the last pass
+  let settleBaseline    = null;   // what they showed at the switch; null on a fresh load
+  let settleConfirmed   = false;  // changed then held still: safe to attribute
+  let settleAttempts    = 0;
+  let settleTimer       = null;
+
+  // Settling needs at least two passes, and passes are normally driven by the
+  // MutationObserver. A page that has finished rendering stops mutating, so
+  // waiting for the next mutation can mean waiting forever: the first pass after
+  // a switch would record the fingerprint and nothing would ever confirm it.
+  // While unsettled, drive the next pass from here instead.
+  const SETTLE_MAX_ATTEMPTS = 15;   // ~18s, then stop rather than poll forever
+
+  function scheduleSettleCheck() {
+    if (settleConfirmed || settleAttempts >= SETTLE_MAX_ATTEMPTS) return;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(maybeHarvest, SETTLE_INTERVAL_MS);
+  }
+
+  /**
+   * Notice a property switch immediately, whatever the harvest throttle says.
+   *
+   * Once a property has settled the throttle drops to 5 seconds, which is fine
+   * for harvesting but far too slow for noticing that the user has moved to a
+   * different property: until the switch is seen, `settleConfirmed` stays true
+   * and the next pass would happily attribute the old property's reports.
+   */
+  function noticePropertySwitch() {
+    const propertyId = currentPropertyId();
+    if (propertyId === settleProperty || settleProperty === null) return;
+    settleConfirmed = false;
+    settleAttempts  = 0;
+    lastHarvestAt   = 0;      // let the next pass run at once
+    scheduleSettleCheck();
+  }
+
+  /** The property ID in the URL: #/a<account>p<property>/… */
+  function currentPropertyId() {
+    const source = window.location.hash || window.location.href;
+    const m = source.match(/a\d{7,}p(\d{6,})/);
+    return m ? m[1] : null;
+  }
+
+  /** A cheap, order-independent signature of the candidate names on screen. */
+  function fingerprintCandidates(score) {
+    return Array.from(score.entries())
+      .map(([name, total]) => `${name}\u0000${total}`)
+      .sort()
+      .join('\u0001');
+  }
 
   /**
    * Is this the tail of a Chrome Web Store page title?
@@ -609,9 +755,7 @@
     return score;
   }
 
-  function extensionNameFromReports(values) {
-    const score = nameCandidates(values || visibleTextValues());
-
+  function bestCandidate(score) {
     let best = null;
     let runnerUp = 0;
     for (const [name, total] of score) {
@@ -627,6 +771,10 @@
     return best.name;
   }
 
+  function extensionNameFromReports(values) {
+    return bestCandidate(nameCandidates(values || visibleTextValues()));
+  }
+
   /**
    * Harvest a slug-to-name hint for the property currently being viewed.
    *
@@ -635,12 +783,55 @@
    * switcher open several are on screen at once, and guessing which one the
    * report belongs to would risk mislabelling a property. In that case we skip
    * rather than guess.
+   *
+   * It must also wait for the reports to catch up with the URL after a property
+   * switch — see the settle tracking above.
    */
   function harvestNameHint(values) {
+    const propertyId = currentPropertyId();
+    const score = nameCandidates(values);
+    const fingerprint = fingerprintCandidates(score);
+
+    if (propertyId !== settleProperty) {
+      // The property just changed. Whatever is on screen right now may still
+      // belong to the property we came from, so record it and attribute nothing
+      // on this pass.
+      // Only an in-page switch can be showing the previous property's reports.
+      settleBaseline    = settleProperty === null ? null : fingerprint;
+      settleProperty    = propertyId;
+      settleFingerprint = fingerprint;
+      settleConfirmed   = false;
+      settleAttempts    = 0;
+
+      // The slug recorded while replacing text belongs to the OLD property.
+      // Keeping it would let the fallback below attribute this property's
+      // reports to the previous one.
+      currentSlug = null;
+      return null;
+    }
+
+    if (!settleConfirmed) {
+      settleAttempts++;
+
+      // Unchanged since the switch: the refetch has not landed yet, so what is
+      // on screen still belongs to the property we came from.
+      if (settleBaseline !== null && fingerprint === settleBaseline) return null;
+
+      if (fingerprint !== settleFingerprint) {
+        settleFingerprint = fingerprint;   // still refreshing
+        return null;
+      }
+      settleConfirmed = true;              // changed, then held still
+    }
+
     // Best source: GA4's own tree, keyed off the property ID in the URL. This
     // is exact, survives our own replacements, and does not care where GA4
     // renders the slug or whether it renders it at all.
     let slug = slugFromTree();
+
+    // Whether the slug came from that authoritative pairing or from a fallback.
+    // Only an exact slug is allowed to take a name away from another property.
+    const exact = !!slug;
 
     if (!slug) {
       // Fallbacks, in order: exactly one slug still visible as text, then the
@@ -653,10 +844,10 @@
     }
     if (!slug) return null;
 
-    const name = extensionNameFromReports(values);
+    const name = bestCandidate(score);
     if (!name) return null;
 
-    return { slug, name };
+    return { slug, name, exact };
   }
 
   /**
@@ -709,6 +900,10 @@
 
     const accountId = currentAccountId();
 
+    // File this property under the account in the URL. Both come from the same
+    // settled read, so the pairing is exact.
+    persistPropertyAccount(hint.slug, accountId);
+
     // A Chrome Web Store account can hold more than one extension (verified
     // live: one test account holds two). Naming such an account after a single
     // one of its extensions would be wrong, so only do it when GA4's own tree
@@ -729,7 +924,32 @@
         const autos    = result.autoMappings || {};
         const autoAccs = result.autoAccountMappings || {};
 
-        const nameChanged    = autos[hint.slug] !== hint.name;
+        // One extension, one name. The same name under a second slug means one
+        // of the two was read while GA4 still had the previous property's
+        // reports on screen. Two Chrome Web Store extensions with byte-identical
+        // names are not a real case, so this is always a stale read.
+        //
+        // Which one is stale depends on how confident THIS read is. A slug taken
+        // from GA4's own account tree is exact: the reports settled and the URL
+        // says this property owns the name, so the other claim is the stale one
+        // and is evicted. Anything less certain yields instead, and leaves the
+        // existing claim alone.
+        //
+        // The eviction matters: without it, one bad pairing written before this
+        // check existed would permanently lock the rightful property out of its
+        // own name.
+        const claimants = Object.keys(autos)
+          .filter(slug => slug !== hint.slug && autos[slug] === hint.name);
+
+        if (claimants.length > 0) {
+          if (!hint.exact) return;
+          claimants.forEach((slug) => {
+            delete autos[slug];
+            if (hints[slug] === hint.name) delete hints[slug];
+          });
+        }
+
+        const nameChanged    = autos[hint.slug] !== hint.name || claimants.length > 0;
         const accountChanged = accountId && shortName && autoAccs[accountId] !== shortName;
         if (!nameChanged && !accountChanged && hints[hint.slug] === hint.name) return;
 
@@ -752,14 +972,29 @@
    * on every React render burst and this walks the page.
    */
   function maybeHarvest() {
-    if (!autoNamingEnabled) return;
     const now = Date.now();
-    if (now - lastHarvestAt < HARVEST_INTERVAL_MS) return;
+    const interval = settleConfirmed ? HARVEST_INTERVAL_MS : SETTLE_INTERVAL_MS;
+
+    // Throttled, but still reschedule. This function is called both by the timer
+    // below and by the MutationObserver; if a throttled observer call returned
+    // without rearming, an observer call landing just before the timer would
+    // swallow the pass AND kill the chain, leaving the property unnamed forever.
+    if (now - lastHarvestAt < interval) { scheduleSettleCheck(); return; }
+
     lastHarvestAt = now;
     try {
+      // Grouping data rather than a name, so it is recorded either way: the
+      // settings table groups the user's own mappings by account too. The tree
+      // is exact but incomplete, so the property in the URL is filed directly
+      // as well — that covers properties whose name can never be derived.
+      persistAccountTree();
+      persistPropertyAccount(slugFromTree(), currentAccountId());
+      if (!autoNamingEnabled) return;
       persistNameHint(harvestNameHint(visibleTextValues()));
     } catch (err) {
       // Harvesting is opportunistic; never let it break replacement.
+    } finally {
+      scheduleSettleCheck();
     }
   }
 
@@ -785,6 +1020,7 @@
     // Name for the property currently on screen, read out of GA4's own reports
     const hint = harvestNameHint(values);
     persistNameHint(hint);
+    persistAccountTree();
 
     // The account in the URL is definite even if the switcher is closed, so
     // make sure it is present and listed first.

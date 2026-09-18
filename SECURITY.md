@@ -82,7 +82,7 @@ The options page can send feedback. As shipped it composes a `mailto:` and hands
 user's own mail client, so **the extension still makes no network request** and the user sees
 exactly what is being sent before it leaves.
 
-If a relay endpoint is configured, the form posts name, email, optional phone, the message,
+If a relay endpoint is configured, the form posts name, email, the message,
 and installation diagnostics to that endpoint instead. Diagnostics deliberately exclude
 everything about the user's analytics: no property slugs, no account numbers, no display
 names, no URLs, no browsing information. Only counts, versions and flags. The form shows the

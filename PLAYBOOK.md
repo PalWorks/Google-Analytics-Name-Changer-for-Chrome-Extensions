@@ -66,6 +66,36 @@ possible in this codebase.
 - [ ] Typing in a row clears its detected highlight
 - [ ] Save persists, and an open GA4 tab updates live
 
+### Property switching (the ADR-013 race)
+
+Needs one account holding two Chrome Web Store properties, both with store traffic.
+
+- [ ] Open property A, let it name itself, then switch to property B **in the page** (not by
+      reloading). Watch `chrome.storage.local.autoMappings` throughout the switch: B must
+      never appear holding A's name, not even for one sample
+- [ ] After the reports refresh, B holds its own name and A still holds its own
+- [ ] Switch back to A and confirm both names are still correct and neither has vanished
+- [ ] Seed a deliberately wrong pairing (`autoMappings[slugB] = "<A's name>"`), open A, and
+      confirm the wrong entry is evicted and A takes its own name back
+- [ ] On a property whose reports never load, confirm nothing is written at all
+
+There is a deterministic fixture for this that needs no Google account: it serves a page with
+a fake `accountTree`, a fake page-title report and a scripted delay between the hash changing
+and the report refreshing, so the race can be reproduced on demand at any delay.
+
+### Settings table
+
+- [ ] Accounts render as group heads with their properties nested beneath them
+- [ ] An account holding no properties shows the "No properties under this account yet" hint
+- [ ] Properties with no known account appear in the catch-all group, which sorts last
+- [ ] The display-name column lines up exactly between an account row and its property rows
+- [ ] The plus on an account row adds a property **inside** that group; the footer's
+      **Add property** adds one to the catch-all
+- [ ] Deleting an account moves its properties to the catch-all instead of deleting them
+- [ ] After **Save Changes**, `sync.mappings` and `sync.accountMappings` are still two flat
+      maps — the grouping must never reach storage
+- [ ] Clearing `local.propertyAccounts` degrades the table to a flat list with no errors
+
 ### Popup to options handoff
 
 - [ ] Type a display name in the popup, click **Full Settings**, and confirm the typed

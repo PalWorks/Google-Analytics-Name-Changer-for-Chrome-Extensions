@@ -25,6 +25,7 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 - **Automatic naming, no setup** — open a GA4 property and it names itself. The real extension name is read straight out of GA4's own reports and applied on the spot, with no save step and no network request. Anything you type overrides it. Extensions installed in your profile can also be named from Chrome itself (optional, off by default). Anything neither source covers gets a one-click link to its store listing. Every suggestion is reviewed before saving, and none of it touches the network
 - **Guided onboarding** — a two-slide welcome modal on first install explains the extension and the auto-naming opt-in; reachable again any time from the popup's **?** button
 - **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
+- **One settings table** — accounts and the extensions they hold in a single grouped view, paired automatically from Google Analytics' own account tree
 - **Feedback form** — report a problem from the settings page, with installation details attached so support can reproduce it
 - **Zero data collection** — no analytics, no telemetry, no server, and no network requests of any kind
 
@@ -57,6 +58,26 @@ If you are not on a GA4 tab, the popup shows the last detected GA4 context so yo
 ### Full settings page
 
 Click **Full Settings** in the popup header, or right-click the extension icon → **Options**.
+
+Everything lives in one table. Each account is a group head, and the extensions it holds are
+listed beneath it:
+
+```
+ACCOUNT NUMBER / PROPERTY SLUG        DISPLAY NAME
+381439763                             Visual Bookmark                    +
+  └ egedbdckafdbomehjaihjhbcgmngmlah  Visual Bookmark Manager…      auto
+  └ mgijbhpkaeddnfbjglmlbkkcnaepmgmc  Gmail Labels as Tabs          auto
+NOT LINKED TO AN ACCOUNT
+    nhhpkdpejegfbcgajapklajkhfnecnkk  Favicon Changer Ultimate      auto
+```
+
+The pairing comes from Google Analytics itself, so properties file themselves under the right
+account the first time you open them. Anything not filed yet sits at the bottom and works
+exactly the same. Removing an account keeps the properties under it — they are separate
+mappings.
+
+Rows marked `auto` were worked out by the extension. Edit any of them and press **Save
+Changes** to make that name permanently yours.
 
 ### Finding your identifiers
 
