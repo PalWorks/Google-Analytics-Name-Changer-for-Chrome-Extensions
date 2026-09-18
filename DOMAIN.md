@@ -88,6 +88,8 @@ English string that Google controls. That is why the label health heartbeat exis
 | **handoff** | `chrome.storage.local.pendingDetection`. Carries popup rows, including detected slugs the popup's three row cap never rendered, to the options page. TTL 10 minutes, consumed once. |
 | **resolution / auto naming** | Turning an extension ID into that extension's name via `chrome.management.get()` in `background.js`. Opt in, off by default, entirely local. |
 | **unresolved** | A valid extension ID that is not installed in this profile, so it could not be named automatically. Its row reveals a link to the public store listing. |
+| **auto mapping** | A name the extension worked out for itself, held in `autoMappings` and applied to the page immediately. Always overridden by a mapping the user typed. Shown badged "auto"; editing and saving promotes it into the user's own `mappings`. |
+| **account tree** | `window.preload` on every GA4 page, a script block carrying every account ID, property ID and property slug with exact pairing. The authoritative source for structure. |
 | **name hint** | An extension name read out of GA4's own "Page title and screen class" report, where store listing titles appear as `<Extension Name> - <store name>`. Free, needs no permission, and works for extensions that are not installed. Stored in `nameHints`. |
 | **suggested name** | A display name produced by resolution rather than typed by the user. Rendered italic and accent coloured until edited or saved. |
 | **label health heartbeat** | `chrome.storage.local.accountLabelLastMatched`. Timestamp of the last successful account label replacement. Stale for 90+ days means Google probably renamed the label. |
@@ -108,6 +110,9 @@ English string that Google controls. That is why the label health heartbeat exis
 | `accountLabelLastMatched` | local | `number` (ms) | content script | Label health heartbeat |
 | `pendingDetection` | local | `{ ts, accountId, properties, accounts }` | popup | Popup to options handoff |
 | `nameHints` | local | `{ [slug]: name }` | content script | Names harvested from GA4 reports; accumulates as the user browses |
+| `autoMappings` | local | `{ [slug]: name }` | content script | Derived property names, applied without a save. Merged **under** `mappings`. |
+| `autoAccountMappings` | local | `{ [accountId]: name }` | content script | Derived account names, likewise merged under `accountMappings` |
+| `autoNamingEnabled` | local | `boolean` | options | On-page automatic naming. Absent or true means on. |
 
 Sync keys count against `chrome.storage.sync.QUOTA_BYTES_PER_ITEM` (8192 bytes per
 item). Both mapping objects are size checked before every save. Local keys are not

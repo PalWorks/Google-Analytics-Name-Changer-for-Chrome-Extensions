@@ -76,6 +76,20 @@ link on an unresolved row calls `chrome.tabs.create()` to open that extension's 
 Web Store page in a normal tab. That is an ordinary navigation the user initiates and can see,
 not a background request, and it carries nothing beyond the extension ID already in the URL.
 
+### Feedback form
+
+The options page can send feedback. As shipped it composes a `mailto:` and hands it to the
+user's own mail client, so **the extension still makes no network request** and the user sees
+exactly what is being sent before it leaves.
+
+If a relay endpoint is configured, the form posts name, email, optional phone, the message,
+and installation diagnostics to that endpoint instead. Diagnostics deliberately exclude
+everything about the user's analytics: no property slugs, no account numbers, no display
+names, no URLs, no browsing information. Only counts, versions and flags. The form shows the
+exact payload before sending.
+
+The Resend API key is never in the extension. See [DECISIONS.md](DECISIONS.md) ADR-011.
+
 ### Data handling
 
 * No analytics, no telemetry, no crash reporting, no remote logging. There is no server.

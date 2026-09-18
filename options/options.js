@@ -474,6 +474,7 @@ function consumeHandoff(done) {
 const autonameToggle = document.getElementById('autoname-toggle');
 const autonameStatus = document.getElementById('autoname-status');
 const fetchNamesBtn  = document.getElementById('fetch-names-btn');
+const managementToggle = document.getElementById('management-toggle');
 
 // chrome.management.get reports the name of any extension installed in this
 // profile. It is the only way to derive an extension's name locally: Chrome
@@ -501,6 +502,19 @@ function setAutonameEnabled(on) {
   fetchNamesBtn.disabled = false; // always usable; hints need no permission
 }
 
+/** Reflects the live permission state, not just the stored flag. */
+function setManagementEnabled(on) {
+  managementToggle.checked = on;
+}
+
+managementToggle.addEventListener('change', () => {
+  if (managementToggle.checked) {
+    enableAutoName((granted) => { if (granted) fillMissingNames(); });
+  } else {
+    disableAutoName();
+  }
+});
+
 /**
  * Turn auto-naming on. Requests the optional permission first: without it the
  * service worker refuses to look anything up, so persisting the setting alone
@@ -509,20 +523,20 @@ function setAutonameEnabled(on) {
 function enableAutoName(onResult) {
   chrome.permissions.request(MANAGEMENT_PERMISSION, (granted) => {
     if (chrome.runtime.lastError || !granted) {
-      setAutonameEnabled(false);
+      setManagementEnabled(false);
       showAutonameStatus('Permission declined. Auto-naming stays off.', 'error');
       if (onResult) onResult(false);
       return;
     }
     chrome.storage.sync.set({ autoResolveNames: true }, () => {
       if (chrome.runtime.lastError) {
-        setAutonameEnabled(false);
+        setManagementEnabled(false);
         showAutonameStatus('Could not save the setting.', 'error');
         if (onResult) onResult(false);
         return;
       }
-      setAutonameEnabled(true);
-      showAutonameStatus('Auto-naming on.', 'success');
+      setManagementEnabled(true);
+      showAutonameStatus('Now also naming from your installed extensions.', 'success');
       if (onResult) onResult(true);
     });
   });
@@ -532,8 +546,8 @@ function disableAutoName() {
   chrome.storage.sync.set({ autoResolveNames: false }, () => void chrome.runtime.lastError);
   // Hand the permission back rather than keeping a grant we will not use.
   chrome.permissions.remove(MANAGEMENT_PERMISSION, () => void chrome.runtime.lastError);
-  setAutonameEnabled(false);
-  showAutonameStatus('Auto-naming off.', 'success');
+  setManagementEnabled(false);
+  showAutonameStatus('Permission given back. Names already filled in are kept.', 'success');
 }
 
 /**
@@ -618,7 +632,7 @@ function fillFromManagement(alreadyHinted) {
         return;
       }
       if (response.reason === 'no-permission' || response.reason === 'disabled') {
-        setAutonameEnabled(false);
+        setManagementEnabled(false);
         if (alreadyHinted > 0) {
           showAutonameStatus(
             `Filled ${alreadyHinted} from your GA4 reports. Turn on auto-naming to ` +
@@ -677,7 +691,9 @@ function initAutoNameState(onReady) {
         if (wanted && granted !== true) {
           chrome.storage.sync.set({ autoResolveNames: false }, () => void chrome.runtime.lastError);
         }
-        if (onReady) onReady(wanted && granted === true);
+        const usable = wanted && granted === true;
+        setManagementEnabled(usable);
+        if (onReady) onReady(usable);
       });
     });
   });
@@ -797,3 +813,168 @@ chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
     consumeHandoff(() => initAutoNameState(initWelcome));
   });
 });
+
+// ── Feedback form ─────────────────────────────────────────────────────────────
+//
+// Delivery note: the extension CANNOT talk to Resend directly. Resend needs an
+// API key, and any key shipped inside an extension is readable by everyone who
+// installs it, which would let anyone send mail as our domain. The key belongs
+// on a server. So this form posts a plain JSON body to FEEDBACK_ENDPOINT, and
+// that endpoint (see worker/feedback-worker.js) holds the key and calls Resend.
+//
+// Until an endpoint is deployed, FEEDBACK_ENDPOINT stays empty and the form
+// falls back to opening a pre-filled email instead, so the feature works on day
+// one with no infrastructure and no permissions.
+
+const FEEDBACK_ENDPOINT = '';                       // e.g. 'https://…workers.dev/feedback'
+const FEEDBACK_TO       = 'palaniappan.tn2@gmail.com';
+
+const fbForm    = document.getElementById('feedback-form');
+const fbName    = document.getElementById('fb-name');
+const fbEmail   = document.getElementById('fb-email');
+const fbPhone   = document.getElementById('fb-phone');
+const fbMessage = document.getElementById('fb-message');
+const fbSubmit  = document.getElementById('fb-submit');
+const fbStatus  = document.getElementById('fb-status');
+const fbDiag    = document.getElementById('fb-diagnostics');
+
+let diagnostics = null;
+
+/**
+ * Installation details support needs to reproduce a problem. Deliberately
+ * excludes everything about the user's analytics: no slugs, no names, no
+ * account numbers, no URLs. Counts only.
+ */
+function collectDiagnostics(callback) {
+  const manifest = chrome.runtime.getManifest();
+  const base = {
+    extension: `${manifest.name} v${manifest.version}`,
+    extensionId: chrome.runtime.id,
+    userAgent: navigator.userAgent,
+    language: navigator.language,
+    platform: (navigator.userAgentData && navigator.userAgentData.platform) || 'unknown',
+    reportedAt: new Date().toISOString()
+  };
+
+  chrome.management.getSelf((self) => {
+    if (!chrome.runtime.lastError && self) base.installType = self.installType;
+
+    chrome.permissions.contains(MANAGEMENT_PERMISSION, (granted) => {
+      base.managementPermission = chrome.runtime.lastError ? 'unknown' : !!granted;
+
+      chrome.storage.sync.get(['mappings', 'accountMappings'], (sync) => {
+        base.userPropertyMappings = Object.keys((!chrome.runtime.lastError && sync.mappings) || {}).length;
+        base.userAccountMappings  = Object.keys((!chrome.runtime.lastError && sync.accountMappings) || {}).length;
+
+        chrome.storage.local.get(
+          ['autoMappings', 'autoAccountMappings', 'autoNamingEnabled', 'accountLabelLastMatched'],
+          (local) => {
+            if (!chrome.runtime.lastError) {
+              base.autoPropertyNames  = Object.keys(local.autoMappings || {}).length;
+              base.autoAccountNames   = Object.keys(local.autoAccountMappings || {}).length;
+              base.autoNamingEnabled  = local.autoNamingEnabled !== false;
+              base.accountLabelMatched = local.accountLabelLastMatched
+                ? new Date(local.accountLabelLastMatched).toISOString()
+                : 'never';
+            }
+            callback(base);
+          }
+        );
+      });
+    });
+  });
+}
+
+function renderDiagnostics() {
+  collectDiagnostics((d) => {
+    diagnostics = d;
+    fbDiag.textContent = Object.entries(d)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n');
+  });
+}
+
+function showFeedbackStatus(text, type = '') {
+  fbStatus.textContent = text;
+  fbStatus.className = 'status-msg' + (type ? ` is-${type}` : '');
+}
+
+function markInvalid(field, invalid) {
+  field.classList.toggle('is-invalid', invalid);
+}
+
+function feedbackBody() {
+  const lines = [
+    `Name:  ${fbName.value.trim() || '(not given)'}`,
+    `Email: ${fbEmail.value.trim()}`,
+    `Phone: ${fbPhone.value.trim() || '(not given)'}`,
+    '',
+    fbMessage.value.trim(),
+    '',
+    '--- installation details ---',
+    ...Object.entries(diagnostics || {}).map(([k, v]) => `${k}: ${v}`)
+  ];
+  return lines.join('\n');
+}
+
+/** No endpoint deployed: hand the composed message to the user's mail client. */
+function sendByMail() {
+  const subject = `GA4 Name Changer feedback from ${fbName.value.trim() || fbEmail.value.trim()}`;
+  const url = `mailto:${FEEDBACK_TO}`
+    + `?subject=${encodeURIComponent(subject)}`
+    + `&body=${encodeURIComponent(feedbackBody())}`;
+  chrome.tabs.create({ url });
+  showFeedbackStatus('Opened in your email app. Press send there to finish.', 'success');
+}
+
+function sendByEndpoint() {
+  fbSubmit.disabled = true;
+  showFeedbackStatus('Sending…');
+
+  fetch(FEEDBACK_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: fbName.value.trim(),
+      email: fbEmail.value.trim(),
+      phone: fbPhone.value.trim(),
+      message: fbMessage.value.trim(),
+      diagnostics
+    })
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`server returned ${res.status}`);
+      fbForm.reset();
+      renderDiagnostics();
+      showFeedbackStatus('Thanks. Your feedback has been sent.', 'success');
+    })
+    .catch((err) => {
+      showFeedbackStatus(`Could not send (${err.message}). Opening your email app instead…`, 'error');
+      setTimeout(sendByMail, 1200);
+    })
+    .finally(() => { fbSubmit.disabled = false; });
+}
+
+if (fbForm) {
+  renderDiagnostics();
+
+  [fbEmail, fbMessage].forEach((field) => {
+    field.addEventListener('input', () => markInvalid(field, false));
+  });
+
+  fbForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fbEmail.value.trim());
+    const msgOk   = fbMessage.value.trim().length >= 10;
+
+    markInvalid(fbEmail, !emailOk);
+    markInvalid(fbMessage, !msgOk);
+
+    if (!emailOk) { showFeedbackStatus('Please enter a valid email address.', 'error'); fbEmail.focus(); return; }
+    if (!msgOk)   { showFeedbackStatus('Please write at least a sentence.', 'error'); fbMessage.focus(); return; }
+
+    if (FEEDBACK_ENDPOINT) sendByEndpoint();
+    else sendByMail();
+  });
+}

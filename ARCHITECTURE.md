@@ -2,7 +2,7 @@
 
 ## Overview
 
-GA4 Name Changer is a client-side Manifest V3 Chrome extension. There is no backend, no build step, and no remote code. All text replacement happens in a content script injected into `analytics.google.com`. A lightweight toolbar popup communicates with the content script via message passing to provide quick access to the same mapping functionality.
+Google Analytics (GA4) Name Changer for Chrome Extension Developers is a client-side Manifest V3 Chrome extension. There is no backend, no build step, and no remote code. All text replacement happens in a content script injected into `analytics.google.com`. A lightweight toolbar popup communicates with the content script via message passing to provide quick access to the same mapping functionality.
 
 A service worker exists for two narrow jobs: opening the settings page on first install, and resolving Chrome extension IDs to extension names via `chrome.management`. The extension makes no network requests of any kind.
 
@@ -154,6 +154,9 @@ An account row is additionally suggested from its property's name, shortened, wh
 | `accountLabelLastMatched` | local | `number` (timestamp ms) | Heartbeat for label health monitoring |
 | `pendingDetection` | local | `{ ts, accountId, properties, accounts }` | Popup → options handoff. TTL 10 min, consumed once. |
 | `nameHints` | local | `{ [slug]: name }` | Extension names harvested from GA4's own report widgets. Accumulates as the user browses. |
+| `autoMappings` | local | `{ [slug]: name }` | Derived property names, applied with no save. Merged **under** `mappings`. |
+| `autoAccountMappings` | local | `{ [accountId]: name }` | Derived account names, merged under `accountMappings`. |
+| `autoNamingEnabled` | local | `boolean` | On-page automatic naming. Absent or `true` means on. |
 
 `mappings` and `accountMappings` are each stored as a single `chrome.storage.sync` item. A pre-save byte-size check against `QUOTA_BYTES_PER_ITEM` (8 192 bytes) surfaces quota errors before Chrome silently rejects them. The other two sync keys are scalars and are not size-checked.
 
@@ -274,6 +277,44 @@ The `isDirty` flag and `beforeunload` guard prevent accidental loss of unsaved c
 Above the grid sits the auto-naming toolbar: the opt-in switch and the **Fill missing names** button. `initAutoNameState()` reconciles the stored `autoResolveNames` flag against a live `chrome.permissions.contains()` check on every load, because the permission can be revoked from `chrome://extensions` without the extension being told. The live check wins, and a disagreement resets the flag.
 
 Each mapping row ends in a `.row-actions` cell holding two buttons: a listing link, hidden until resolution reports that slug as unresolved, and delete. Rows carry two hint classes, `is-detected` (arrived from detection or the handoff) and `is-suggested` (name came from resolution, not the user), both cleared on first edit.
+
+---
+
+## Automatic naming without a save
+
+Derived names are a **second layer beneath** the user's own, never a write into them.
+
+```
+rebuildMaps()
+  ├─ layer 1: autoMappings        (local, derived by the extension)
+  └─ layer 2: mappings            (sync, typed by the user)   ← always wins
+```
+
+The content script watches `chrome.storage.local` as well as `sync`, so the moment a name is
+derived it is written to `autoMappings`, the listener fires, and `replaceAll()` re-renders the
+page with the real name. No user action is involved at any point.
+
+`mappings` is never written to by the content script, so nothing the user owns can be clobbered
+and nothing is synced to their other devices without them asking. Both surfaces render auto
+entries badged "auto"; because they are ordinary editable rows, pressing **Save** promotes them
+into the user's own mappings, which is what makes Save still meaningful.
+
+`autoNamingEnabled` (default true) disables the whole layer without deleting anything.
+
+---
+
+## Feedback form
+
+The options page carries a feedback form. **The extension never calls Resend**: an API key
+shipped in an extension is readable by anyone who installs it. The form posts to a relay
+([worker/feedback-worker.js](worker/feedback-worker.js)) which holds the key as a Worker
+secret, and with no endpoint configured it falls back to composing a `mailto:`, which needs no
+network request and no permission.
+
+Diagnostics are limited to installation facts (versions, install type, permission state,
+mapping counts) and deliberately exclude every piece of the user's analytics: no slugs, no
+account numbers, no display names, no URLs. The exact payload is shown in the form behind a
+collapsed disclosure before anything is sent. See [DECISIONS.md](DECISIONS.md) ADR-011.
 
 ---
 

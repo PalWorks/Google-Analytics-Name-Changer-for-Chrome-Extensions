@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to GA4 Name Changer are documented here.
+All notable changes to Google Analytics (GA4) Name Changer for Chrome Extension Developers are documented here.
 
 ---
 
@@ -22,9 +22,16 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 - **Popup → options handoff** — the popup stashes its rows under `chrome.storage.local.pendingDetection` before navigating to Full Settings, and the options page merges them in once and clears the key. TTL 10 minutes
 - **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (eight ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
 
+- **Automatic naming with no save step** — derived names live in `chrome.storage.local.autoMappings` and are merged **under** the user's own `sync.mappings`, so they apply to the page immediately while anything the user typed still wins. The content script watches local storage, so a name lands the moment it is derived. `mappings` is never written to by the extension, so nothing the user owns is clobbered or synced without them asking. Auto rows show badged "auto" in both surfaces and are ordinary editable rows, so **Save** now means "make this mine". `autoNamingEnabled` (default on) turns the layer off without deleting anything
+- **GA4's own account tree as the authoritative source** — every GA4 page inlines `window.preload = JSON.parse(...)` carrying every account ID, property ID and property slug with exact pairing. A content script cannot read page JS variables but can read that script element's text. This gives the current property exactly (via the property ID in the URL), every account without opening the switcher, and every property slug. It fixed a real deadlock: on one live page the slug was rendered only inside a `<button>`, so scraping could not attribute it and nothing was ever named
+- **Robust name extraction** — no longer depends on one particular report table. Two independent strategies feed one score: page-title report tables weighted by views, and any store-listing-shaped text anywhere on the page. A title is recognised by its tail containing "Chrome", which held across every localisation seen live (Web Store, ウェブストア, 線上應用程式商店, Web Mağazası, Webáruház, 应用商店, 웹 스토어) and cleanly rejects the store's own pages, since "Chrome Web Store - Extensions" has a tail of "Extensions". A tie between two names returns nothing rather than guessing
+- **"How are these names worked out?"** — a collapsible card on the options page explaining the three naming sources in short form
+- **Feedback form** — name, email, optional phone and message, with installation diagnostics attached. The extension never holds the Resend API key; it posts to a relay Worker that does, and falls back to a pre-filled `mailto:` when no endpoint is configured, so it works with no infrastructure and no permission
+
 ### Fixed
 
 - **Unsaved popup edits were silently discarded.** Clicking **Full Settings** closed the popup without preserving anything typed into it. Extension popups do not fire `beforeunload`, so the `isDirty` guard used by the options page is unavailable; the `pendingDetection` handoff replaces it
+- **Accounts holding more than one extension were named wrongly.** An account is now only named after its extension when GA4's tree confirms it holds exactly one property; one live test account holds two
 - **The slug overflow note was untrue.** It directed the user to Full Settings to map the remaining slugs, but those slugs existed only in popup memory and were never carried anywhere. The handoff now carries every detected slug, including the ones beyond the three-row display cap
 
 ### Changed

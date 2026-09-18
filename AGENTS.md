@@ -66,7 +66,21 @@ Never move resolution into `content/content.js`. Never make `management` a requi
 permission. Never call anything from `chrome.management` other than `get`. Never remove a
 gate "temporarily".
 
-### 5. Harvesting must never guess which property a report belongs to
+### 5. Never put an API key, token or secret in this extension
+
+The package is readable by anyone who installs it. The feedback form therefore posts to a
+relay that holds the Resend key server-side, and falls back to `mailto:` when none is
+configured. See [DECISIONS.md](DECISIONS.md) ADR-011. If you are about to add a credential to
+any file here, stop.
+
+### 6. Auto-derived names must never overwrite the user's own
+
+`autoMappings` is merged **under** `sync.mappings` in `rebuildMaps()`. The extension writes
+only to the `auto*` keys in local storage and never to the user's `mappings`. Reversing that
+precedence, or writing derived names into the user's own store, silently destroys their work
+and syncs the damage to their other devices.
+
+### 7. Harvesting must never guess which property a report belongs to
 
 `harvestNameHint()` records a slug-to-name hint only when **exactly one** property slug is
 visible on the page. With the account switcher open several are, and the only way to attribute
@@ -75,7 +89,7 @@ A wrong hint silently mislabels a property, which is worse than no hint.
 
 Do not relax the single-slug check. Do not add a class-name-based fallback.
 
-### 6. Never interpolate user data into `innerHTML`
+### 8. Never interpolate user data into `innerHTML`
 
 `innerHTML` is used in this codebase only with module scope SVG string constants.
 User supplied values reach the DOM exclusively through `.value`, `.textContent`,

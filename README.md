@@ -1,4 +1,4 @@
-# Google Analytics Name Changer for Chrome Extensions
+# Google Analytics (GA4) Name Changer for Chrome Extension Developers
 
 > Replace unreadable GA4 property slugs and account numbers with human-friendly display names — directly inside [analytics.google.com](https://analytics.google.com), in real time.
 
@@ -22,9 +22,10 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 - **Full settings page** — a dedicated full-tab settings page for managing all mappings with more room; reachable from the popup header or from `chrome://extensions`
 - **Cross-device sync** — mappings stored in `chrome.storage.sync` and synced across your signed-in Chrome profiles automatically
 - **Import / Export** — back up or transfer all mappings as a single JSON file
-- **Auto-naming** — your extension's real name is read straight out of GA4's own reports, so properties name themselves as you browse. Extensions installed in your profile can also be named from Chrome itself (optional, off by default). Anything neither source covers gets a one-click link to its store listing. Every suggestion is reviewed before saving, and none of it touches the network
+- **Automatic naming, no setup** — open a GA4 property and it names itself. The real extension name is read straight out of GA4's own reports and applied on the spot, with no save step and no network request. Anything you type overrides it. Extensions installed in your profile can also be named from Chrome itself (optional, off by default). Anything neither source covers gets a one-click link to its store listing. Every suggestion is reviewed before saving, and none of it touches the network
 - **Guided onboarding** — a two-slide welcome modal on first install explains the extension and the auto-naming opt-in; reachable again any time from the popup's **?** button
 - **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
+- **Feedback form** — report a problem from the settings page, with installation details attached so support can reproduce it
 - **Zero data collection** — no analytics, no telemetry, no server, and no network requests of any kind
 
 ---

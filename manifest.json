@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Google Analytics Name Changer for Chrome Extensions",
+  "name": "Google Analytics (GA4) Name Changer for Chrome Extension Developers",
   "version": "1.1.0",
   "description": "Replace unreadable GA4 property slugs and account numbers with human-friendly names directly in Google Analytics.",
   "minimum_chrome_version": "88",

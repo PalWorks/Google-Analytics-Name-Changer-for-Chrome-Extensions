@@ -123,6 +123,29 @@ Needs a live Chrome Web Store developer property with some traffic in the select
 - [ ] The popup's **?** button reopens it on demand
 - [ ] "Turn on auto-naming" on slide 2 requests the permission, then fills names
 
+### Automatic naming
+
+- [ ] On a wiped profile, open a GA4 property and touch nothing: within ~15 s the property
+      slug in the breadcrumb is replaced by the real extension name
+- [ ] `chrome.storage.sync.get(null, console.log)` shows **no** mappings; the derived names
+      live in `chrome.storage.local.autoMappings`
+- [ ] Both surfaces show those rows badged "auto"
+- [ ] Typing a different name for the same slug and pressing Save overrides the derived one
+      on the GA4 page
+- [ ] Turning the toggle off stops new names being derived and existing derived names stop
+      being applied, without deleting anything
+- [ ] An account holding two properties is **not** given a name derived from either
+
+### Feedback form
+
+- [ ] Submitting with an empty or malformed email is refused with a specific message
+- [ ] A message under ten characters is refused
+- [ ] "What gets sent with this" lists versions, install type, permission state and counts,
+      and contains **no** slugs, account numbers, display names or URLs
+- [ ] With `FEEDBACK_ENDPOINT` empty, submitting opens a pre-filled email
+- [ ] With an endpoint set, submitting posts JSON and reports success; a failing endpoint
+      falls back to the email path rather than losing the message
+
 ### Import and export
 
 - [ ] Export downloads a JSON file with both `mappings` and `accountMappings`
@@ -181,7 +204,7 @@ chrome.storage.local.get(null, console.log);
 ```bash
 zip -r ../ga4-name-changer-<version>.zip . \
   -x '*.git*' -x '*.md' -x '.crxignore' \
-  -x 'icons/generate-icons.html' -x 'googled*.html'
+  -x 'icons/generate-icons.html' -x 'googled*.html' -x 'worker/*'
 ```
 
 7. Verify the zip: it must contain `manifest.json` at the root, and no `.md` files,

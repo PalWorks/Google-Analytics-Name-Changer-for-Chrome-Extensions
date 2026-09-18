@@ -309,3 +309,34 @@ installed locally. Everything else is already covered for free.
 **If it is built later,** it belongs behind the same contextual opt-in as ADR-005: offered when
 a GA4 property is in view, permission requested at the moment the user says yes, and off until
 then.
+
+---
+
+## ADR-011: Feedback is relayed by a server, never sent by the extension
+
+**Status:** accepted in v1.1.0
+
+**Decision.** The options page has a feedback form. It does **not** call Resend. It posts a
+plain JSON body to `FEEDBACK_ENDPOINT`, a Cloudflare Worker
+([worker/feedback-worker.js](worker/feedback-worker.js)) that holds the Resend API key as a
+secret. With no endpoint configured, the form falls back to opening a pre-filled `mailto:`.
+
+**Why.** Resend authenticates with an API key. **Any key shipped inside a Chrome extension is
+readable by everyone who installs it** — the package is just files on disk, and anyone can
+unzip it or open devtools. A leaked key lets a stranger send mail as `palworks.ai`, which
+costs domain reputation, invites spam complaints, and is billable. There is no way to hide a
+secret in a client. The local `resend` CLI is not an option either: it runs on the developer's
+machine, not in a user's browser.
+
+**Rejected.**
+
+* *Ship the API key in the extension.* Refused outright, for the reasons above.
+* *A third-party form service.* Routes the user's name, email and phone through someone else,
+  which then needs its own disclosure.
+
+**Consequence.** Until the Worker is deployed the form uses `mailto:`, which needs no
+endpoint, no permission and no network request from the extension, and therefore keeps the
+unconditional privacy claim intact. Switching to the endpoint means adding its origin to
+`optional_host_permissions`, updating `privacy.html`, and declaring the collected fields in the
+Chrome Web Store data disclosure, because name, email and phone are personal data.
+

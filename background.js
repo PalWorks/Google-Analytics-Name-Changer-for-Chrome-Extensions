@@ -1,7 +1,8 @@
 'use strict';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GA4 Name Changer service worker
+// Google Analytics (GA4) Name Changer for Chrome Extension Developers
+// service worker
 //
 // Two jobs:
 //   1. Open the settings page once on first install (onboarding).

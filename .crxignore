@@ -7,3 +7,4 @@
 .crxignore
 icons/generate-icons.html
 googled*.html
+worker/
