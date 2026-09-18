@@ -139,6 +139,7 @@ body {
 }
 
 .method-card > summary::-webkit-details-marker { display: none; }
+.method-card > summary::marker { content: ''; }
 .method-card > summary:hover { background: var(--accent-bg); }
 .method-card > summary:focus-visible {
   outline: 2px solid var(--accent);
@@ -214,6 +215,33 @@ body {
   color: var(--accent);
 }
 
+/* ── Accordion affordance ──
+   Every collapsible section shows a large chevron that points down when closed
+   and flips up when open, so the control reads as expandable at a glance and
+   also reports its current state. */
+
+.accordion-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  /* Inherit the summary's own colour so the affordance reads as part of the
+     control rather than as faint decoration. */
+  color: currentColor;
+  opacity: 0.7;
+  transition: transform 0.2s ease, opacity 0.15s ease;
+}
+
+.accordion-chevron.is-small { margin-left: 0; }
+
+details[open] > summary > .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+summary:hover > .accordion-chevron { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-chevron { transition: none; }
+}
+
 /* ── Feedback form ── */
 
 .feedback-card { margin-bottom: 20px; }
@@ -281,6 +309,9 @@ body {
 }
 
 .diag-box > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 9px 12px;
   font-size: 12px;
   font-weight: 500;
@@ -289,7 +320,9 @@ body {
   list-style: none;
 }
 
+.diag-box > summary > span { flex: 1; }
 .diag-box > summary::-webkit-details-marker { display: none; }
+.diag-box > summary::marker { content: ''; }
 .diag-box > summary:hover { color: var(--accent); }
 
 .diag-pre {
