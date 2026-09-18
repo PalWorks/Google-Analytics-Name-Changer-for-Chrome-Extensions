@@ -479,7 +479,9 @@ function showAutonameStatus(text, type = '') {
 
 function setAutonameEnabled(on) {
   autonameToggle.checked = on;
-  fetchNamesBtn.disabled = !on;
+  // The button stays usable with the toggle off: GA4-report hints are local and
+  // need no permission. Only the chrome.management step is gated.
+  fetchNamesBtn.disabled = false;
 }
 
 /**
@@ -533,10 +535,43 @@ function rowsAwaitingNames() {
   return out;
 }
 
+/**
+ * Names harvested by the content script from GA4's own report widgets. These
+ * cost nothing, need no permission, and cover extensions that are not installed
+ * locally, so they are applied before chrome.management is consulted.
+ */
+function applyNameHints(targets, hints) {
+  let filled = 0;
+  targets.forEach(({ row, slug }) => {
+    const name = hints[slug];
+    if (!name) return;
+    const input = row.querySelector('.name-input');
+    if (input.value.trim()) return;
+    input.value = name;
+    row.classList.add('is-suggested');
+    filled++;
+  });
+  return filled;
+}
+
 function fillMissingNames() {
+  chrome.storage.local.get(['nameHints'], (stored) => {
+    const hints = (!chrome.runtime.lastError && stored.nameHints) || {};
+    const hinted = applyNameHints(rowsAwaitingNames(), hints);
+    if (hinted > 0) markDirty();
+    fillFromManagement(hinted);
+  });
+}
+
+function fillFromManagement(alreadyHinted) {
   const targets = rowsAwaitingNames();
   if (targets.length === 0) {
-    showAutonameStatus('No rows are waiting for a name.');
+    if (alreadyHinted > 0) {
+      showAutonameStatus(
+        `Filled ${alreadyHinted} from your GA4 reports. Review, then Save Changes.`, 'success');
+    } else {
+      showAutonameStatus('No rows are waiting for a name.');
+    }
     return;
   }
 
@@ -554,7 +589,15 @@ function fillMissingNames() {
       }
       if (response.reason === 'no-permission' || response.reason === 'disabled') {
         setAutonameEnabled(false);
-        showAutonameStatus('Auto-naming is off. Turn it on first.', 'error');
+        if (alreadyHinted > 0) {
+          showAutonameStatus(
+            `Filled ${alreadyHinted} from your GA4 reports. Turn on auto-naming to ` +
+            `also name extensions installed here.`, 'success');
+        } else {
+          showAutonameStatus(
+            'Nothing to name from your GA4 reports. Turn on auto-naming to use ' +
+            'your installed extensions too.', 'error');
+        }
         return;
       }
 
@@ -572,15 +615,16 @@ function fillMissingNames() {
       });
 
       const missed = targets.length - filled;
-      if (filled === 0) {
+      const total  = filled + alreadyHinted;
+      if (total === 0) {
         showAutonameStatus(
-          `None of these ${targets.length} are installed in this profile. ` +
-          `Use the link on each row to open its Chrome Web Store listing.`, 'error');
+          `None of these ${targets.length} are installed in this profile, and your ` +
+          `GA4 reports did not name them. Use the link on each row to open its listing.`, 'error');
         return;
       }
       markDirty();
       showAutonameStatus(
-        `Filled ${filled}${missed > 0 ? `, ${missed} not installed here` : ''}. ` +
+        `Filled ${total}${missed > 0 ? `, ${missed} still unnamed` : ''}. ` +
         `Review, then Save Changes.`, 'success'
       );
     }

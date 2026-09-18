@@ -10,8 +10,12 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 
 ### Added
 
-- **Auto-naming** — a Chrome Web Store property slug is the extension's own ID, so any of those extensions installed in this Chrome profile can be named automatically via `chrome.management.get()`. Off by default and gated behind the optional `management` permission; turning it off calls `chrome.permissions.remove()`. Resolution is entirely local, so the extension still makes no network requests of any kind. Only `get` is ever called, and only the `name` field read
-- **Chrome Web Store listing link** — an extension ID that is valid but not installed in this profile cannot be named automatically, so its row reveals a button that opens the public store listing in a new tab for the user to read the name from
+- **Name harvesting from GA4's own reports** — the primary naming source, and it costs nothing. A Chrome Web Store developer property's "Page title and screen class" report lists the store listing pages that were viewed, titled `<Extension Name> - <localised store name>`, so the extension's real name is already on the page. Titles are split on the last `" - "` (which strips the store suffix in any language and preserves names containing `" - "`), generic store pages are dropped, and the remainder ranked by views. Hints accumulate in `chrome.storage.local.nameHints` as the user browses, so visiting a property once names it permanently. Needs no permission and no network. A hint is only recorded when exactly one property slug is visible, so an open account switcher never causes a mislabel
+- **Multi-account detection** — the popup previously detected only the account in the URL, so the other accounts listed in GA4's account switcher were invisible to it. All of them are now detected, paired with their labels, and a property ID sitting next to a slug is correctly never offered as an account
+- **Cross-tab detection** — opening the popup from a non-GA4 tab now finds a GA4 tab elsewhere in the same window instead of falling back to cached context. Needs no new permission: Chrome exposes `url` for tabs matching host permissions the extension already holds
+- **Account names suggested from their property** — a Chrome Web Store developer account holds one extension, so when a single account and a single named property are on screen the account is suggested a shortened form of the extension's name
+- **Auto-naming from installed extensions** — a Chrome Web Store property slug is the extension's own ID, so any of those extensions installed in this Chrome profile can be named automatically via `chrome.management.get()`. Off by default and gated behind the optional `management` permission; turning it off calls `chrome.permissions.remove()`. Resolution is entirely local, so the extension still makes no network requests of any kind. Only `get` is ever called, and only the `name` field read
+- **Chrome Web Store listing link** — anything neither harvesting nor `chrome.management` could name reveals a button on its row that opens the public store listing in a new tab for the user to read the name from
 - **Service worker (`background.js`)** — hosts name resolution behind three independent gates: the setting, the live permission check, and an `/^[a-p]{32}$/` format check. Also opens the settings page on first install
 - **Welcome modal** — two-slide onboarding on the options page, opened automatically on first install via `chrome.runtime.onInstalled`, and reachable any time from the popup's new **?** button. Slide 2 is the auto-naming opt-in and states exactly what the permission is and is not used for
 - **Fill missing names** — options-page button that resolves every row holding a valid extension ID with no display name yet. Suggested names render italic until reviewed and saved
@@ -32,6 +36,10 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 ### Removed
 
 - The checked-in `dist/` directory and `dist.zip`. They were byte-identical hand-maintained copies of the source, gitignored so drift would have been invisible, and carried a real risk of shipping a stale build. Packaging now runs from the repository root against `.crxignore`; the exact command is in `PLAYBOOK.md`
+
+### Verified against live GA4
+
+Detection, harvesting, multi-account scanning and the cross-tab fallback were all exercised against a real Chrome Web Store developer account with four accounts and two properties. Harvesting produced the correct extension name; the account switcher produced all four account IDs; the single-slug guard correctly declined to record a hint while the switcher was open.
 
 ### Notes
 

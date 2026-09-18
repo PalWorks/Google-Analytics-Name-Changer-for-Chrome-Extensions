@@ -75,6 +75,30 @@ possible in this codebase.
 - [ ] Wait more than 10 minutes, open the options page directly, and confirm the stale
       handoff is discarded rather than injected
 
+### Name harvesting from GA4 reports
+
+Needs a live Chrome Web Store developer property with some traffic in the selected date range.
+
+- [ ] Open a property's Home view, wait a few seconds, then open the popup: the property row
+      is pre-filled with the extension's real name, in italic
+- [ ] The account row is pre-filled with a shortened form of that name
+- [ ] Open the account switcher (several slugs now visible) and reopen the popup: no new hint
+      is recorded, because the report can no longer be attributed to one property
+- [ ] `chrome.storage.local.get('nameHints', console.log)` shows the accumulated slug-to-name map
+- [ ] Visit a second property, then return: both properties are named from the cache
+
+### Multi-account detection
+
+- [ ] With the account switcher **closed**, only the account in the URL is detected
+- [ ] With the switcher **open**, every account listed in it is detected, in order
+- [ ] A property ID (9 digits, sitting next to a slug) is never offered as an account
+
+### Cross-tab detection
+
+- [ ] Open the popup from a non-GA4 tab while a GA4 tab is open in the same window: detection
+      still runs and the banner reads "(other tab)"
+- [ ] With no GA4 tab in the window at all, the cached "Last seen" banner is shown instead
+
 ### Auto naming
 
 - [ ] Default state on a fresh profile is off, and `chrome://extensions` shows no

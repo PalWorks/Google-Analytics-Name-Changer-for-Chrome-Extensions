@@ -106,6 +106,42 @@ This distinguishes extension writes from GA4 writes without observer disconnect/
 
 React fires many mutations in rapid succession during a render. An 80 ms debounce (`scheduleBatch`) aggregates them into a single pass. When `replaceAll()` is called (on init or storage change), any pending debounce is cancelled — a full-page pass makes queued partial-root work redundant.
 
+### Name harvesting
+
+GA4's "Page title and screen class" report for a Chrome Web Store developer property lists the store listing pages that were viewed, and the store titles them `<Extension Name> - <localised store name>`. **The extension's real name is therefore already on the page**, with no lookup of any kind:
+
+```
+Gmail Labels and Search Queries as Tabs - Chrome Web Store         60 views
+Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome   1
+Chrome Web Store - Extensions                                       0   <- generic, dropped
+```
+
+```
+maybeHarvest()                        (throttled to 1 per 5s)
+  ├─ visibleTextValues()
+  ├─ exactly one slug visible?  ──no──▶ skip: cannot attribute the report
+  ├─ reportTitleRows()                  find tables headed "page title / screen class"
+  ├─ split each title on the LAST " - " strips the store suffix in any language,
+  │                                     and preserves names containing " - "
+  ├─ drop GENERIC_TITLES               "chrome web store", "extensions", …
+  ├─ rank remaining names by views
+  └─ persist to local.nameHints[slug]
+```
+
+**The single-slug guard is the important part.** A report belongs to whichever property is selected. With the account switcher open, several slugs are on screen and attributing the report to one of them would mean trusting GA4's minified class names, which [DECISIONS.md](DECISIONS.md) ADR-003 refuses to do. So harvesting is skipped entirely unless exactly one slug is visible. Verified against live GA4: switcher closed produces a hint, switcher open produces `null`.
+
+Harvesting runs from the observer callback **before** its empty-map early return, because a user with no mappings yet is precisely who benefits most. It also runs once ~2.5 s after init, since GA4 fills its report widgets asynchronously.
+
+### Naming sources, in priority order
+
+| Tier | Source | Cost | Covers |
+|---|---|---|---|
+| 1 | `nameHints` harvested from GA4 reports | free, no permission | The property currently in view, installed or not |
+| 2 | `chrome.management.get()` | optional permission | Extensions installed in this profile |
+| 3 | Store listing link | one click, manual | Everything else |
+
+An account row is additionally suggested from its property's name, shortened, when exactly one account and one named property are on screen. Chrome Web Store developer accounts hold one extension each, so that pairing is safe in the common (switcher closed) case.
+
 ### Storage
 
 | Key | Store | Type | Description |
@@ -117,6 +153,7 @@ React fires many mutations in rapid succession during a render. An 80 ms debounc
 | `lastGA4Context` | local | `{ accountId, slugs }` | Last detected GA4 state (popup fallback for non-GA4 tabs) |
 | `accountLabelLastMatched` | local | `number` (timestamp ms) | Heartbeat for label health monitoring |
 | `pendingDetection` | local | `{ ts, accountId, properties, accounts }` | Popup → options handoff. TTL 10 min, consumed once. |
+| `nameHints` | local | `{ [slug]: name }` | Extension names harvested from GA4's own report widgets. Accumulates as the user browses. |
 
 `mappings` and `accountMappings` are each stored as a single `chrome.storage.sync` item. A pre-save byte-size check against `QUOTA_BYTES_PER_ITEM` (8 192 bytes) surfaces quota errors before Chrome silently rejects them. The other two sync keys are scalars and are not size-checked.
 
@@ -127,9 +164,10 @@ React fires many mutations in rapid succession during a render. An 80 ms debounc
 The popup communicates with the content script via `chrome.tabs.sendMessage`:
 
 ```
-popup.js                             content.js (active GA4 tab)
+popup.js                             content.js (a GA4 tab)
   │                                        │
-  ├─ chrome.tabs.query(active tab)         │
+  ├─ findGA4Tab(): active tab, else        │
+  │    any GA4 tab in this window          │
   ├─ chrome.tabs.sendMessage(             │
   │    tab.id, { action: 'getGA4Data' }) ──▶ onMessage handler
   │                                        ├─ parse accountId from location.hash
@@ -145,7 +183,9 @@ Three strips sit between the header and the mapping lists, each shown only when 
 
 The header carries **Full Settings**, a **?** button that reopens onboarding, and close. The first two both route through `openOptions()`, which writes the handoff before navigating.
 
-The `tabs` permission is **not** declared in the manifest, and neither is `activeTab`. `chrome.tabs.query` always returns tab objects carrying `id`; only the privileged fields (`url`, `title`, `favIconUrl`) are gated behind `tabs`. This code reads `tab.id` and nothing else, so no permission is required. `chrome.tabs.create`, used by the listing links, is likewise unrestricted.
+**Cross-tab detection.** The popup is often opened while looking at something else, so `findGA4Tab()` tries the active tab first and then falls back to any `analytics.google.com` tab in the same window, labelling the banner "(other tab)".
+
+The `tabs` permission is **not** declared in the manifest, and neither is `activeTab`. `chrome.tabs.query` always returns tab objects carrying `id`, and Chrome additionally exposes `url` and `title` **for tabs matching the host permissions the extension already holds**, which is what makes the `{ url: 'https://analytics.google.com/*' }` query work. Tabs outside those permissions stay hidden. Verified empirically; `chrome.tabs.create`, used by the listing links, is likewise unrestricted.
 
 ---
 

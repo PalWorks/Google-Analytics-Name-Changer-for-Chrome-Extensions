@@ -27,7 +27,12 @@ let isDirty = false;
 // Every unmapped slug detected on the GA4 tab, including those beyond the
 // three-row display cap. Carried to the options page on handoff.
 let detectedSlugs = [];
+let detectedAccounts = [];
 let detectedAccountId = null;
+
+// slug -> extension name, read out of GA4's own report widgets by the content
+// script. Free, local, and works for extensions that are not installed here.
+let nameHints = {};
 
 // ── Dirty tracking ────────────────────────────────────────────────────────────
 
@@ -397,6 +402,12 @@ function buildHandoff() {
     accounts.push({ id, name });
   });
 
+  detectedAccounts.forEach(({ id }) => {
+    if (!id || seenAccounts.has(id)) return;
+    seenAccounts.add(id);
+    accounts.push({ id, name: '' });
+  });
+
   return { ts: Date.now(), accountId: detectedAccountId, properties, accounts };
 }
 
@@ -516,23 +527,92 @@ function offerAutoName() {
 autonameBtn.addEventListener('click', () => openOptions('#autoname'));
 
 function initAutoName() {
+  suggestAccountNameFromProperty();
+  const hinted = list.querySelectorAll('.mapping-row.is-suggested').length;
+  if (hinted > 0) {
+    showAutonameBar(
+      `Named ${hinted} from this GA4 report · review, then Save`, { state: 'done' });
+  }
   chrome.storage.sync.get(['autoResolveNames'], (result) => {
     if (chrome.runtime.lastError) return;
     if (result.autoResolveNames === true) runAutoName();
-    else offerAutoName();
+    else if (unnamedDetectedSlugs().length > 0) offerAutoName();
   });
 }
 
 // ── GA4 auto-detection ────────────────────────────────────────────────────────
 
-function addDetectedAccountRow(accountId, currentAccountMappings) {
-  if (currentAccountMappings[accountId]) return; // already mapped — skip
+/**
+ * A short form of an extension name, for use as an account display name.
+ *
+ * Chrome Web Store developer accounts hold one extension each, so the account
+ * is best labelled by that extension. The full name is usually too long for the
+ * switcher row, so this keeps roughly the first few words and trims any
+ * dangling connector word left at the end.
+ */
+const TRAILING_STOPWORDS = new Set([
+  'and','or','the','a','an','as','of','for','to','in','on','with','by','my','your'
+]);
+
+function shortenName(name, maxChars = 24) {
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+
+  const kept = [words[0]];
+  for (let i = 1; i < words.length; i++) {
+    if ((kept.join(' ') + ' ' + words[i]).length > maxChars) break;
+    kept.push(words[i]);
+  }
+  while (kept.length > 1 && TRAILING_STOPWORDS.has(kept[kept.length - 1].toLowerCase())) {
+    kept.pop();
+  }
+  return kept.join(' ');
+}
+
+/**
+ * GA4 only puts the currently open account in the URL, but the account switcher
+ * renders every account the user can see. The content script scans for all of
+ * them, so every unmapped account gets a row rather than just the current one.
+ */
+function addDetectedAccountRows(accounts, currentAccountMappings) {
+  const newAccounts = (accounts || []).filter(a => a && a.id && !currentAccountMappings[a.id]);
+  detectedAccounts = newAccounts;
+  if (newAccounts.length === 0) return;
+
   const empty = document.getElementById('account-empty-state');
   if (empty) empty.remove();
-  const row = createAccountRow(accountId, '', true, true);
-  // Insert before existing rows so it's immediately visible
-  accountList.insertBefore(row, accountList.firstChild);
-  row.querySelector('.name-input').focus();
+
+  // Reversed, because each row is inserted at the top: iterating backwards
+  // leaves them in the order GA4 listed them.
+  newAccounts.slice().reverse().forEach(({ id }) => {
+    accountList.insertBefore(createAccountRow(id, '', true, true), accountList.firstChild);
+  });
+
+  accountList.querySelector('.name-input').focus();
+  markDirty();
+}
+
+/**
+ * When a single account and a single named property are on screen, they belong
+ * to each other, so the account can be labelled from the extension's name.
+ * Only ever fills a blank field, and is styled as a suggestion for review.
+ */
+function suggestAccountNameFromProperty() {
+  const accountRows = accountList.querySelectorAll('.mapping-row');
+  if (accountRows.length !== 1) return;
+
+  const nameInput = accountRows[0].querySelector('.name-input');
+  if (nameInput.value.trim()) return;
+
+  const named = list.querySelectorAll('.mapping-row.is-suggested');
+  if (named.length !== 1) return;
+
+  const full = named[0].querySelector('.name-input').value.trim();
+  const short = shortenName(full);
+  if (!short) return;
+
+  nameInput.value = short;
+  accountRows[0].classList.add('is-suggested');
   markDirty();
 }
 
@@ -550,7 +630,9 @@ function addDetectedSlugRows(slugs, currentMappings) {
 
   // Reverse so newSlugs[0] lands at list.firstChild after all insertions
   toShow.slice().reverse().forEach(slug => {
-    const row = createRow(slug, '', true, true);
+    const hinted = nameHints[slug] || '';
+    const row = createRow(slug, hinted, true, true);
+    if (hinted) row.classList.add('is-suggested');
     list.insertBefore(row, list.firstChild);
     markDirty();
   });
@@ -569,7 +651,47 @@ function addDetectedSlugRows(slugs, currentMappings) {
 }
 
 function initDetection(currentMappings, currentAccountMappings) {
-  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+  chrome.storage.local.get(['nameHints'], (stored) => {
+    nameHints = (!chrome.runtime.lastError && stored.nameHints) || {};
+    runDetection(currentMappings, currentAccountMappings);
+  });
+}
+
+/**
+ * Ask a GA4 tab for the current page context.
+ *
+ * The active tab is tried first, but the popup is frequently opened while
+ * looking at something else, so a GA4 tab anywhere in the same window is used
+ * as a fallback. Querying by URL needs no extra permission: `tabs` is NOT
+ * declared, and Chrome exposes `url` only for tabs matching the host
+ * permissions this extension already holds for analytics.google.com.
+ */
+function findGA4Tab(callback) {
+  chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
+    if (chrome.runtime.lastError) { callback(null, false); return; }
+
+    const isGA4Active = activeTab && typeof activeTab.url === 'string' &&
+                        activeTab.url.startsWith('https://analytics.google.com/');
+    if (isGA4Active) { callback(activeTab, true); return; }
+
+    // Not looking at GA4 right now: fall back to a GA4 tab in this window
+    chrome.tabs.query(
+      { url: 'https://analytics.google.com/*', currentWindow: true },
+      (tabs) => {
+        if (chrome.runtime.lastError || !tabs || tabs.length === 0) {
+          // Last resort: the active tab may still host the content script even
+          // if its url was not readable.
+          callback(activeTab || null, true);
+          return;
+        }
+        callback(tabs[0], false);
+      }
+    );
+  });
+}
+
+function runDetection(currentMappings, currentAccountMappings) {
+  findGA4Tab((tab, isActive) => {
     if (!tab) { loadLastContext(); return; }
 
     chrome.tabs.sendMessage(tab.id, { action: 'getGA4Data' }, (response) => {
@@ -579,15 +701,28 @@ function initDetection(currentMappings, currentAccountMappings) {
         return;
       }
 
-      const { accountId, slugs } = response;
+      const { accountId, accounts, slugs, hint } = response;
       detectedAccountId = accountId || null;
-      const accountLabel = accountId ? `· Account ${accountId}` : '';
-      showDetectionBanner(`GA4 page detected ${accountLabel}`.trim(), 'live');
+      if (hint && hint.slug && hint.name) nameHints[hint.slug] = hint.name;
 
-      if (accountId) addDetectedAccountRow(accountId, currentAccountMappings);
+      // Older cached payloads only carried a single accountId
+      const found = Array.isArray(accounts)
+        ? accounts
+        : (accountId ? [{ id: accountId, label: null }] : []);
+
+      const where = isActive ? '' : ' (other tab)';
+      showDetectionBanner(
+        'GA4 page detected' +
+        (found.length > 1 ? ` · ${found.length} accounts`
+          : accountId ? ` · Account ${accountId}` : '') + where,
+        'live'
+      );
+
+      addDetectedAccountRows(found, currentAccountMappings);
       addDetectedSlugRows(slugs, currentMappings);
+
       // If no account row stole focus, land on the first detected slug's name field
-      if (!accountId) {
+      if (!accountList.querySelector('.is-detected')) {
         const firstSlug = list.querySelector('.is-detected');
         if (firstSlug) firstSlug.querySelector('.name-input').focus();
       }
@@ -599,10 +734,10 @@ function initDetection(currentMappings, currentAccountMappings) {
 function loadLastContext() {
   chrome.storage.local.get(['lastGA4Context'], (result) => {
     if (chrome.runtime.lastError || !result.lastGA4Context) return;
-    const { accountId } = result.lastGA4Context;
-    if (accountId) {
-      showDetectionBanner(`Last seen · Account ${accountId}`, 'cached');
-    }
+    const { accountId, accounts } = result.lastGA4Context;
+    const count = Array.isArray(accounts) ? accounts.length : 0;
+    if (count > 1)      showDetectionBanner(`Last seen · ${count} accounts`, 'cached');
+    else if (accountId) showDetectionBanner(`Last seen · Account ${accountId}`, 'cached');
   });
 }
 

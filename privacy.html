@@ -164,9 +164,10 @@
       <p>A small amount of operational state is also kept in
          <strong><code>chrome.storage.local</code></strong>, which is never synced and
          never leaves the device: your preferences, the last Google Analytics context
-         seen so the toolbar popup still works on other tabs, and a short-lived handoff
-         of rows between the toolbar popup and the settings page. Uninstalling the
-         extension deletes all of it.</p>
+         seen so the toolbar popup still works on other tabs, a short-lived handoff of rows
+         between the toolbar popup and the settings page, and extension names the
+         extension read from the Google Analytics reports already on your screen.
+         Uninstalling the extension deletes all of it.</p>
     </section>
 
     <section>
@@ -184,6 +185,13 @@
          the extension uses that ID to ask Chrome for the name of the matching extension
          installed in your browser, and suggests it as the display name, so you do not
          have to identify each 32-character ID by hand.</p>
+
+      <p>Separately, and with no permission or setting required, the extension reads
+         extension names out of the Google Analytics reports already displayed on your
+         screen. Your Chrome Web Store listing pages appear in those reports titled
+         "&lt;Extension Name&gt; - Chrome Web Store", so the name is already on the page.
+         This is ordinary reading of the page you are looking at, the same thing the
+         extension does to replace text, and it involves no request to anyone.</p>
 
       <p>This feature is <strong>off by default</strong>. Turning it on requires you to
          grant Chrome's <code>management</code> permission, which Chrome will prompt you

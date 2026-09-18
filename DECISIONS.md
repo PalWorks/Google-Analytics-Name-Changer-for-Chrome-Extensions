@@ -231,3 +231,81 @@ into misinformation.
 **Consequence.** Revisit if the project grows a test suite, a backend, or a second
 contributor. ROADMAP.md is deliberately absent because there is no committed roadmap to
 record yet.
+
+---
+
+## ADR-009: Extension names are harvested from GA4's own reports
+
+**Status:** accepted in v1.1.0. Primary naming source, ahead of ADR-004.
+
+**Context.** Testing against a live Chrome Web Store developer property revealed that the
+name is *already on the GA4 page*. The "Page title and screen class" report lists the store
+listing pages that were viewed, and the store titles them `<Extension Name> - <store name>`:
+
+```
+Gmail Labels and Search Queries as Tabs - Chrome Web Store         60 views
+Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome   1
+Gmail Labels and Search Queries as Tabs - Chrome ウェブストア          1
+Chrome Web Store - Extensions                                       0   <- generic
+Chrome Web Store - Search Results                                   0   <- generic
+```
+
+**Decision.** Read the name out of that report. Split each row's title on the **last** `" - "`,
+which strips the store suffix in any language while preserving names that themselves contain
+`" - "`. Drop generic store pages by name (`chrome web store`, `extensions`, `search results`,
+and similar). Rank the remaining candidates by view count and take the winner.
+
+**Why this beats every other source.**
+
+* Costs nothing: no network request, no permission, no server.
+* Works for extensions that are **not installed locally**, which is exactly the gap
+  `chrome.management` (ADR-004) cannot cover.
+* The name is the store listing name, which is what the user actually wants to see.
+* Hints accumulate in `chrome.storage.local.nameHints` as the user browses GA4, so visiting a
+  property once names it permanently.
+
+**The single-slug guard.** A report belongs to whichever property is selected. With the
+account switcher open, several property slugs are on screen at once and there is no
+non-fragile way to tell which one the report describes. Rather than risk mislabelling a
+property, harvesting is skipped entirely unless exactly one slug is visible. Verified live:
+switcher closed yields a hint, switcher open yields `null`.
+
+**Rejected.**
+
+* *Reading the property header via GA4's class names to attribute the report.* Those class
+  names are minified and rotate between deploys; ADR-003 already refuses to depend on them.
+* *Harvesting continuously on every mutation.* The scan walks the page, so it is throttled to
+  once per 5 s and also runs once ~2.5 s after load, since GA4 fills report widgets
+  asynchronously.
+
+**Consequence.** Naming now has three tiers, tried in this order: harvested hints (free,
+covers the property in view), `chrome.management` (free, covers installed extensions), and the
+store listing link (manual, covers everything else). A property that is never visited and is
+not installed still cannot be named automatically. See ADR-010.
+
+---
+
+## ADR-010: No backend, for now
+
+**Status:** accepted in v1.1.0. Revisit if the coverage gap proves real in use.
+
+**Context.** A server-side proxy could fetch the public store listing and return the name for
+any extension ID, closing every coverage gap at once. Chrome blocks the extension from doing
+this itself (ADR-004), but nothing blocks a server of ours from doing it.
+
+**Decision.** Not built. The three tiers in ADR-009 cover the realistic cases, and a backend
+would cost:
+
+* the unconditional "zero network requests" claim, which is currently true and is a real part
+  of this extension's pitch to a privacy-conscious developer audience
+* a host permission for the endpoint, plus privacy policy and Chrome Web Store disclosure
+* an service to run, monitor and keep available
+* server-side scraping of the Chrome Web Store, whose terms around automated access are worth
+  checking before relying on it commercially
+
+**The gap it would close.** A property the user never opens in GA4 *and* does not have
+installed locally. Everything else is already covered for free.
+
+**If it is built later,** it belongs behind the same contextual opt-in as ADR-005: offered when
+a GA4 property is in view, permission requested at the moment the user says yes, and off until
+then.

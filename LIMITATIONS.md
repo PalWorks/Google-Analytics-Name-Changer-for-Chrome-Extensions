@@ -48,7 +48,37 @@ ADR-004 for the measured evidence.
 
 Names are therefore read from `chrome.management.get()` instead, which has the constraints below.
 
-### Only extensions installed in this profile can be named automatically
+### Harvesting needs the property's report to be on screen
+
+Names read from GA4's own reports (the primary source) require a view that actually contains
+the "Page title and screen class" widget, such as Home or the Reports snapshot. On a report
+that does not include it, nothing is harvested.
+
+It also needs the listing to have been viewed in the selected date range. A brand-new
+extension with no traffic will not name itself this way.
+
+### Harvesting refuses to guess when several properties are visible
+
+A report belongs to whichever property is selected, so a hint is only recorded when exactly
+one property slug is on screen. With the account switcher open, several are, and harvesting is
+skipped rather than risk attaching the wrong name to a property. In practice this means
+hints are collected with the switcher closed, which is the normal browsing state.
+
+### Account IDs other than the current one need the switcher open
+
+Verified against live GA4: with the account switcher closed there are **no** numeric account
+IDs in the DOM at all, so only the account in the URL can be detected. Opening the switcher
+renders every account and all of them are picked up. There is no way to enumerate accounts
+without the user opening that panel.
+
+### A numeric ID could in principle be mistaken for an account ID
+
+Account detection accepts an 8 to 12 digit text node whose nearest preceding label is not a
+property slug. A metric rendered as a bare 8 to 12 digit number with a text label above it
+would be picked up as a candidate account. GA4 formats large metrics with separators, so this
+has not been observed, and a wrong row costs one click to delete before saving.
+
+### Only extensions installed in this profile can be named by `chrome.management`
 
 `chrome.management` sees the current Chrome profile and nothing else. An extension the user
 publishes but does not have installed, or has installed under a different profile, cannot be
@@ -154,8 +184,15 @@ export block exist in near identical form in both `popup/popup.js` and
 A shared module would fix this, but with no build step it would mean a third script tag
 and manual load order management. Currently accepted; revisit if a third surface appears.
 
-### The listing link is the only path for non-installed extensions
+### A property that is never visited and is not installed cannot be named automatically
 
-It opens a tab the user must read and then type from. It is not automation, and for a
-portfolio of extensions none of which are installed locally, auto naming is effectively
-just this link. Chrome leaves no better option (ADR-004).
+This is the one remaining gap, and the only thing a backend would close. Harvesting covers any
+property the user opens in GA4; `chrome.management` covers anything installed locally; the
+listing link covers the rest manually. See [DECISIONS.md](DECISIONS.md) ADR-010 for why no
+backend is built yet.
+
+### The account name shortener is a heuristic
+
+An account is labelled from its property's extension name, cut to roughly 24 characters on a
+word boundary with any dangling connector word trimmed. "Gmail Labels and Search Queries as
+Tabs" becomes "Gmail Labels and Search". It is a suggestion in an editable field, not a rule.

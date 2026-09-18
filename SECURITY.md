@@ -27,6 +27,9 @@ The relevant guarantees are:
 * **Text in, text out.** The content script only ever reads `node.nodeValue` and writes
   `node.nodeValue`. It never evaluates page content, never inserts markup, and never
   reads page JavaScript state.
+* **Name harvesting reads only rendered report text.** It walks the same text nodes the
+  replacement engine already walks, extracts extension names from titles Google itself
+  rendered, and stores them locally. No request is made and nothing is sent anywhere.
 * **No `innerHTML` with dynamic data.** `innerHTML` appears only with module scope SVG
   string constants that contain no interpolation. Everything user supplied reaches the
   DOM through `.value`, `.textContent`, or `.nodeValue`.

@@ -66,7 +66,16 @@ Never move resolution into `content/content.js`. Never make `management` a requi
 permission. Never call anything from `chrome.management` other than `get`. Never remove a
 gate "temporarily".
 
-### 5. Never interpolate user data into `innerHTML`
+### 5. Harvesting must never guess which property a report belongs to
+
+`harvestNameHint()` records a slug-to-name hint only when **exactly one** property slug is
+visible on the page. With the account switcher open several are, and the only way to attribute
+the report would be to trust GA4's minified class names, which invariant 3 of ADR-003 refuses.
+A wrong hint silently mislabels a property, which is worse than no hint.
+
+Do not relax the single-slug check. Do not add a class-name-based fallback.
+
+### 6. Never interpolate user data into `innerHTML`
 
 `innerHTML` is used in this codebase only with module scope SVG string constants.
 User supplied values reach the DOM exclusively through `.value`, `.textContent`,
@@ -139,3 +148,10 @@ Do not "fix" these without discussion. Each is a deliberate, documented decision
   link instead. Do not try to "fix" the coverage gap with a fetch; see invariant 4.
 * **`background.js` uses promise wrappers while every other file uses callbacks.** The
   resolver is async; the rest is not. Do not "harmonise" this.
+* **Harvesting runs before the observer's empty-map early return.** Deliberate: a user with no
+  mappings yet is exactly who needs name hints. It is throttled to once per 5 s instead.
+* **Account detection only finds one account when the switcher is closed.** Verified against
+  live GA4: no numeric account IDs exist in the DOM at all until that panel is opened.
+* **`chrome.tabs.query({url})` works without the `tabs` permission.** Chrome exposes `url` for
+  tabs matching host permissions the extension already holds. Verified empirically. Do not add
+  `tabs` to make cross-tab detection "work".

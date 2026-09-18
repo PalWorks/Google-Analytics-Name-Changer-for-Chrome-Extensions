@@ -25,10 +25,14 @@ extension ID are the same string.** Google provisions the GA4 property using the
 extension's ID as its name. So the rendered GA4 page already contains enough to
 identify the extension, two ways:
 
-1. **`chrome.management.get(<slug>)`** returns the extension's name if it is installed
-   in this Chrome profile. This is how auto naming works. It is local and instant.
-2. **`https://chromewebstore.google.com/detail/<slug>`** is the public listing URL,
-   which the UI offers as a link for extensions that are not installed locally.
+1. **GA4's own reports already contain the name.** The "Page title and screen class" report
+   lists the store listing pages that were viewed, titled `<Extension Name> - <store name>`.
+   This is the primary source: free, no permission, and it works whether or not the extension
+   is installed. See [DECISIONS.md](DECISIONS.md) ADR-009.
+2. **`chrome.management.get(<slug>)`** returns the extension's name if it is installed
+   in this Chrome profile. Local and instant, but only covers this profile.
+3. **`https://chromewebstore.google.com/detail/<slug>`** is the public listing URL,
+   which the UI offers as a link for anything the first two could not name.
 
 Note the asymmetry: the extension can **link** to (2) but cannot **read** it. Chrome
 blocks extension-initiated requests to the Web Store entirely. See
@@ -84,6 +88,7 @@ English string that Google controls. That is why the label health heartbeat exis
 | **handoff** | `chrome.storage.local.pendingDetection`. Carries popup rows, including detected slugs the popup's three row cap never rendered, to the options page. TTL 10 minutes, consumed once. |
 | **resolution / auto naming** | Turning an extension ID into that extension's name via `chrome.management.get()` in `background.js`. Opt in, off by default, entirely local. |
 | **unresolved** | A valid extension ID that is not installed in this profile, so it could not be named automatically. Its row reveals a link to the public store listing. |
+| **name hint** | An extension name read out of GA4's own "Page title and screen class" report, where store listing titles appear as `<Extension Name> - <store name>`. Free, needs no permission, and works for extensions that are not installed. Stored in `nameHints`. |
 | **suggested name** | A display name produced by resolution rather than typed by the user. Rendered italic and accent coloured until edited or saved. |
 | **label health heartbeat** | `chrome.storage.local.accountLabelLastMatched`. Timestamp of the last successful account label replacement. Stale for 90+ days means Google probably renamed the label. |
 
@@ -102,6 +107,7 @@ English string that Google controls. That is why the label health heartbeat exis
 | `lastGA4Context` | local | `{ accountId, slugs }` | content script | Popup fallback when the active tab is not GA4 |
 | `accountLabelLastMatched` | local | `number` (ms) | content script | Label health heartbeat |
 | `pendingDetection` | local | `{ ts, accountId, properties, accounts }` | popup | Popup to options handoff |
+| `nameHints` | local | `{ [slug]: name }` | content script | Names harvested from GA4 reports; accumulates as the user browses |
 
 Sync keys count against `chrome.storage.sync.QUOTA_BYTES_PER_ITEM` (8192 bytes per
 item). Both mapping objects are size checked before every save. Local keys are not

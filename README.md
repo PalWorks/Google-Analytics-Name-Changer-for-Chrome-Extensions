@@ -18,11 +18,11 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 
 - **Live text replacement** — slugs and account labels replaced as GA4 renders; works seamlessly across SPA navigation without requiring a page reload
 - **Toolbar popup** — left-click the extension icon to view and edit mappings from any tab without leaving your current page
-- **GA4 auto-detection** — when you open the popup on a GA4 tab, it reads the current account ID from the URL and scans the DOM for unmapped property slugs, pre-filling rows ready for you to name
+- **GA4 auto-detection** — open the popup and it scans the GA4 page for unmapped property slugs and for **every account** in the account switcher, not just the one you are viewing, pre-filling rows ready to name. Works even when GA4 is in another tab in the same window
 - **Full settings page** — a dedicated full-tab settings page for managing all mappings with more room; reachable from the popup header or from `chrome://extensions`
 - **Cross-device sync** — mappings stored in `chrome.storage.sync` and synced across your signed-in Chrome profiles automatically
 - **Import / Export** — back up or transfer all mappings as a single JSON file
-- **Auto-naming** *(optional, off by default)* — a Chrome Web Store property slug is your extension's ID, so any of those extensions installed in your Chrome profile can be named automatically, instantly and entirely offline; you review every suggestion before saving. Anything not installed locally gets a one-click link to its store listing
+- **Auto-naming** — your extension's real name is read straight out of GA4's own reports, so properties name themselves as you browse. Extensions installed in your profile can also be named from Chrome itself (optional, off by default). Anything neither source covers gets a one-click link to its store listing. Every suggestion is reviewed before saving, and none of it touches the network
 - **Guided onboarding** — a two-slide welcome modal on first install explains the extension and the auto-naming opt-in; reachable again any time from the popup's **?** button
 - **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
 - **Zero data collection** — no analytics, no telemetry, no server, and no network requests of any kind
@@ -68,32 +68,47 @@ Note that the numbers in the URL hash (`#a{accountId}p{propertyId}/…`) are GA4
 
 ### Auto-naming your extensions
 
-Every Chrome Web Store developer property in GA4 is named after your extension's ID. Auto-naming
-uses that: for each slug, it asks Chrome for the name of the extension with that ID.
+There are three sources, tried in order. The first two are automatic and cost nothing.
 
-This is **off by default**. To turn it on, open **Full Settings** and flip
-**Auto-name from your installed extensions**. Chrome will ask you to grant the `management`
-permission; the extension cannot look anything up until you do.
+**1. GA4's own reports (automatic, no setup).** A Chrome Web Store developer property's
+"Page title and screen class" report lists the store listing pages that were viewed, and the
+store titles them `<Extension Name> - Chrome Web Store`. So your extension's real name is
+already on the page:
 
-Once on:
+```
+Gmail Labels and Search Queries as Tabs - Chrome Web Store        60 views
+Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome  1
+Chrome Web Store - Extensions                                      0   ← generic, ignored
+```
 
-- the popup fills in names automatically for slugs it detects on a GA4 page
-- **Fill missing names** in Full Settings names every row that has a slug but no name
-- suggestions render in italic until you accept them by saving, so you always review first
+The extension reads that, strips the store suffix in whatever language it appears, and
+remembers the name against that property slug. Just open a property in GA4 and it names
+itself. Names accumulate as you browse, so visiting a property once is enough.
 
-**What it covers.** Only extensions installed in the Chrome profile you are using. That is
-usually most of your own, but an extension you publish and do not run locally cannot be named
-this way. Those rows get a link that opens the public Chrome Web Store listing in a new tab, so
-you can read the name and type it.
+It only records a name when a single property is on screen. With the account switcher open
+several are visible at once and there is no reliable way to tell which one the report belongs
+to, so it skips rather than risk mislabelling.
 
-**What it costs.** Nothing leaves your browser. The lookup is local, so the extension still
-makes no network requests at all. The `management` permission is only ever used to call
-`chrome.management.get()` and read a name; nothing is installed, enabled, disabled or changed.
-Turning the feature off revokes the permission. See [SECURITY.md](SECURITY.md) for the detail.
+**2. Your installed extensions (optional, off by default).** Turn on
+**Auto-name from your installed extensions** in Full Settings and Chrome will ask for the
+`management` permission. After that, any slug matching an extension installed in your profile
+is named from Chrome directly. Used only to call `chrome.management.get()` and read a name;
+nothing is installed, enabled, disabled or changed, and turning the feature off revokes the
+permission.
 
-> **Why not just read the store listing?** Because Chrome will not allow it. Extensions are
-> blocked from making requests to `chromewebstore.google.com` entirely, which is a deliberate
-> platform protection. [DECISIONS.md](DECISIONS.md) ADR-004 has the measurements.
+**3. The store listing link (manual).** Anything the first two could not name shows a link on
+its row that opens the public Chrome Web Store listing in a new tab, so you can read the name
+and type it.
+
+Accounts are named too: a Chrome Web Store developer account holds one extension, so when a
+single account and a single named property are on screen, the account is suggested a shortened
+form of the extension's name.
+
+Nothing leaves your browser in any of this. The extension makes no network requests.
+
+> **Why not just read the store listing directly?** Because Chrome will not allow it.
+> Extensions are blocked from making requests to `chromewebstore.google.com`, which is a
+> deliberate platform protection. [DECISIONS.md](DECISIONS.md) ADR-004 has the measurements.
 
 ### Import / Export
 

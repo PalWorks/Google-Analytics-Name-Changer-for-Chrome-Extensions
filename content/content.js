@@ -194,6 +194,7 @@
         pairAccountLabels(root);
         walkTree(root);
       });
+      maybeHarvest();
     }, 80);
   }
 
@@ -214,6 +215,10 @@
 
   function initObserver() {
     observer = new MutationObserver((mutations) => {
+      // Harvesting is independent of the mapping state: a user with no mappings
+      // yet is exactly who benefits most from name hints. Throttled internally.
+      maybeHarvest();
+
       if (slugMap.size === 0 && accountMap.size === 0) return;
 
       const roots = new Set();
@@ -263,10 +268,197 @@
     if (changed) replaceAll();
   });
 
+  // ── Page scanning ──────────────────────────────────────────────────────────
+
+  const SLUG_RE       = /^[a-z]{20,}$/;   // a property slug rendered as the property name
+  const NUMERIC_ID_RE = /^\d{8,12}$/;     // a GA4 account or property ID
+  const MAX_ACCOUNTS  = 10;
+
+  /**
+   * Every visible text node on the page, in document order, trimmed and with
+   * blanks dropped. Both scans below work off this one walk rather than
+   * repeating the traversal.
+   */
+  function visibleTextValues() {
+    const walker = document.createTreeWalker(
+      document.body, NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const tag = node.parentElement && node.parentElement.tagName;
+          return SKIP_TAGS.has(tag) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    const values = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      const val = node.nodeValue && node.nodeValue.trim();
+      if (val) values.push(val);
+    }
+    return values;
+  }
+
+  /**
+   * Account IDs visible anywhere on the page, not just the one in the URL.
+   *
+   * The GA4 account switcher renders every account as a name followed by its
+   * 9-digit ID, which is the only way to see accounts other than the one
+   * currently open. Properties render in exactly the same shape, so a numeric
+   * ID is only treated as an account when the label immediately preceding it
+   * is NOT a property slug.
+   *
+   * Returns [{ id, label }] so the popup can show which account each ID is.
+   */
+  function collectAccounts(values) {
+    const accounts = [];
+    const seen = new Set();
+
+    for (let i = 0; i < values.length; i++) {
+      const val = values[i];
+      if (!NUMERIC_ID_RE.test(val) || seen.has(val)) continue;
+
+      // Nearest preceding non-numeric text is the row's label
+      let label = null;
+      for (let j = i - 1; j >= 0 && j >= i - 4; j--) {
+        if (!NUMERIC_ID_RE.test(values[j])) { label = values[j]; break; }
+      }
+
+      // No label, or the label is a property slug, means this is a property ID
+      if (!label || SLUG_RE.test(label)) continue;
+
+      seen.add(val);
+      accounts.push({ id: val, label });
+      if (accounts.length >= MAX_ACCOUNTS) break;
+    }
+    return accounts;
+  }
+
+  function collectSlugs(values) {
+    const slugs = [];
+    const seen = new Set(slugMap.keys());
+    for (const val of values) {
+      if (SLUG_RE.test(val) && !seen.has(val)) {
+        slugs.push(val);
+        seen.add(val);
+      }
+    }
+    return slugs;
+  }
+
+  // ── Harvesting extension names from GA4's own reports ──────────────────────
+  //
+  // GA4's "Page title and screen class" report for a Chrome Web Store developer
+  // property lists the store listing pages that were viewed, and the store
+  // renders those titles as "<Extension Name> - <localised store name>". So the
+  // extension's real name is already on the page, for free, with no lookup:
+  //
+  //   Gmail Labels and Search Queries as Tabs - Chrome Web Store        60
+  //   Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome  1
+  //   Chrome Web Store - Extensions                                      0   <- generic
+  //
+  // Splitting on the LAST " - " strips the store suffix in any language while
+  // preserving a name that itself contains " - ". Generic store pages are
+  // dropped by name, and the remaining candidates are ranked by view count.
+
+  // Prefixes that are store furniture rather than an extension name
+  const GENERIC_TITLES = new Set([
+    'chrome web store', 'extensions', 'themes', 'apps', 'search results',
+    'collection', 'category', '(not set)', '(other)'
+  ]);
+
+  const HARVEST_INTERVAL_MS = 5000;
+  let lastHarvestAt = 0;
+
+  function reportTitleRows() {
+    const rows = [];
+    document.querySelectorAll('table.data-table-hover-card').forEach((table) => {
+      const trs = Array.from(table.querySelectorAll('tr'));
+      const head = (trs[0] && trs[0].textContent || '').toLowerCase();
+      if (!/page title|screen class/.test(head)) return;
+
+      trs.slice(1).forEach((tr) => {
+        const cells = Array.from(tr.querySelectorAll('th,td'))
+          .map(c => (c.textContent || '').trim())
+          .filter(Boolean);
+        if (!cells.length) return;
+        rows.push({
+          title: cells[0],
+          views: parseInt((cells[1] || '0').replace(/[^\d]/g, ''), 10) || 0
+        });
+      });
+    });
+    return rows;
+  }
+
+  function extensionNameFromReports() {
+    const score = new Map();
+
+    for (const { title, views } of reportTitleRows()) {
+      const cut = title.lastIndexOf(' - ');
+      if (cut <= 0) continue;
+      const name = title.slice(0, cut).trim();
+      if (!name || GENERIC_TITLES.has(name.toLowerCase())) continue;
+      // +1 so a listing with zero views in the period still counts
+      score.set(name, (score.get(name) || 0) + views + 1);
+    }
+
+    let best = null;
+    for (const [name, total] of score) {
+      if (!best || total > best.total) best = { name, total };
+    }
+    return best ? best.name : null;
+  }
+
+  /**
+   * Harvest a slug-to-name hint for the property currently being viewed.
+   *
+   * The report belongs to whichever property is selected, so a hint can only be
+   * attributed when exactly one property slug is visible. With the account
+   * switcher open several are on screen at once, and guessing which one the
+   * report belongs to would risk mislabelling a property. In that case we skip
+   * rather than guess.
+   */
+  function harvestNameHint(values) {
+    const slugs = Array.from(new Set(values.filter(v => SLUG_RE.test(v))));
+    if (slugs.length !== 1) return null;
+
+    const name = extensionNameFromReports();
+    if (!name) return null;
+
+    return { slug: slugs[0], name };
+  }
+
+  function persistNameHint(hint) {
+    if (!hint) return;
+    chrome.storage.local.get(['nameHints'], (result) => {
+      if (chrome.runtime.lastError) return;
+      const hints = result.nameHints || {};
+      if (hints[hint.slug] === hint.name) return; // unchanged, skip the write
+      hints[hint.slug] = hint.name;
+      chrome.storage.local.set({ nameHints: hints });
+    });
+  }
+
+  /**
+   * Called from the debounced batch so hints accumulate as the user browses
+   * GA4, without the popup ever being opened. Throttled because the batch runs
+   * on every React render burst and this walks the page.
+   */
+  function maybeHarvest() {
+    const now = Date.now();
+    if (now - lastHarvestAt < HARVEST_INTERVAL_MS) return;
+    lastHarvestAt = now;
+    try {
+      persistNameHint(harvestNameHint(visibleTextValues()));
+    } catch (err) {
+      // Harvesting is opportunistic; never let it break replacement.
+    }
+  }
+
   // ── Popup message handler ──────────────────────────────────────────────────
-  // Responds to the popup's request for the current GA4 page context.
-  // Returns the account ID from the URL and any unmapped property slugs
-  // visible in the DOM, then caches the result for non-GA4-tab sessions.
+  // Responds to the popup's request for the current GA4 page context: the
+  // account IDs and unmapped property slugs visible on the page, plus the
+  // account ID from the URL. The result is cached for non-GA4-tab sessions.
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action !== 'getGA4Data') return false;
@@ -278,32 +470,26 @@
     const accountMatch = urlForParsing.match(/a(\d{7,})/);
     const accountId = accountMatch ? accountMatch[1] : null;
 
-    // Find property slugs visible in the DOM that aren't yet mapped.
-    // GA4 property slugs are 20+ character all-lowercase strings.
-    const slugs = [];
-    const seen = new Set(slugMap.keys());
-    const slugWalker = document.createTreeWalker(
-      document.body, NodeFilter.SHOW_TEXT,
-      {
-        acceptNode(node) {
-          const tag = node.parentElement && node.parentElement.tagName;
-          return SKIP_TAGS.has(tag) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
-        }
-      }
-    );
-    let sn;
-    while ((sn = slugWalker.nextNode())) {
-      const val = sn.nodeValue && sn.nodeValue.trim();
-      if (val && /^[a-z]{20,}$/.test(val) && !seen.has(val)) {
-        slugs.push(val);
-        seen.add(val);
-      }
+    const values   = visibleTextValues();
+    const slugs    = collectSlugs(values);
+    const accounts = collectAccounts(values);
+
+    // Name for the property currently on screen, read out of GA4's own reports
+    const hint = harvestNameHint(values);
+    persistNameHint(hint);
+
+    // The account in the URL is definite even if the switcher is closed, so
+    // make sure it is present and listed first.
+    if (accountId && !accounts.some(a => a.id === accountId)) {
+      accounts.unshift({ id: accountId, label: null });
     }
 
-    // Cache detected context so the popup can show it on non-GA4 tabs
-    chrome.storage.local.set({ lastGA4Context: { accountId, slugs } });
+    const payload = { accountId, accounts, slugs, hint };
 
-    sendResponse({ accountId, slugs });
+    // Cache detected context so the popup can show it on non-GA4 tabs
+    chrome.storage.local.set({ lastGA4Context: payload });
+
+    sendResponse(payload);
     return true;
   });
 
@@ -315,6 +501,9 @@
       rebuildAccountMap(accountMappings);
       initObserver();
       if (slugMap.size > 0 || accountMap.size > 0) replaceAll();
+      // GA4 fills its report widgets asynchronously, so the first harvest has
+      // to wait for the data to land rather than running at document_idle.
+      setTimeout(maybeHarvest, 2500);
     });
   }
 
