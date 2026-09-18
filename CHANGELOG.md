@@ -4,6 +4,41 @@ All notable changes to GA4 Name Changer are documented here.
 
 ---
 
+## [1.1.0] — 2026-09-18
+
+Auto-naming, onboarding, and a documentation set for contributors and agents.
+
+### Added
+
+- **Auto-naming** — a Chrome Web Store property slug is the extension's own ID, so any of those extensions installed in this Chrome profile can be named automatically via `chrome.management.get()`. Off by default and gated behind the optional `management` permission; turning it off calls `chrome.permissions.remove()`. Resolution is entirely local, so the extension still makes no network requests of any kind. Only `get` is ever called, and only the `name` field read
+- **Chrome Web Store listing link** — an extension ID that is valid but not installed in this profile cannot be named automatically, so its row reveals a button that opens the public store listing in a new tab for the user to read the name from
+- **Service worker (`background.js`)** — hosts name resolution behind three independent gates: the setting, the live permission check, and an `/^[a-p]{32}$/` format check. Also opens the settings page on first install
+- **Welcome modal** — two-slide onboarding on the options page, opened automatically on first install via `chrome.runtime.onInstalled`, and reachable any time from the popup's new **?** button. Slide 2 is the auto-naming opt-in and states exactly what the permission is and is not used for
+- **Fill missing names** — options-page button that resolves every row holding a valid extension ID with no display name yet. Suggested names render italic until reviewed and saved
+- **Popup → options handoff** — the popup stashes its rows under `chrome.storage.local.pendingDetection` before navigating to Full Settings, and the options page merges them in once and clears the key. TTL 10 minutes
+- **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (eight ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
+
+### Fixed
+
+- **Unsaved popup edits were silently discarded.** Clicking **Full Settings** closed the popup without preserving anything typed into it. Extension popups do not fire `beforeunload`, so the `isDirty` guard used by the options page is unavailable; the `pendingDetection` handoff replaces it
+- **The slug overflow note was untrue.** It directed the user to Full Settings to map the remaining slugs, but those slugs existed only in popup memory and were never carried anywhere. The handoff now carries every detected slug, including the ones beyond the three-row display cap
+
+### Changed
+
+- The options page row factory gained the `is-detected` and `is-suggested` states the popup already had, plus a shared row actions cell, and editing a row clears both hints
+- `privacy.html` updated for the optional permission, and its "no network requests" claim restated as unconditional, which it now is
+- `README.md` and `ARCHITECTURE.md` updated for the service worker, handoff, welcome modal, new storage keys and revised permission set
+
+### Removed
+
+- The checked-in `dist/` directory and `dist.zip`. They were byte-identical hand-maintained copies of the source, gitignored so drift would have been invisible, and carried a real risk of shipping a stale build. Packaging now runs from the repository root against `.crxignore`; the exact command is in `PLAYBOOK.md`
+
+### Notes
+
+An earlier implementation of auto-naming fetched the extension's public Chrome Web Store listing and parsed its title. That approach was completed and then discarded: **Chrome blocks extension-initiated requests to `chromewebstore.google.com`, `chrome.google.com/webstore` and `clients2.google.com/service/update2`**, even with the host permission granted, while every other origin succeeds. It is a deliberate platform protection. `DECISIONS.md` ADR-004 records the measurements so the approach is not attempted again. `minimum_chrome_version` stays at `88` as a result, since the `optional_host_permissions` key that briefly required `102` is no longer used.
+
+---
+
 ## [1.0.0] — 2026-06-05
 
 Initial public release.

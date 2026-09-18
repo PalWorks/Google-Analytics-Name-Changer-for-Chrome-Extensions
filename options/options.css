@@ -48,6 +48,338 @@ body {
   min-height: 100vh;
 }
 
+/* ── Auto-naming toolbar ── */
+
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.toolbar-info { min-width: 0; }
+
+.toolbar-hint {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 6px;
+  max-width: 64ch;
+}
+
+.toolbar-hint code,
+.fact-list code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-ghost[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-ghost[disabled]:hover { background: transparent; }
+
+/* ── Switch ── */
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: #d8d8dd;
+  transition: background 0.18s ease;
+  flex-shrink: 0;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  transition: transform 0.18s ease;
+}
+
+.switch input:checked + .switch-track            { background: var(--accent); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+.switch input:focus-visible + .switch-track      { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.switch-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── Row hint states ── */
+
+/* Rows handed over from the popup, or detected on the GA4 tab */
+.mapping-row.is-detected {
+  background: rgba(52, 199, 89, 0.05);
+  box-shadow: inset 3px 0 0 var(--success);
+}
+
+/* Display names suggested by a store lookup rather than typed by the user */
+.mapping-row.is-suggested .name-input {
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* ── Welcome modal ── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 24, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  animation: overlay-in 0.18s ease;
+}
+
+.overlay.is-hidden { display: none; }
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  position: relative;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.22);
+  width: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  overflow-y: auto;
+  animation: modal-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-close:hover { color: var(--text); background: var(--bg); }
+.modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.slide { padding: 32px 32px 8px; }
+.slide.is-hidden { display: none; }
+
+.slide-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 20px;
+  padding: 4px 11px;
+  margin-bottom: 14px;
+}
+
+.slide h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.slide p {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.slide-note {
+  font-size: 12.5px !important;
+  color: var(--text-3) !important;
+  margin-top: 14px;
+}
+
+/* Before/after preview block on slide 1 */
+
+.preview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-top: 18px;
+  text-align: center;
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.preview-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-3);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+
+.preview-tag.is-after {
+  color: var(--success);
+  border-color: rgba(52, 199, 89, 0.35);
+  background: rgba(52, 199, 89, 0.08);
+}
+
+.preview-slug {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+  word-break: break-all;
+}
+
+.preview-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.preview-arrow {
+  color: var(--text-3);
+  margin: 8px 0;
+  line-height: 0;
+}
+
+/* Fact list on slide 2 */
+
+.fact-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+}
+
+.fact-list li {
+  position: relative;
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.55;
+  padding-left: 22px;
+  margin-bottom: 7px;
+}
+
+.fact-list li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 9px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.slide-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 32px 24px;
+}
+
+.dots { display: flex; gap: 7px; }
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.18s, width 0.18s;
+}
+
+.dot.is-active {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.modal-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-nav .is-hidden,
+.slide-actions .is-hidden { display: none; }
+
 /* ── Two-card grid ── */
 
 .cards-grid {
@@ -108,7 +440,7 @@ main {
 
 .card-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 40px;
+  grid-template-columns: 1fr 1fr 72px;
   gap: 12px;
   padding: 10px 16px;
   background: var(--bg);
@@ -127,7 +459,7 @@ main {
 
 .mapping-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 40px;
+  grid-template-columns: 1fr 1fr 72px;
   gap: 12px;
   padding: 8px 16px;
   align-items: center;
@@ -212,6 +544,42 @@ main {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   opacity: 1;
+}
+
+/* ── Row actions cell ── */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.listing-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--accent);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.listing-btn:hover { background: var(--accent-bg); }
+.listing-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.listing-btn.is-hidden { display: none; }
+
+/* A row with a visible listing link could not be resolved locally */
+.mapping-row:has(.listing-btn:not(.is-hidden)) {
+  box-shadow: inset 3px 0 0 rgba(79, 70, 229, 0.45);
 }
 
 /* ── Empty state ── */
@@ -402,16 +770,30 @@ a.support-link:hover {
   .cards-grid {
     grid-template-columns: 1fr;
   }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .toolbar-actions { justify-content: flex-end; }
 }
 
 @media (max-width: 480px) {
   .container { padding: 0 16px 40px; }
+
+  .overlay      { padding: 12px; }
+  .slide        { padding: 26px 20px 8px; }
+  .modal-footer { padding: 16px 20px 20px; }
+  .slide h2     { font-size: 19px; }
+
   header { padding: 28px 0 20px; }
   h1 { font-size: 22px; }
 
   .card-header,
   .mapping-row {
-    grid-template-columns: 1fr 1fr 36px;
+    grid-template-columns: 1fr 1fr 64px;
     gap: 8px;
     padding: 8px 12px;
   }

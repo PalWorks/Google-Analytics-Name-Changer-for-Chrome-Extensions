@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Google Analytics Name Changer for Chrome Extensions",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Replace unreadable GA4 property slugs and account numbers with human-friendly names directly in Google Analytics.",
   "minimum_chrome_version": "88",
   "icons": {
@@ -18,19 +18,33 @@
       "128": "icons/icon128.png"
     }
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "options_ui": {
     "page": "options/options.html",
     "open_in_tab": true
   },
   "content_scripts": [
     {
-      "matches": ["https://analytics.google.com/*"],
-      "js": ["content/content.js"],
+      "matches": [
+        "https://analytics.google.com/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage"],
-  "host_permissions": ["https://analytics.google.com/*"],
+  "permissions": [
+    "storage"
+  ],
+  "optional_permissions": [
+    "management"
+  ],
+  "host_permissions": [
+    "https://analytics.google.com/*"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   }

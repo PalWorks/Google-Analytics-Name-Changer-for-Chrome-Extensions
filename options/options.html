@@ -20,6 +20,37 @@
     </header>
 
     <main>
+
+      <!-- Auto-naming controls -->
+      <div class="toolbar">
+        <div class="toolbar-info">
+          <label class="switch">
+            <input id="autoname-toggle" type="checkbox">
+            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            <span class="switch-label">Auto-name from your installed extensions</span>
+          </label>
+          <p class="toolbar-hint">
+            A Chrome Web Store property slug is the extension's own ID, so any of these
+            extensions installed in this Chrome profile can be named automatically. This reads
+            those names locally and sends nothing anywhere. Off by default; turning it on asks
+            for the <code>management</code> permission. Anything not installed here gets a link
+            to open its public listing so you can read the name yourself.
+          </p>
+        </div>
+        <div class="toolbar-actions">
+          <span id="autoname-status" class="status-msg" aria-live="polite"></span>
+          <button id="fetch-names-btn" class="btn-ghost" type="button" disabled>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M12.25 7a5.25 5.25 0 1 1-1.54-3.71" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12.25 1.75V4.5H9.5" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Fill missing names
+          </button>
+        </div>
+      </div>
+
       <div class="cards-grid">
 
         <!-- GA4 Account Number mappings -->
@@ -82,6 +113,90 @@
       </div>
     </footer>
 
+  </div>
+
+  <!-- ── Welcome / onboarding modal ───────────────────────────────────────── -->
+  <div id="welcome-overlay" class="overlay is-hidden" role="dialog" aria-modal="true"
+       aria-labelledby="welcome-title">
+    <div class="modal">
+
+      <button id="welcome-close" class="modal-close" type="button" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <!-- Slide 1 — what the extension does -->
+      <section class="slide" data-slide="0">
+        <span class="slide-badge">Welcome</span>
+        <h2 id="welcome-title">Give your GA4 properties real names</h2>
+        <p>
+          Google shares Chrome Web Store analytics under a 32-character extension ID, and labels
+          every account identically. This extension swaps those identifiers for names you choose,
+          live inside Google Analytics.
+        </p>
+
+        <div class="preview">
+          <div class="preview-row">
+            <span class="preview-tag">Before</span>
+            <code class="preview-slug">egedbdckafdbomehjaihjhbcgmngmlah</code>
+          </div>
+          <div class="preview-arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="preview-row">
+            <span class="preview-tag is-after">After</span>
+            <span class="preview-name">Favicon Changer Ultimate</span>
+          </div>
+        </div>
+
+        <p class="slide-note">
+          Nothing in your Google Analytics account is changed. The replacement is display-only
+          and lives in your browser.
+        </p>
+      </section>
+
+      <!-- Slide 2 — auto-naming opt-in -->
+      <section class="slide is-hidden" data-slide="1">
+        <span class="slide-badge">Optional</span>
+        <h2>Let it name them for you</h2>
+        <p>
+          That 32-character slug <em>is</em> your extension's ID. Turn this on and any of those
+          extensions installed in this Chrome profile are named automatically, instantly and
+          entirely offline. You review every suggestion before saving.
+        </p>
+
+        <ul class="fact-list">
+          <li>Names are read locally with Chrome's <code>management</code> API. Nothing is sent
+              anywhere, and the extension still makes no network requests at all.</li>
+          <li>Chrome asks your permission first, and turning this back off revokes it.</li>
+          <li>Only names are read. Nothing is installed, enabled, disabled or changed.</li>
+          <li>An extension that is not installed here cannot be named this way. Those rows get a
+              link that opens the public Chrome Web Store listing so you can read the name.</li>
+        </ul>
+
+        <div class="slide-actions">
+          <button id="welcome-enable" class="btn-primary" type="button">Turn on auto-naming</button>
+          <button id="welcome-skip" class="btn-text" type="button">Not now</button>
+        </div>
+      </section>
+
+      <footer class="modal-footer">
+        <div class="dots" role="tablist" aria-label="Onboarding progress">
+          <span class="dot is-active" data-dot="0"></span>
+          <span class="dot" data-dot="1"></span>
+        </div>
+        <div class="modal-nav">
+          <button id="welcome-back" class="btn-text is-hidden" type="button">Back</button>
+          <button id="welcome-next" class="btn-primary" type="button">Next</button>
+          <button id="welcome-done" class="btn-text is-hidden" type="button">Done</button>
+        </div>
+      </footer>
+
+    </div>
   </div>
 
   <script src="options.js"></script>

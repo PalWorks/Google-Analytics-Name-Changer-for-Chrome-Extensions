@@ -131,11 +131,12 @@
     <header>
       <div class="badge">Privacy Policy</div>
       <h1>GA4 Name Changer</h1>
-      <p class="meta">Effective date: June 2026 &nbsp;·&nbsp; Chrome Extension</p>
+      <p class="meta">Effective date: September 2026 &nbsp;·&nbsp; Chrome Extension &nbsp;·&nbsp; Version 1.1.0</p>
     </header>
 
     <div class="highlight-box">
-      <p>This extension does not collect, transmit, or share any personal data. Ever.</p>
+      <p>This extension does not collect, transmit, or share any personal data. Ever.
+         It has no server, no analytics, and no telemetry.</p>
     </div>
 
     <section>
@@ -160,22 +161,65 @@
         <li>This extension never reads, copies, or transmits your mappings to any
             server operated by this extension's developer.</li>
       </ul>
+      <p>A small amount of operational state is also kept in
+         <strong><code>chrome.storage.local</code></strong>, which is never synced and
+         never leaves the device: your preferences, the last Google Analytics context
+         seen so the toolbar popup still works on other tabs, and a short-lived handoff
+         of rows between the toolbar popup and the settings page. Uninstalling the
+         extension deletes all of it.</p>
     </section>
 
     <section>
       <h2>Does this extension send any data to external servers?</h2>
-      <p>No. The extension has no backend, no analytics, no tracking, and makes
-         zero network requests. It operates entirely offline after installation.</p>
+      <p>No. The extension has no backend, no analytics, no tracking, and makes zero
+         network requests. This is true in every configuration, including with the
+         optional auto-naming feature switched on. It operates entirely offline after
+         installation.</p>
+    </section>
+
+    <section>
+      <h2>The optional auto-naming feature</h2>
+      <p>A Chrome Web Store property slug in Google Analytics is the same string as
+         your extension's Chrome Web Store ID. If you turn on <strong>auto-naming</strong>,
+         the extension uses that ID to ask Chrome for the name of the matching extension
+         installed in your browser, and suggests it as the display name, so you do not
+         have to identify each 32-character ID by hand.</p>
+
+      <p>This feature is <strong>off by default</strong>. Turning it on requires you to
+         grant Chrome's <code>management</code> permission, which Chrome will prompt you
+         for. Until you do, the feature cannot run.</p>
+
+      <p>What it does and does not do:</p>
+      <ul>
+        <li>Names are read <strong>locally, from your own browser</strong>. Nothing is
+            transmitted anywhere, and no network request is made.</li>
+        <li>The extension calls exactly one method, <code>chrome.management.get()</code>,
+            and reads exactly one field from the result: the extension's name.</li>
+        <li>It <strong>never</strong> installs, enables, disables, or uninstalls anything,
+            and never enumerates your full extension list.</li>
+        <li>Turning the feature off revokes the permission, so the capability is removed
+            rather than just switched off.</li>
+        <li>An extension that is not installed in your current Chrome profile cannot be
+            named this way. Those rows show a link that opens the extension's public
+            Chrome Web Store listing in a new tab, which you can read and type from. That
+            is an ordinary page visit you choose to make, not a background request.</li>
+      </ul>
     </section>
 
     <section>
       <h2>Permissions used</h2>
       <ul>
-        <li><strong>storage</strong> — to save your slug-to-name mappings.</li>
+        <li><strong>storage</strong> — to save your slug-to-name mappings and settings.</li>
         <li><strong>Host permission for analytics.google.com</strong> — to inject the
             content script that performs text replacement on the GA4 interface.</li>
+        <li><strong>Optional permission: management</strong> — requested only if you turn
+            on auto-naming, and only to read the names of extensions already installed in
+            your browser. Not granted at install time. Revoked when you turn the feature
+            off.</li>
       </ul>
-      <p>No other permissions are requested.</p>
+      <p>No other permissions are requested. In particular, the extension does not
+         request the <code>tabs</code> permission and cannot read your browsing history,
+         your open tab URLs, or any page other than Google Analytics.</p>
     </section>
 
     <section>

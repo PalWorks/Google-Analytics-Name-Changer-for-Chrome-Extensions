@@ -5,5 +5,5 @@
 .git
 .gitignore
 .crxignore
-dist/
 icons/generate-icons.html
+googled*.html
