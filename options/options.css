@@ -63,13 +63,25 @@ body {
   margin-bottom: 20px;
 }
 
-.toolbar-info { min-width: 0; }
+.toolbar-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 32px;
+  align-items: start;
+}
+
+.switch-block { min-width: 0; }
 
 .toolbar-hint {
   font-size: 12.5px;
   color: var(--text-2);
   margin-top: 6px;
-  max-width: 64ch;
+  /* Indented to the width of the switch, so the text hangs under its own label
+     rather than under the control. */
+  padding-left: 48px;
+  max-width: 62ch;
 }
 
 .toolbar-hint code,
@@ -96,22 +108,10 @@ body {
 
 .btn-ghost[disabled]:hover { background: transparent; }
 
-.switch-sub { margin-top: 14px; }
-
-.switch-label-sub {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-2);
-}
-
-.toolbar-hint-sub {
-  margin-top: 4px;
-  padding-left: 48px;
-  font-size: 12px;
-}
-
-@media (max-width: 700px) {
-  .toolbar-hint-sub { padding-left: 0; }
+@media (max-width: 860px) {
+  /* One column, and drop the hanging indent so narrow text keeps its width */
+  .toolbar-info  { grid-template-columns: 1fr; }
+  .toolbar-hint  { padding-left: 0; }
 }
 
 /* ── "How names are worked out" card ── */
@@ -683,6 +683,7 @@ main {
      fill the viewport opened a large blank band above the feedback card on a
      short list. Everything stacks from the top instead. */
   flex: 0 0 auto;
+  margin-bottom: 20px;
 }
 
 .card {

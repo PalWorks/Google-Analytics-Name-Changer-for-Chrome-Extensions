@@ -24,28 +24,33 @@
       <!-- Auto-naming controls -->
       <div class="toolbar">
         <div class="toolbar-info">
-          <label class="switch">
-            <input id="autoname-toggle" type="checkbox" checked>
-            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
-            <span class="switch-label">Name my extensions automatically</span>
-          </label>
-          <p class="toolbar-hint">
-            On by default. Names are worked out from the Google Analytics page you are already
-            looking at and applied straight away, with no save and no network request. Anything
-            you type below overrides them.
-          </p>
+          <div class="switch-block">
+            <label class="switch">
+              <input id="autoname-toggle" type="checkbox" checked>
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+              <span class="switch-label">Name my extensions automatically</span>
+            </label>
+            <p class="toolbar-hint">
+              On by default. Names are worked out from the Google Analytics page you are already
+              looking at and applied straight away, with no save and no network request. Anything
+              you type below overrides them.
+            </p>
+          </div>
 
-          <label class="switch switch-sub">
-            <input id="management-toggle" type="checkbox">
-            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
-            <span class="switch-label switch-label-sub">Also use my installed extensions</span>
-          </label>
-          <p class="toolbar-hint toolbar-hint-sub">
-            Asks Chrome for the <code>management</code> permission, then names any slug matching
-            an extension installed in this profile. Only names are read. Turning this off gives
-            the permission back.
-          </p>
+          <div class="switch-block">
+            <label class="switch">
+              <input id="management-toggle" type="checkbox">
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+              <span class="switch-label">Also use my installed extensions</span>
+            </label>
+            <p class="toolbar-hint">
+              Asks Chrome for the <code>management</code> permission, then names any slug matching
+              an extension installed in this profile. Only names are read. Turning this off gives
+              the permission back.
+            </p>
+          </div>
         </div>
+
         <div class="toolbar-actions">
           <span id="autoname-status" class="status-msg" aria-live="polite"></span>
           <button id="fetch-names-btn" class="btn-ghost" type="button">
