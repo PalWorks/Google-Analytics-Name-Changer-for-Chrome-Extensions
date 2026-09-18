@@ -88,11 +88,12 @@ const LISTING_SVG = `
 
 // ── Row factory ───────────────────────────────────────────────────────────────
 
-function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder, slugAriaLabel }) {
+function makeRow({ slug, name, animate, isDetected, isAuto, parentList, slugPlaceholder, slugAriaLabel }) {
   const row = document.createElement('div');
   let cls = 'mapping-row';
   if (animate)    cls += ' is-new';
   if (isDetected) cls += ' is-detected';
+  if (isAuto)     cls += ' is-auto';
   row.className = cls;
 
   const slugInput = document.createElement('input');
@@ -147,6 +148,13 @@ function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder,
 
   const actions = document.createElement('div');
   actions.className = 'row-actions';
+  if (isAuto) {
+    const badge = document.createElement('span');
+    badge.className = 'badge-auto';
+    badge.textContent = 'auto';
+    badge.title = 'Worked out automatically. Edit and Save to make it yours.';
+    actions.appendChild(badge);
+  }
   actions.appendChild(listingBtn);
   actions.appendChild(deleteBtn);
 
@@ -156,18 +164,18 @@ function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder,
   return row;
 }
 
-function createRow(slug = '', name = '', animate = false, isDetected = false) {
+function createRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
   return makeRow({
-    slug, name, animate, isDetected,
+    slug, name, animate, isDetected, isAuto,
     parentList: list,
     slugPlaceholder: 'egedbdckafdbomeh…',
     slugAriaLabel: 'GA4 property slug',
   });
 }
 
-function createAccountRow(slug = '', name = '', animate = false, isDetected = false) {
+function createAccountRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
   return makeRow({
-    slug, name, animate, isDetected,
+    slug, name, animate, isDetected, isAuto,
     parentList: accountList,
     slugPlaceholder: '376297388',
     slugAriaLabel: 'GA4 account number',
@@ -199,18 +207,25 @@ function renderEmptyState(targetList) {
 
 // ── Render all rows ───────────────────────────────────────────────────────────
 
-function renderMappings(mappings) {
-  list.innerHTML = '';
-  const entries = Object.entries(mappings || {});
-  if (entries.length === 0) { renderEmptyState(list); return; }
-  entries.forEach(([slug, name]) => list.appendChild(createRow(slug, name)));
+/** User mappings first, then the ones the extension derived, badged "auto". */
+function renderInto(targetList, factory, userMappings, autoMappings) {
+  targetList.innerHTML = '';
+  const user = Object.entries(userMappings || {});
+  const auto = Object.entries(autoMappings || {})
+    .filter(([key]) => !(userMappings || {})[key]);
+
+  if (user.length === 0 && auto.length === 0) { renderEmptyState(targetList); return; }
+
+  user.forEach(([key, name]) => targetList.appendChild(factory(key, name)));
+  auto.forEach(([key, name]) => targetList.appendChild(factory(key, name, false, false, true)));
 }
 
-function renderAccountMappings(mappings) {
-  accountList.innerHTML = '';
-  const entries = Object.entries(mappings || {});
-  if (entries.length === 0) { renderEmptyState(accountList); return; }
-  entries.forEach(([id, name]) => accountList.appendChild(createAccountRow(id, name)));
+function renderMappings(mappings, auto) {
+  renderInto(list, createRow, mappings, auto);
+}
+
+function renderAccountMappings(mappings, auto) {
+  renderInto(accountList, createAccountRow, mappings, auto);
 }
 
 // ── Read current DOM state ────────────────────────────────────────────────────
@@ -350,8 +365,8 @@ importFile.addEventListener('change', () => {
       if (!parsed.mappings && !parsed.accountMappings)
         throw new Error('File must contain mappings and/or accountMappings.');
 
-      if (parsed.mappings)        renderMappings(parsed.mappings);
-      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings);
+      if (parsed.mappings)        renderMappings(parsed.mappings, {});
+      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings, {});
 
       const total = Object.keys(parsed.mappings || {}).length
                   + Object.keys(parsed.accountMappings || {}).length;
@@ -774,15 +789,23 @@ function checkLabelHealth(accountMappings) {
 chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
   if (chrome.runtime.lastError) {
     showStatus('Could not load saved mappings.', 'error');
-    renderMappings({});
-    renderAccountMappings({});
+    renderMappings({}, {});
+    renderAccountMappings({}, {});
     return;
   }
   const m  = result.mappings        || {};
   const am = result.accountMappings || {};
-  renderMappings(m);
-  renderAccountMappings(am);
-  markClean();
-  checkLabelHealth(am);
-  initDetection(m, am);
+
+  chrome.storage.local.get(['autoMappings', 'autoAccountMappings'], (local) => {
+    const auto     = (!chrome.runtime.lastError && local.autoMappings) || {};
+    const autoAccs = (!chrome.runtime.lastError && local.autoAccountMappings) || {};
+
+    renderMappings(m, auto);
+    renderAccountMappings(am, autoAccs);
+    markClean();
+    checkLabelHealth(am);
+
+    // Already-named slugs must not be offered again as "detected"
+    initDetection({ ...auto, ...m }, { ...autoAccs, ...am });
+  });
 });

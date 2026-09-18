@@ -407,6 +407,23 @@ html, body {
   opacity: 1;
 }
 
+/* ── "auto" badge on derived rows ── */
+
+.badge-auto {
+  display: inline-block;
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 20px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.mapping-row.is-auto .name-input { color: var(--accent); }
+
 /* ── Row actions cell ── */
 
 .row-actions {

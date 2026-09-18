@@ -75,11 +75,12 @@ const LISTING_SVG = `
 
 // ── Generic row factory ───────────────────────────────────────────────────────
 
-function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder, slugAriaLabel }) {
+function makeRow({ slug, name, animate, isDetected, isAuto, parentList, slugPlaceholder, slugAriaLabel }) {
   const row = document.createElement('div');
   let cls = 'mapping-row';
   if (animate)    cls += ' is-new';
   if (isDetected) cls += ' is-detected';
+  if (isAuto)     cls += ' is-auto';
   row.className = cls;
 
   const slugInput = document.createElement('input');
@@ -134,6 +135,13 @@ function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder,
 
   const actions = document.createElement('div');
   actions.className = 'row-actions';
+  if (isAuto) {
+    const badge = document.createElement('span');
+    badge.className = 'badge-auto';
+    badge.textContent = 'auto';
+    badge.title = 'Worked out automatically. Edit and Save to make it yours.';
+    actions.appendChild(badge);
+  }
   actions.appendChild(listingBtn);
   actions.appendChild(deleteBtn);
 
@@ -143,18 +151,18 @@ function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder,
   return row;
 }
 
-function createRow(slug = '', name = '', animate = false, isDetected = false) {
+function createRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
   return makeRow({
-    slug, name, animate, isDetected,
+    slug, name, animate, isDetected, isAuto,
     parentList: list,
     slugPlaceholder: 'egedbdckafdbomehjaihjhbcgmngmlah',
     slugAriaLabel: 'GA4 property name',
   });
 }
 
-function createAccountRow(slug = '', name = '', animate = false, isDetected = false) {
+function createAccountRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
   return makeRow({
-    slug, name, animate, isDetected,
+    slug, name, animate, isDetected, isAuto,
     parentList: accountList,
     slugPlaceholder: '376297388',
     slugAriaLabel: 'GA4 account number',
@@ -186,18 +194,29 @@ function renderEmptyState(targetList) {
 
 // ── Render all rows ───────────────────────────────────────────────────────────
 
-function renderMappings(mappings) {
-  list.innerHTML = '';
-  const entries = Object.entries(mappings || {});
-  if (entries.length === 0) { renderEmptyState(list); return; }
-  entries.forEach(([slug, name]) => list.appendChild(createRow(slug, name)));
+/**
+ * Render the user's own mappings together with the ones the extension derived
+ * for itself. Auto rows are badged and shown last; they are ordinary editable
+ * rows, so pressing Save promotes them into the user's own mappings.
+ */
+function renderInto(targetList, factory, userMappings, autoMappings) {
+  targetList.innerHTML = '';
+  const user = Object.entries(userMappings || {});
+  const auto = Object.entries(autoMappings || {})
+    .filter(([key]) => !(userMappings || {})[key]);
+
+  if (user.length === 0 && auto.length === 0) { renderEmptyState(targetList); return; }
+
+  user.forEach(([key, name]) => targetList.appendChild(factory(key, name)));
+  auto.forEach(([key, name]) => targetList.appendChild(factory(key, name, false, false, true)));
 }
 
-function renderAccountMappings(mappings) {
-  accountList.innerHTML = '';
-  const entries = Object.entries(mappings || {});
-  if (entries.length === 0) { renderEmptyState(accountList); return; }
-  entries.forEach(([id, name]) => accountList.appendChild(createAccountRow(id, name)));
+function renderMappings(mappings, auto) {
+  renderInto(list, createRow, mappings, auto);
+}
+
+function renderAccountMappings(mappings, auto) {
+  renderInto(accountList, createAccountRow, mappings, auto);
 }
 
 // ── Read current DOM state ────────────────────────────────────────────────────
@@ -357,8 +376,8 @@ importFile.addEventListener('change', () => {
         throw new Error('File must contain at least one of: mappings, accountMappings.');
       }
 
-      if (parsed.mappings)        renderMappings(parsed.mappings);
-      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings);
+      if (parsed.mappings)        renderMappings(parsed.mappings, {});
+      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings, {});
 
       const total = Object.keys(parsed.mappings || {}).length
                   + Object.keys(parsed.accountMappings || {}).length;
@@ -479,9 +498,7 @@ function showAutonameStatus(text, type = '') {
 
 function setAutonameEnabled(on) {
   autonameToggle.checked = on;
-  // The button stays usable with the toggle off: GA4-report hints are local and
-  // need no permission. Only the chrome.management step is gated.
-  fetchNamesBtn.disabled = false;
+  fetchNamesBtn.disabled = false; // always usable; hints need no permission
 }
 
 /**
@@ -519,9 +536,22 @@ function disableAutoName() {
   showAutonameStatus('Auto-naming off.', 'success');
 }
 
+/**
+ * The toggle drives on-page automatic naming, which is local, needs no
+ * permission and is on by default. The separate `management` opt-in is handled
+ * by the onboarding slide and by fillMissingNames(), not by this switch.
+ */
 autonameToggle.addEventListener('change', () => {
-  if (autonameToggle.checked) enableAutoName();
-  else disableAutoName();
+  const on = autonameToggle.checked;
+  chrome.storage.local.set({ autoNamingEnabled: on }, () => {
+    if (chrome.runtime.lastError) {
+      showAutonameStatus('Could not save the setting.', 'error');
+      return;
+    }
+    showAutonameStatus(on
+      ? 'Automatic naming on. Open a GA4 property and it names itself.'
+      : 'Automatic naming off. Existing names stay until you delete them.', 'success');
+  });
 });
 
 /** Rows that carry a valid extension ID but no display name yet. */
@@ -634,17 +664,21 @@ function fillFromManagement(alreadyHinted) {
 fetchNamesBtn.addEventListener('click', fillMissingNames);
 
 function initAutoNameState(onReady) {
-  chrome.storage.sync.get(['autoResolveNames'], (syncResult) => {
-    const wanted = !chrome.runtime.lastError && syncResult.autoResolveNames === true;
-    chrome.permissions.contains(MANAGEMENT_PERMISSION, (granted) => {
-      // The permission can be revoked from chrome://extensions behind our back,
-      // so the granted state, not the stored flag, is what the UI reflects.
-      const on = wanted && granted === true && !chrome.runtime.lastError;
-      if (wanted && !on) {
-        chrome.storage.sync.set({ autoResolveNames: false }, () => void chrome.runtime.lastError);
-      }
-      setAutonameEnabled(on);
-      if (onReady) onReady(on);
+  chrome.storage.local.get(['autoNamingEnabled'], (local) => {
+    const on = chrome.runtime.lastError ? true : local.autoNamingEnabled !== false;
+    setAutonameEnabled(on);
+
+    // Reconcile the separate management opt-in: the permission can be revoked
+    // from chrome://extensions behind our back, so the live check wins over the
+    // stored flag and a disagreement resets it.
+    chrome.storage.sync.get(['autoResolveNames'], (syncResult) => {
+      const wanted = !chrome.runtime.lastError && syncResult.autoResolveNames === true;
+      chrome.permissions.contains(MANAGEMENT_PERMISSION, (granted) => {
+        if (wanted && granted !== true) {
+          chrome.storage.sync.set({ autoResolveNames: false }, () => void chrome.runtime.lastError);
+        }
+        if (onReady) onReady(wanted && granted === true);
+      });
     });
   });
 }
@@ -745,15 +779,21 @@ function initWelcome(autoNameIsOn) {
 chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
   if (chrome.runtime.lastError) {
     showStatus('Could not load saved mappings.', 'error');
-    renderMappings({});
-    renderAccountMappings({});
+    renderMappings({}, {});
+    renderAccountMappings({}, {});
     return;
   }
-  renderMappings(result.mappings);
-  renderAccountMappings(result.accountMappings);
-  markClean();
 
-  // Strictly sequenced: the handoff rows must exist before initWelcome is
-  // allowed to reach fillMissingNames(), or there is nothing for it to name.
-  consumeHandoff(() => initAutoNameState(initWelcome));
+  chrome.storage.local.get(['autoMappings', 'autoAccountMappings'], (local) => {
+    const auto     = (!chrome.runtime.lastError && local.autoMappings) || {};
+    const autoAccs = (!chrome.runtime.lastError && local.autoAccountMappings) || {};
+
+    renderMappings(result.mappings, auto);
+    renderAccountMappings(result.accountMappings, autoAccs);
+    markClean();
+
+    // Strictly sequenced: the handoff rows must exist before initWelcome is
+    // allowed to reach fillMissingNames(), or there is nothing for it to name.
+    consumeHandoff(() => initAutoNameState(initWelcome));
+  });
 });
