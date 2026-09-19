@@ -347,7 +347,7 @@ collapsed disclosure before anything is sent. See [DECISIONS.md](DECISIONS.md) A
 - Static SVG constants injected via `innerHTML` are module-scope literals with no user data interpolated
 - `host_permissions` scoped to `https://analytics.google.com/*` only
 - `optional_permissions` contains `"management"` — not granted at install; requested only on explicit opt-in, and released via `chrome.permissions.remove()` when the feature is turned off. Only `chrome.management.get()` is ever called, and only its `name` field read
-- `permissions` contains only `"storage"`; `tabs` is deliberately not requested
+- `permissions` contains `"storage"` and `"scripting"`; `tabs` is deliberately not requested. `scripting` is used in exactly one place, `adoptOpenGA4Tabs()` in `background.js`, and is bounded by the declared host permission (ADR-017)
 - **No background network egress.** No `XMLHttpRequest`, no `WebSocket`, no remote resource referenced by any page. Exactly one `fetch`, in `options/options.js`, reached only from the feedback form's submit handler and carrying only what the user typed (ADR-016). Nothing about the user's analytics is ever transmitted
 - Message handlers take no caller-supplied selectors or code: `getGA4Data` takes no parameters, `resolveNames` filters its input against `/^[a-p]{32}$/`
 - Explicit `content_security_policy` in manifest: `script-src 'self'; object-src 'self'`

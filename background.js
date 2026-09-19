@@ -39,7 +39,53 @@ const MAX_IDS_PER_REQUEST = 100;
 
 // ── First-run onboarding ─────────────────────────────────────────────────────
 
+/**
+ * Adopt Google Analytics tabs that were already open.
+ *
+ * Chrome injects a content script only into pages that load after the extension
+ * does. A GA4 tab open at the moment of install, update or reload therefore has
+ * no content script, and shows raw 32-character IDs until the user happens to
+ * refresh it. Most users will read that as the extension being broken.
+ *
+ * So inject it into those tabs instead of asking them to refresh. Reloading the
+ * tab for them was rejected: it throws away scroll position, an open report
+ * configuration and any unsaved state on the page (ADR-017).
+ *
+ * Querying tabs by URL needs no `tabs` permission; Chrome allows it against
+ * hosts the extension already has permission for, which is analytics.google.com
+ * and nothing else. The same is true of what may be injected: `scripting` is
+ * bounded by the declared host permissions.
+ */
+function adoptOpenGA4Tabs() {
+  chrome.tabs.query({ url: GA4_TAB_MATCH }, (tabs) => {
+    if (chrome.runtime.lastError || !tabs) return;
+
+    tabs.forEach((tab) => {
+      if (typeof tab.id !== 'number') return;
+
+      // A tab that answers already has a live copy. Injecting a second one
+      // would give the page two MutationObservers for no gain.
+      chrome.tabs.sendMessage(tab.id, { action: 'ping' }, (response) => {
+        // Reading lastError is what marks it handled; an unreachable tab is the
+        // expected case here, not a fault.
+        const noContentScript = !!chrome.runtime.lastError || !response;
+        if (!noContentScript) return;
+
+        chrome.scripting.executeScript(
+          { target: { tabId: tab.id }, files: ['content/content.js'] },
+          () => { void chrome.runtime.lastError; }
+        );
+      });
+    });
+  });
+}
+
+const GA4_TAB_MATCH = 'https://analytics.google.com/*';
+
 chrome.runtime.onInstalled.addListener((details) => {
+  // install, update and developer reload all orphan the open tabs
+  adoptOpenGA4Tabs();
+
   if (details.reason !== 'install') return;
   chrome.runtime.openOptionsPage();
 });

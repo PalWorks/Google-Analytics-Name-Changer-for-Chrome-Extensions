@@ -103,6 +103,12 @@ Mode". Extensions it has not seen yet are counted rather than guessed at, so a h
 account reads "Tab Session Saver Pro + 1 more" and corrects itself when you open the rest.
 
 
+IT WORKS THE MOMENT YOU INSTALL IT
+
+If you already had Google Analytics open in a tab, that tab starts showing real names straight
+away. You are not asked to refresh anything.
+
+
 EVERYTHING IN ONE TABLE
 
 The settings page shows every account with the extensions it owns nested underneath, paired
@@ -187,6 +193,24 @@ they follow the user's Chrome profile; names the extension works out for itself 
 chrome.storage.local and stay on the device. No storage is read or written by any remote party,
 because the extension has no backend for them. The only data the extension ever transmits is
 a support message the user types into the feedback form and submits themselves.
+```
+
+### `scripting`
+
+```
+Used in exactly one place: when the extension is installed or updated, the service worker
+injects the extension's own content script into any Google Analytics tab that was already open.
+
+Chrome only injects content scripts into pages loaded after the extension, so without this a
+user who already had analytics.google.com open sees no change at all until they happen to
+refresh that tab, and reasonably concludes the extension does not work. Rather than display a
+"please refresh" message, the extension fixes it.
+
+The only script injected is content/content.js from within this package. No remote or
+dynamically constructed code is ever injected, and chrome.scripting cannot reach any site
+outside the host permissions this extension declares, which is analytics.google.com and nothing
+else. Reloading the user's tab instead was rejected because it would discard their scroll
+position, report configuration and any unsaved state on the page.
 ```
 
 ### Host permission: `https://analytics.google.com/*`

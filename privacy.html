@@ -260,7 +260,11 @@
     <section>
       <h2>Permissions used</h2>
       <ul>
-        <li><strong>storage</strong> — to save your slug-to-name mappings and settings.</li>
+        <li><strong>storage</strong> &mdash; to save your slug-to-name mappings and settings.</li>
+        <li><strong>scripting</strong> &mdash; so that a Google Analytics tab you already had
+            open when you installed or updated the extension starts working without you
+            having to refresh it. It can only ever reach analytics.google.com, because that
+            is the only site this extension has permission for.</li>
         <li><strong>Host permission for analytics.google.com</strong> — to inject the
             content script that performs text replacement on the GA4 interface.</li>
         <li><strong>Optional permission: management</strong> — requested only if you turn

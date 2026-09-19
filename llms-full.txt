@@ -178,6 +178,7 @@ Full policy: https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome
 | Permission | Required | What it is for |
 |---|---|---|
 | `storage` | Yes | Saves the display names the user assigns and their preferences. Without it there is nothing to substitute onto the page. |
+| `scripting` | Yes | Injects the content script into Google Analytics tabs that were already open when the extension was installed or updated, so the user does not have to refresh them. Bounded by the host permission below, so it can reach no other site. |
 | `https://analytics.google.com/*` | Yes | The single host the extension runs on. It reads and rewrites text nodes there and nowhere else. There are no wildcard or broad host permissions. |
 | `management` | No, off by default | Reads only the `name` of an extension installed in the user's own profile, to resolve an ID the reports have not already named. Never enumerates, never modifies, revoked on switch-off. |
 
@@ -231,7 +232,7 @@ Requires Google Chrome 88 or later. Manifest V3.
 | Manifest version | 3 |
 | Minimum Chrome version | 88 |
 | Content script host | `https://analytics.google.com/*` |
-| Required permissions | `storage` |
+| Required permissions | `storage`, `scripting` |
 | Optional permissions | `management` |
 | Content security policy | `script-src 'self'; object-src 'self';` |
 | Dependencies | none |

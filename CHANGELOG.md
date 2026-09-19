@@ -77,9 +77,35 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   echoing the extension's own origin, so the POST satisfies CORS by itself and the store's
   permission list is unchanged. See DECISIONS.md ADR-016
 
+- **Already-open Google Analytics tabs are adopted instead of being asked to refresh** — Chrome
+  injects a content script only into pages that load after the extension does, so a GA4 tab open
+  at the moment of install or update showed raw IDs until the user happened to reload it, which
+  reads as broken software. `background.js` now queries those tabs on `onInstalled`, pings each,
+  and injects the content script into any that does not answer. Measured with the behaviour
+  disabled, a ping into such a tab returns "Receiving end does not exist"; with it enabled the
+  same ping returns alive, with no refresh. Costs the `scripting` permission, which is bounded by
+  the host permission already declared. Reloading the tab for the user was rejected: it discards
+  their scroll position, report configuration and anything unsaved. Two guards prevent a double
+  injection, because the ping cannot detect an orphaned copy left by an update: the content
+  script now tears down any previous copy of itself on start-up. See DECISIONS.md ADR-017
+
+- **A new icon, built from what the tool actually is** — an extension puzzle piece with analytics
+  bars inside it. The previous mark was abstract to the point of saying nothing. Neither the
+  Chrome Web Store nor the Google Analytics logo is reproduced: both are Google marks, and
+  putting either in a third-party icon invites a rejection under the store's impersonation and
+  IP policy while implying an endorsement that does not exist. A puzzle piece and a bar chart
+  carry the same meaning and belong to nobody
+
 ### Changed
 
 - **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it
+
+- **The feedback form's input fields had no visible border.** `.field-input` set `border-color`,
+  but `.input` later in the same stylesheet sets the `border` shorthand, which resets the colour
+  to transparent; at equal specificity the later rule won. The fields rendered as text floating
+  on a white card. Fixed with a doubled `.input.field-input` selector, which outranks it whatever
+  the source order. Measured before and after: computed `border-color` went from
+  `rgba(0, 0, 0, 0)` to the border token
 
 - **The "no network requests" claim is narrowed to match what the extension now does.** It was
   unconditional and true; with the relay wired up it is not. Every statement of it in

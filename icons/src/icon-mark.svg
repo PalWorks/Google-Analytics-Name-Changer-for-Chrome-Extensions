@@ -3,7 +3,18 @@
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6C63F2"/><stop offset="1" stop-color="#4338CA"/>
     </linearGradient>
+    <linearGradient id="a" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#E37400"/><stop offset="1" stop-color="#FBBC04"/>
+    </linearGradient>
   </defs>
   
-  <rect x="30" y="43" width="14" height="9" rx="4.5" fill="#fff" opacity=".5"/><rect x="48" y="43" width="22" height="9" rx="4.5" fill="#fff" opacity=".5"/><rect x="74" y="43" width="11" height="9" rx="4.5" fill="#fff" opacity=".5"/><rect x="89" y="43" width="15" height="9" rx="4.5" fill="#fff" opacity=".5"/><rect x="30" y="69" width="56" height="14" rx="7" fill="#fff"/>
+  <path fill="#fff" fill-rule="evenodd" d="
+    M 36 40.09
+    H 51.0965
+    a 12.09 12.09 0 0 1 27.807 0
+    H 94 a 10 10 0 0 1 10 10
+    V 92 a 10 10 0 0 1 -10 10
+    H 36 a 10 10 0 0 1 -10 -10
+    V 84.49000000000001 a 12.09 12.09 0 0 0 0 -27.807
+    V 50.09 a 10 10 0 0 1 10 -10 Z"/><rect x="43" y="74.04" width="8.914728682170542" height="15.959999999999999" rx="3.0310077519379846" fill="url(#a)"/><rect x="61.542635658914726" y="63.400000000000006" width="8.914728682170542" height="26.599999999999998" rx="3.0310077519379846" fill="url(#a)"/><rect x="80.08527131782945" y="52" width="8.914728682170542" height="38" rx="3.0310077519379846" fill="url(#a)"/>
 </svg>

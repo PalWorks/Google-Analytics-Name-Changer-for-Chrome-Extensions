@@ -2,6 +2,19 @@
 
 (function ga4NameChanger() {
 
+  // A content script is not injected into pages that were already open when the
+  // extension was installed, updated or reloaded. background.js injects it into
+  // those tabs itself so the user never has to refresh (ADR-017).
+  //
+  // That injection can land next to a copy left over from a previous version of
+  // the extension, whose chrome.* context is dead but whose MutationObserver is
+  // still running against this page. The new copy tells the old one to stand
+  // down before starting. The call is guarded because an orphaned copy's
+  // teardown may itself throw.
+  if (globalThis.__GA4NC__ && typeof globalThis.__GA4NC__.teardown === 'function') {
+    try { globalThis.__GA4NC__.teardown(); } catch (err) { /* orphan; ignore */ }
+  }
+
   // ── State ──────────────────────────────────────────────────────────────────
 
   // Sorted Map<slug, name>: longest slug first to prevent partial-match collisions.
@@ -1109,6 +1122,10 @@
   // account ID from the URL. The result is cached for non-GA4-tab sessions.
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    // Liveness probe. background.js asks before injecting, so a tab that
+    // already has a working copy is never given a second one.
+    if (msg.action === 'ping') { sendResponse({ ok: true }); return false; }
+
     if (msg.action !== 'getGA4Data') return false;
 
     // Account ID sits in the URL hash as: #a376297388p515458307/...
@@ -1170,6 +1187,24 @@
       );
     });
   }
+
+  /**
+   * Stop this copy touching the page. Called by a newer copy that has just been
+   * injected over the top of this one; see the takeover guard at the top.
+   *
+   * Only DOM-side work is undone, because that is the part that keeps running
+   * in an orphaned copy. Its chrome.* listeners are already dead, and calling
+   * removeListener on an invalidated context throws.
+   */
+  globalThis.__GA4NC__ = {
+    teardown() {
+      if (observer) { observer.disconnect(); observer = null; }
+      clearTimeout(debounceTimer);
+      clearTimeout(settleTimer);
+      debounceTimer = null;
+      settleTimer = null;
+    }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });

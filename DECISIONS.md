@@ -573,3 +573,67 @@ behaviour rather than breaking it.
 **Reversal.** Set `FEEDBACK_ENDPOINT` back to `''`. The form returns to `mailto:`, and the
 unconditional claim becomes true again. Then revert the privacy wording in `privacy.html`,
 `SECURITY.md`, `store/LISTING.md`, `index.html`, `llms.txt`, `llms-full.txt` and `README.md`.
+
+---
+
+## ADR-017 — Already-open GA4 tabs are adopted, not asked to refresh
+
+**Status:** accepted 2026-09-19
+
+**Context.** Chrome injects a content script only into pages that load *after* the extension
+does. A Google Analytics tab that was already open at the moment of install, update or reload
+therefore has no content script at all: it keeps showing raw 32-character IDs until the user
+happens to refresh it.
+
+This is the worst possible first impression. The user installs the extension, the settings page
+opens, they switch back to the Analytics tab they already had open, and nothing has changed.
+Most people read that as broken software, not as a page that needs reloading.
+
+Measured, with adoption disabled: pinging the content script in an open GA4 tab immediately
+after `chrome.runtime.reload()` returns *"Could not establish connection. Receiving end does not
+exist."* With adoption enabled, the same ping returns alive, with no refresh of the tab.
+
+**Decision.** On `chrome.runtime.onInstalled`, the service worker queries every tab matching
+`https://analytics.google.com/*`, pings each one, and injects `content/content.js` into any that
+does not answer. This covers install, update, and developer reload, all three of which orphan
+open tabs.
+
+This requires the `scripting` permission.
+
+**Why not just tell the user to refresh.** It works, but it spends the user's goodwill on a
+problem we created and can fix ourselves. A banner that says "please refresh" is an admission
+that the tool does not work yet.
+
+**Why not reload the tab for them.** `chrome.tabs.reload()` needs no extra permission and would
+also work. Rejected: it discards scroll position, the report configuration the user has set up,
+any date range or comparison they were in the middle of, and anything unsaved on the page.
+Silently throwing away someone's work to save them one keystroke is a bad trade. Injection
+achieves the same result and costs the user nothing.
+
+**On the permission.** `scripting` is bounded by the host permissions already declared, and
+`https://analytics.google.com/*` is the only one, so this grants no reach the extension did not
+already have. [Inference] It is also understood to add no new user-facing permission warning,
+since the warning shown is the host one that is already present; this is worth confirming
+against the warning list the dashboard shows at upload, because it is the only thing that would
+change what a user is asked to accept.
+
+**Double injection.** Two guards, because either alone is insufficient:
+
+1. `background.js` pings before injecting, so a tab that already has a live copy never gets a
+   second one. This is the common case.
+2. `content/content.js` calls `globalThis.__GA4NC__.teardown()` on start-up if a previous copy
+   is present. This is the case the ping cannot catch: after an *update*, the old copy is
+   orphaned. Its `chrome.*` context is dead, so it cannot answer a ping, but its
+   `MutationObserver` is still live and still rewriting the page. The new copy tells it to
+   disconnect. Teardown only undoes DOM-side work, because calling `removeListener` on an
+   invalidated context throws.
+
+**Consequence.** `permissions` gains a second entry, so `README.md`, `SECURITY.md`,
+`privacy.html`, `store/LISTING.md`, `index.html` and the `llms` files all had to be updated in
+the same change, per invariant 5 in AGENTS.md. The Chrome Web Store dashboard also requires a
+justification for `scripting`; it is in `store/LISTING.md`.
+
+**Reversal.** Remove `adoptOpenGA4Tabs()` and its call, drop `scripting` from the manifest, and
+delete the teardown export and the `ping` handler from the content script. The extension returns
+to needing a refresh.
+

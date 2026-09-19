@@ -309,6 +309,7 @@ footer a{color:var(--text-2)}
         <thead><tr><th scope="col">Permission</th><th scope="col">Why it is needed</th></tr></thead>
         <tbody>
           <tr><td><code>storage</code></td><td>Saves the names you assign. Without it there is nothing to substitute onto the page.</td></tr>
+          <tr><td><code>scripting</code></td><td>Lets a Google Analytics tab you already had open start working without a refresh. It can only reach the site below, which is the only one the extension has permission for.</td></tr>
           <tr><td><code>analytics.google.com</code></td><td>The only site the extension runs on. It reads and rewrites text nodes there and nowhere else.</td></tr>
           <tr><td><code>management</code><br><small>optional</small></td><td>Off by default. When enabled, reads the <em>name</em> of an extension installed in your own profile. Never lists your extensions, never installs, disables or modifies anything, and is handed back to Chrome the moment you switch it off.</td></tr>
         </tbody>
@@ -381,7 +382,7 @@ footer a{color:var(--text-2)}
           <tr><td>Analytics data transmitted</td><td>None, ever</td></tr>
           <tr><td>Data collected</td><td>Only what you type into the feedback form and send</td></tr>
           <tr><td>Licence</td><td>MIT</td></tr>
-          <tr><td>Required permissions</td><td><code>storage</code>, plus the host permission for analytics.google.com</td></tr>
+          <tr><td>Required permissions</td><td><code>storage</code> and <code>scripting</code>, plus the host permission for analytics.google.com</td></tr>
           <tr><td>Optional permissions</td><td><code>management</code>, off by default</td></tr>
           <tr><td>Dependencies</td><td>None. Plain JavaScript, no build step, no remote code</td></tr>
           <tr><td>Source</td><td><a href="https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions">github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions</a></td></tr>
@@ -528,7 +529,7 @@ footer a{color:var(--text-2)}
       "publisher": { "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#publisher" },
       "privacyPolicy": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html",
       "license": "https://opensource.org/licenses/MIT",
-      "permissions": "storage; host access to analytics.google.com; management (optional, off by default)",
+      "permissions": "storage; scripting (bounded by the host permission); host access to analytics.google.com; management (optional, off by default)",
       "featureList": [
         "Replaces 32-character Chrome Web Store property slugs with extension names inside Google Analytics",
         "Replaces 9-digit Google Analytics account numbers with names derived from the extensions the account holds",

@@ -46,6 +46,7 @@ The relevant guarantees are:
 | Permission | Type | Why |
 |---|---|---|
 | `storage` | required | Persist mappings and settings |
+| `scripting` | required | Inject the content script into GA4 tabs that were already open at install or update, so they need no refresh (ADR-017). Bounded by the host permission below, so it reaches no site the extension could not already reach |
 | `https://analytics.google.com/*` | required host | Inject the replacement content script |
 | `management` | **optional** | Read the names of locally installed extensions, only while auto naming is on |
 

@@ -56,7 +56,7 @@ cannot be fetched.
 - Data collected: only the name, email, message and installation details a user types into the
   feedback form and submits. Never sold. Used solely to answer the report
 - Licence: MIT
-- Required permissions: `storage`, plus host access to `https://analytics.google.com/*`
+- Required permissions: `storage` and `scripting`, plus host access to `https://analytics.google.com/*`. `scripting` is bounded by that host permission and is used only to adopt GA4 tabs that were already open at install
 - Optional permissions: `management`, off by default
 - Dependencies: none. Plain JavaScript, no build step, no bundler, no remote code
 - Publisher: PalWorks

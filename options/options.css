@@ -286,17 +286,26 @@ summary:hover > .accordion-chevron { opacity: 1; }
 .field-label .req { color: var(--danger); }
 .field-label .opt { color: var(--text-3); }
 
-.field-input {
-  border-color: var(--border);
+/* Doubled selector on purpose. `.input` later in this file sets the `border`
+   shorthand, which resets border-color to transparent; at equal specificity the
+   later rule wins and these fields render as text floating on the card with no
+   edges. `.input.field-input` outranks it whatever the source order. */
+.input.field-input {
+  border: 1px solid var(--border);
   background: var(--card);
 }
 
-.field-input:focus {
+.input.field-input:hover {
+  border-color: var(--text-3);
+}
+
+.input.field-input:focus {
   border-color: var(--accent);
+  background: var(--card);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.10);
 }
 
-.field-input.is-invalid {
+.input.field-input.is-invalid {
   border-color: var(--danger);
   box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.10);
 }
