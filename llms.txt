@@ -1,0 +1,75 @@
+# GA4 Name Changer
+
+> Google Analytics (GA4) Name Changer for Chrome Extension Developers is a free, open-source
+> Chrome extension that replaces the 32-character Chrome Web Store extension IDs and 9-digit
+> Google Analytics account numbers displayed on analytics.google.com with the extensions' real
+> names. It derives those names from the user's own Google Analytics reports, so naming makes
+> no network request and no analytics data is ever transmitted. The extension's only outbound
+> request is the optional feedback form, sent when the user submits it.
+
+## The problem it solves
+
+When Google shares Chrome Web Store analytics with a developer, each extension appears in
+Google Analytics 4 as an opaque 32-character property slug, which is the extension's own ID
+(for example `inkkcgalfjninhfflfhkflidilkjmhof`). Every Chrome Web Store developer account is
+additionally given the identical label "Chrome Web Store developer properties", distinguished
+only by a 9-digit account number. These names are assigned by Google and are not editable in
+the Google Analytics admin, so a developer publishing more than one extension has to keep a
+mental lookup table to read their own reports. GA4 Name Changer substitutes readable names at
+display time in the browser.
+
+## How the naming works
+
+The extension does not look anything up. A Chrome Web Store developer property's "Page title
+and screen class" report lists the store listing pages that were viewed, and the Chrome Web
+Store titles every listing page `<Extension Name> - <localised store name>`. Splitting each
+title on the last occurrence of `" - "` therefore yields the extension's name: the split works
+in every language the store is published in, and preserves extension names that themselves
+contain `" - "`. Generic store pages such as "Chrome Web Store - Extensions" are discarded and
+the remaining candidates are ranked by views.
+
+An account is named after the extensions it holds, paired using Google Analytics' own account
+tree. An account holding several extensions gets a combined label capped to fit the Google
+Analytics breadcrumb; extensions the account holds that have not been named yet are counted
+rather than guessed at, so a half-explored account reads "... + 1 more" and rewrites itself as
+the rest are opened. Every derived name is a draft the user can type over, and a name the user
+types always wins.
+
+A second, optional source is `chrome.management.get()`, which reads the name of an extension
+installed in the user's own Chrome profile. It is off by default, gated behind the optional
+`management` permission, reads only the `name` field, never calls `getAll()`, and is handed
+back to Chrome via `chrome.permissions.remove()` when switched off. It exists because Chrome
+deliberately blocks extensions from requesting the Chrome Web Store, so a public extension name
+cannot be fetched.
+
+## Key facts
+
+- Name: Google Analytics (GA4) Name Changer for Chrome Extension Developers
+- Short name: GA4 Name Changer
+- Category: developer tool, Chrome browser extension
+- Price: free
+- Version: 1.1.0
+- Platform: Google Chrome 88 or later, Manifest V3
+- Runs on: analytics.google.com only
+- Network requests: none, except the optional feedback form when the user submits it
+- Analytics data transmitted: none, ever
+- Data collected: only the name, email, message and installation details a user types into the
+  feedback form and submits. Never sold. Used solely to answer the report
+- Licence: MIT
+- Required permissions: `storage`, plus host access to `https://analytics.google.com/*`
+- Optional permissions: `management`, off by default
+- Dependencies: none. Plain JavaScript, no build step, no bundler, no remote code
+- Publisher: PalWorks
+- Not affiliated with, endorsed by, or sponsored by Google
+
+## Docs
+
+- [Home and FAQ](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/): what it does, how the naming works, permissions, install steps, ten answered questions
+- [Full text for models](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/llms-full.txt): everything on this site as one plain-text file
+- [Privacy policy](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html): what is stored, where, and what is never transmitted
+- [Source repository](https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions): complete source, architecture notes, decision records, known limitations
+
+## Optional
+
+- [Report a problem](https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions/issues): issue tracker
+- [Publisher](https://github.com/PalWorks): PalWorks on GitHub

@@ -1,6 +1,124 @@
 # Changelog
 
-All notable changes to GA4 Name Changer are documented here.
+All notable changes to Google Analytics (GA4) Name Changer for Chrome Extension Developers are documented here.
+
+---
+
+## [1.1.0] — 2026-09-18
+
+Auto-naming, onboarding, and a documentation set for contributors and agents.
+
+### Added
+
+- **Name harvesting from GA4's own reports** — the primary naming source, and it costs nothing. A Chrome Web Store developer property's "Page title and screen class" report lists the store listing pages that were viewed, titled `<Extension Name> - <localised store name>`, so the extension's real name is already on the page. Titles are split on the last `" - "` (which strips the store suffix in any language and preserves names containing `" - "`), generic store pages are dropped, and the remainder ranked by views. Hints accumulate in `chrome.storage.local.nameHints` as the user browses, so visiting a property once names it permanently. Needs no permission and no network. A hint is only recorded when exactly one property slug is visible, so an open account switcher never causes a mislabel
+- **Multi-account detection** — the popup previously detected only the account in the URL, so the other accounts listed in GA4's account switcher were invisible to it. All of them are now detected, paired with their labels, and a property ID sitting next to a slug is correctly never offered as an account
+- **Cross-tab detection** — opening the popup from a non-GA4 tab now finds a GA4 tab elsewhere in the same window instead of falling back to cached context. Needs no new permission: Chrome exposes `url` for tabs matching host permissions the extension already holds
+- **Account names suggested from their properties** — an account holding one extension is suggested that extension's name, shortened; an account holding several is suggested a draft built from all of them
+- **Auto-naming from installed extensions** — a Chrome Web Store property slug is the extension's own ID, so any of those extensions installed in this Chrome profile can be named automatically via `chrome.management.get()`. Off by default and gated behind the optional `management` permission; turning it off calls `chrome.permissions.remove()`. Resolution is entirely local, so the extension still makes no network requests of any kind. Only `get` is ever called, and only the `name` field read
+- **Chrome Web Store listing link** — anything neither harvesting nor `chrome.management` could name reveals a button on its row that opens the public store listing in a new tab for the user to read the name from
+- **Service worker (`background.js`)** — hosts name resolution behind three independent gates: the setting, the live permission check, and an `/^[a-p]{32}$/` format check. Also opens the settings page on first install
+- **Welcome modal** — two-slide onboarding on the options page, opened automatically on first install via `chrome.runtime.onInstalled`, and reachable any time from the popup's new **?** button. Slide 2 is the auto-naming opt-in and states exactly what the permission is and is not used for
+- **Fill missing names** — options-page button that resolves every row holding a valid extension ID with no display name yet. Suggested names render italic until reviewed and saved
+- **Popup → options handoff** — the popup stashes its rows under `chrome.storage.local.pendingDetection` before navigating to Full Settings, and the options page merges them in once and clears the key. TTL 10 minutes
+- **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (fifteen ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
+
+- **Automatic naming with no save step** — derived names live in `chrome.storage.local.autoMappings` and are merged **under** the user's own `sync.mappings`, so they apply to the page immediately while anything the user typed still wins. The content script watches local storage, so a name lands the moment it is derived. `mappings` is never written to by the extension, so nothing the user owns is clobbered or synced without them asking. Auto rows show badged "auto" in both surfaces and are ordinary editable rows, so **Save** now means "make this mine". `autoNamingEnabled` (default on) turns the layer off without deleting anything
+- **GA4's own account tree as the authoritative source** — every GA4 page inlines `window.preload = JSON.parse(...)` carrying every account ID, property ID and property slug with exact pairing. A content script cannot read page JS variables but can read that script element's text. This gives the current property exactly (via the property ID in the URL), every account without opening the switcher, and every property slug. It fixed a real deadlock: on one live page the slug was rendered only inside a `<button>`, so scraping could not attribute it and nothing was ever named
+- **Robust name extraction** — no longer depends on one particular report table. Two independent strategies feed one score: page-title report tables weighted by views, and any store-listing-shaped text anywhere on the page. A title is recognised by its tail containing "Chrome", which held across every localisation seen live (Web Store, ウェブストア, 線上應用程式商店, Web Mağazası, Webáruház, 应用商店, 웹 스토어) and cleanly rejects the store's own pages, since "Chrome Web Store - Extensions" has a tail of "Extensions". A tie between two names returns nothing rather than guessing
+- **"How are these names worked out?"** — a collapsible card on the options page explaining the three naming sources in short form
+- **One settings table, grouped by account** — the settings page used to show `accountMappings` and `mappings` as two cards side by side, which is the shape of storage rather than the shape of the problem: nothing on the page said which extension sat under which account. They are now one table, with each account as a group head and the properties it holds nested beneath it, sharing the same two columns so identifiers and display names line up across both row kinds. The pairing comes from `chrome.storage.local.propertyAccounts`, mirrored out of GA4's own inline account tree, so properties file themselves the first time they are opened; anything unpaired sits in a catch-all group at the bottom and behaves identically. **The saved shape is unchanged** — still two flat maps — so the content script, the popup and every JSON file already exported keep working. Removing an account moves its properties to the catch-all rather than deleting them. See ADR-012
+- **`auto` badges align down one column** — an account row carries a badge plus an add button, a property row a badge plus a delete button, and packing them toward the end put the badge at a different position on each kind, so the column zig-zagged. The actions cell is now a fixed three-slot grid, so the badge and both buttons hold the same column on every row
+- **An account holding several extensions gets a combined draft name** — it used to be left blank, on the grounds that naming it after one of several extensions is arbitrary. The reasoning held; the conclusion did not. A blank field reads as a broken feature and leaves the user staring at the nine-digit account number this extension exists to remove. Such an account is now named from **all** of them — `Amazon MyOrders + Flip Rotate` — capped at 38 characters so it still fits GA4's breadcrumb. Extensions not yet named are counted rather than guessed at (`Amazon MyOrders Page Grid + 1 more`) and the label is rewritten as they are learned. Badged `auto` and editable like any other name. See ADR-015
+- **Settings toolbar laid out as two columns** — the two switches were stacked in the left half of a full-width card, leaving the right half empty and the card twice as tall as it needed to be. They now sit side by side as peers, each with its own description, and stack again below 860px
+- **Accordion affordance** — every collapsible section now carries a large chevron at the trailing edge that rotates 180 degrees on open, so the control reads as expandable and reports its current state. Previously the sections had only a leading topic icon and nothing indicating they opened
+- **Feedback form** — name, email and message, with installation diagnostics attached. The extension never holds the Resend API key; it posts to a relay Worker that does, and falls back to a pre-filled `mailto:` when no endpoint is configured, so it works with no infrastructure and no permission
+
+### Fixed in this release
+
+- **A property switch could write another extension's name into a property, permanently.** Google Analytics rewrites the URL as soon as you switch property but refetches its report widgets around four seconds later (measured live). Harvesting inside that window paired the new property's slug with the previous extension's name and persisted it, so the breadcrumb showed the wrong extension until something overwrote it — reported from live use as names that were wrong, that vanished, or that only a refresh would fix. A name is now attributed only once the reports have demonstrably changed since the switch and then held still for a further pass. See ADR-013
+- **A wrong pairing could not heal itself.** The same name under two slugs is always a stale read, since two Chrome Web Store extensions do not share a byte-identical name. The property whose slug comes from GA4's own account tree now takes the name and the other claim is dropped, so a bad pairing written earlier is corrected on the next visit rather than blocking the rightful property forever
+- **Properties in accounts outside GA4's preloaded tree were never filed.** `window.preload` carries a capped account list — 18 on a live profile that holds more, not including the account being viewed. The account and property are now read from the URL as well, so every property is filed the first time it is opened. See ADR-014
+- **The first name took over 20 seconds on a cold page load.** GA4's page is interactive well before its page-title report has any rows, and a harvest pass that early saw no candidate names at all. That was treated as "settled on no name", which stopped the polling and left the first name waiting for an unrelated mutation. An empty report is now understood as "not loaded yet" and is waited out. Measured on a live account: 20s+ before, 8.7s after
+- **Harvesting could stall on a page that stopped mutating.** Settling needs two passes and passes were driven only by the MutationObserver, so a page that had finished rendering never completed one. Unsettled passes are now self-driven, and a throttled call re-arms the timer instead of silently ending the chain
+
+### Added (listing)
+
+- **Chrome Web Store listing assets** — `store/LISTING.md` holds the product name, short description with three tested alternates, the full detailed description, the single-purpose statement, a permission justification for `storage`, the `analytics.google.com` host permission and the optional `management` permission, and the privacy declarations. `store/assets/` holds a 440×280 small promo tile, a 1400×560 marquee tile and five 1280×800 screenshots, rendered at exact size by `store/src/render.mjs`. Every claim in the permission justifications was checked against the source: no `management.getAll`, no `fetch`/XHR/WebSocket, no `eval`, no external script or style references, one host permission. `store/` is excluded from the package. Every example name, extension ID and account number in the copy and the imagery is fictional, and each account label shown is checked against the shipping `combineAccountName()` so nothing depicted is a label the extension could not really produce
+
+- **Public listing site** — a one-page site at
+  [palworks.github.io](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/),
+  served by GitHub Pages from the repo root on `main`. Self-contained HTML with inline CSS, no
+  JavaScript and no third-party requests, so it renders with nothing to block. Carries a
+  JSON-LD `@graph` of `WebSite`, `Organization`, `WebPage`, `SoftwareApplication`, a ten-question
+  `FAQPage` and a four-step `HowTo`; Open Graph and Twitter card metadata over a 1200×630 preview
+  rendered by `site/src/render.mjs`; a canonical URL; `robots.txt` naming the search and AI
+  crawlers explicitly rather than leaving them to a wildcard; an image sitemap; and `llms.txt`
+  plus `llms-full.txt` for language models. Every FAQ answer on the page has a matching
+  `Question` in the structured data. All site files are excluded from the package
+
+- **A new extension icon** — the old one was a card above an arrow above a second card, which
+  reads as a download rather than a rename and collapsed into an indistinct blob at the 16px
+  toolbar size. The new mark shows the substitution itself: a segmented upper row, the way a
+  32-character ID reads to a human, above one solid bar, the way a name reads. The 16px variant
+  is drawn with fewer, fatter segments rather than scaled down from the 128px one. Adds a 32px
+  size, and a 512px and SVG pair for the site. `icons/src/icon.mjs` replaces the old Canvas
+  generator
+
+- **MIT licence** — the repository, the site and the store copy all described this as open
+  source while no licence file existed, which legally means all rights reserved. `LICENSE`
+  now says MIT, and the site's `SoftwareApplication` schema declares it
+
+- **The feedback relay is deployed, and the feedback form now uses it** — Cloudflare Worker
+  `ga4nc-feedback`, with the Resend API key as a Worker secret and never in the package.
+  `FEEDBACK_ENDPOINT` points at it. A `mailto:` only arrives if the user has a configured
+  desktop mail client and presses send in a second application, so on a machine using webmail
+  reports were being lost silently. The form still falls back to `mailto:` if the relay is
+  unreachable. No host permission was needed: the relay returns an `Access-Control-Allow-Origin`
+  echoing the extension's own origin, so the POST satisfies CORS by itself and the store's
+  permission list is unchanged. See DECISIONS.md ADR-016
+
+### Changed
+
+- **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it
+
+- **The "no network requests" claim is narrowed to match what the extension now does.** It was
+  unconditional and true; with the relay wired up it is not. Every statement of it in
+  `privacy.html`, `SECURITY.md`, `ARCHITECTURE.md`, `README.md`, `AGENTS.md`, `store/LISTING.md`,
+  `index.html`, `llms.txt`, `llms-full.txt`, the options page and two rendered store assets was
+  rewritten to the narrower claim that is still true: nothing about the user's Google Analytics
+  data is ever transmitted, naming and replacement make no network request at all, and the only
+  thing the extension ever sends is a support message the user typed and submitted. Verified
+  against the source: exactly one `fetch` in the codebase, no `XMLHttpRequest`, no `WebSocket`
+
+- **The Chrome Web Store privacy declaration changes from "none" to Personally identifiable
+  information.** Name and email are now transmitted when a user submits feedback, so the data
+  type has to be declared and a privacy policy URL is now required. `store/LISTING.md` carries
+  the exact wording, and the note tying the declaration back to `FEEDBACK_ENDPOINT` so it is
+  reverted if the endpoint is ever removed
+
+### Fixed
+
+- **Unsaved popup edits were silently discarded.** Clicking **Full Settings** closed the popup without preserving anything typed into it. Extension popups do not fire `beforeunload`, so the `isDirty` guard used by the options page is unavailable; the `pendingDetection` handoff replaces it
+- **Accounts holding more than one extension were named wrongly.** An account was labelled after whichever single extension happened to be on screen. It is now labelled from all of them (ADR-015); one live test account holds two and another holds three
+- **The slug overflow note was untrue.** It directed the user to Full Settings to map the remaining slugs, but those slugs existed only in popup memory and were never carried anywhere. The handoff now carries every detected slug, including the ones beyond the three-row display cap
+
+### Changed
+
+- The options page row factory gained the `is-detected` and `is-suggested` states the popup already had, plus a shared row actions cell, and editing a row clears both hints
+- `privacy.html` updated for the optional permission, and its "no network requests" claim restated as unconditional, which it now is
+- `README.md` and `ARCHITECTURE.md` updated for the service worker, handoff, welcome modal, new storage keys and revised permission set
+
+### Removed
+
+- The checked-in `dist/` directory and `dist.zip`. They were byte-identical hand-maintained copies of the source, gitignored so drift would have been invisible, and carried a real risk of shipping a stale build. Packaging now runs from the repository root against `.crxignore`; the exact command is in `PLAYBOOK.md`
+
+### Verified against live GA4
+
+Detection, harvesting, multi-account scanning and the cross-tab fallback were all exercised against a real Chrome Web Store developer account with four accounts and two properties. Harvesting produced the correct extension name; the account switcher produced all four account IDs; the single-slug guard correctly declined to record a hint while the switcher was open.
+
+### Notes
+
+An earlier implementation of auto-naming fetched the extension's public Chrome Web Store listing and parsed its title. That approach was completed and then discarded: **Chrome blocks extension-initiated requests to `chromewebstore.google.com`, `chrome.google.com/webstore` and `clients2.google.com/service/update2`**, even with the host permission granted, while every other origin succeeds. It is a deliberate platform protection. `DECISIONS.md` ADR-004 records the measurements so the approach is not attempted again. `minimum_chrome_version` stays at `88` as a result, since the `optional_host_permissions` key that briefly required `102` is no longer used.
 
 ---
 

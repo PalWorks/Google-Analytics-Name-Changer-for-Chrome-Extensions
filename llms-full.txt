@@ -1,0 +1,317 @@
+# GA4 Name Changer: complete reference
+
+Source: https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/
+Publisher: PalWorks
+Version: 1.1.0
+Last updated: 2026-09-19
+
+This file contains the full public documentation for GA4 Name Changer in one plain-text
+document, for language models and other tools that prefer a single fetch. Every statement here
+is verifiable against the source repository at
+https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions
+
+---
+
+## Summary
+
+Google Analytics (GA4) Name Changer for Chrome Extension Developers is a free, open-source
+Chrome extension that replaces the 32-character Chrome Web Store extension IDs and 9-digit
+Google Analytics account numbers displayed on analytics.google.com with the extensions' real
+names. The names are derived from the user's own Google Analytics reports, so naming makes no
+network request at all and nothing about the user's Google Analytics data is ever transmitted.
+The extension's only outbound request is the optional feedback form, and it fires only when the
+user submits it.
+
+---
+
+## The problem
+
+Google provides Chrome Web Store developers with Google Analytics 4 access to their listing
+analytics. In that data:
+
+1. Each extension appears as a property whose name is the extension's own 32-character ID, for
+   example `inkkcgalfjninhfflfhkflidilkjmhof`. Google does not substitute the extension's
+   public name.
+2. Every Chrome Web Store developer account carries the identical label "Chrome Web Store
+   developer properties". The only thing distinguishing one account from another in the account
+   switcher is a 9-digit account number.
+
+Neither name is editable in the Google Analytics admin, because these properties are created
+and managed by Google rather than by the developer. A developer publishing more than one
+extension therefore has to cross-reference IDs by hand to read a report, compare two
+extensions, or pick the right account.
+
+---
+
+## What the extension does
+
+It rewrites those identifiers as Google Analytics renders them, in the browser, at display
+time. The substitution is display-only:
+
+- Nothing in the user's Google Analytics configuration, data or reports is modified.
+- Anyone else looking at the same Google Analytics account sees the original identifiers.
+- Uninstalling the extension returns Google Analytics to exactly how it looked before.
+
+It runs only on `https://analytics.google.com/*` and nowhere else.
+
+---
+
+## How names are derived
+
+### Primary source: the user's own report
+
+The extension does not look anything up. A Chrome Web Store developer property's "Page title
+and screen class" report lists the store listing pages that were viewed, and the Chrome Web
+Store titles every listing page in the form:
+
+    <Extension Name> - <localised store name>
+
+For example:
+
+    Tab Session Saver Pro - Chrome Web Store
+    Tab Session Saver Pro - Интернет-магазин Chrome
+    Tab Session Saver Pro - Chrome ウェブストア
+    Tab Session Saver Pro - Cửa hàng Chrome trực tuyến
+
+Splitting each title on the **last** occurrence of `" - "` yields the extension's name. Taking
+the last separator rather than the first has two consequences that matter:
+
+- It works in every language the Chrome Web Store is published in, because whatever the
+  localised store name is, it is the final segment.
+- It preserves extension names that themselves contain `" - "`, such as
+  `Coupon Finder - Auto Apply`.
+
+Generic store pages, such as "Chrome Web Store - Extensions" or "Chrome Web Store - Themes",
+are the store's own furniture rather than the developer's listing and are discarded. The
+remaining candidates are ranked by views.
+
+This method requires no permission beyond the host access the extension already has, works for
+extensions that are not installed in the user's browser, and costs nothing because the data is
+already on screen.
+
+### Secondary source: the local Chrome profile, optional
+
+A Chrome Web Store property slug is the extension's own ID, so any of those extensions
+installed in the same Chrome profile can be named from Chrome itself via
+`chrome.management.get()`.
+
+- It is optional and **off by default**.
+- It is gated behind the optional `management` permission, which is requested at the moment the
+  user enables the feature, never at install.
+- Only the `name` field is read. `chrome.management.getAll()` is never called, so no inventory
+  of the user's extensions is ever built.
+- Nothing is installed, uninstalled, enabled, disabled or modified.
+- Switching the feature off calls `chrome.permissions.remove()` to hand the permission straight
+  back to Chrome.
+- Resolution is entirely local. No network request is made with it enabled.
+
+This source exists because Chrome deliberately blocks extensions from requesting the Chrome Web
+Store (both `chromewebstore.google.com` and the CRX update endpoint), so an extension's public
+name cannot simply be fetched.
+
+### Naming accounts
+
+Accounts are named after the extensions they hold. Extensions are filed under their owning
+account using Google Analytics' own preloaded account tree, falling back to pairs observed from
+the URL when the tree does not list the account.
+
+- An account holding one extension is named after that extension, shortened.
+- An account holding several is named after all of them, joined and capped so the label still
+  fits the Google Analytics breadcrumb, for example `Tab Session Saver + Dark Mode`.
+- Extensions the account holds that have not been named yet are **counted, not guessed at**, so
+  a half-explored account reads `Tab Session Saver Pro + 1 more` and rewrites itself once the
+  remaining properties are opened.
+
+Every derived name is badged "auto" in the settings page and is a draft. A name the user types
+always wins and is never overwritten.
+
+---
+
+## Privacy and data handling
+
+Nothing about the user's Google Analytics data is ever transmitted. There is no account to
+create, no telemetry, no analytics and no tracking, and nothing is sent in the background.
+Replacing identifiers, deriving names and storing mappings all happen entirely in the browser
+and make no network request at all. The source contains no `XMLHttpRequest`, no WebSocket, no
+`eval` and no remote code.
+
+There is exactly one `fetch` in the extension, in `options/options.js`, reached only from the
+feedback form's submit handler. When a user fills in that form and presses send, the following
+is posted to a relay at `ga4nc-feedback.sunmooncal.workers.dev` and forwarded by email through
+Resend so the report can be answered:
+
+- the name the user typed, if they gave one (optional)
+- the email address they typed (required, so a reply can reach them)
+- the message they wrote
+- installation details, which the page displays to the user before they send: extension version
+  and ID, browser user agent, language, platform, whether auto-naming and the optional
+  permission are on, and counts of how many names exist. These contain no property slugs, no
+  display names, no account numbers and no URLs
+
+That data is used solely to reply to the user and reproduce the problem. It is never sold and
+never used for advertising or profiling. The relay stores nothing: it validates the request,
+forwards it, and forgets it. It refuses any request whose origin is not a `chrome-extension://`
+origin, so it cannot be used as an open mail relay. If the relay is unreachable, the form falls
+back to opening a pre-filled message in the user's own mail client and the extension transmits
+nothing. A user who never opens the form never causes a network request.
+
+What is stored, and where:
+
+| Data | Storage | Leaves the device |
+|---|---|---|
+| Names the user types | `chrome.storage.sync` | Only through the user's own Chrome profile sync |
+| Names the extension derives | `chrome.storage.local` | No |
+| Preferences | `chrome.storage.sync` | Only through the user's own Chrome profile sync |
+
+Traffic figures, revenue, user counts, property names and account numbers are never collected,
+transmitted or stored off the device, neither to the developer nor to any third party. No
+personally identifiable information, health information, financial information, authentication
+information, personal communications, location, web history, user activity or website content
+is collected.
+
+Full policy: https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html
+
+---
+
+## Permissions
+
+| Permission | Required | What it is for |
+|---|---|---|
+| `storage` | Yes | Saves the display names the user assigns and their preferences. Without it there is nothing to substitute onto the page. |
+| `https://analytics.google.com/*` | Yes | The single host the extension runs on. It reads and rewrites text nodes there and nowhere else. There are no wildcard or broad host permissions. |
+| `management` | No, off by default | Reads only the `name` of an extension installed in the user's own profile, to resolve an ID the reports have not already named. Never enumerates, never modifies, revoked on switch-off. |
+
+`chrome.management.getSelf()` is also called to note the extension's own install type on a
+support report the user chooses to send. That call requires no permission and returns
+information about this extension only.
+
+---
+
+## Features
+
+- Automatic naming with no setup: open a property and it names itself, usually within seconds.
+- Live text replacement as Google Analytics renders, including across single-page navigation
+  without a reload.
+- One settings table: each account as a group heading with the extensions it holds nested
+  beneath it, paired automatically from Google Analytics' own account tree.
+- Toolbar popup for viewing and editing names from any tab, including detection of a Google
+  Analytics tab elsewhere in the same window.
+- Cross-device sync of user-assigned names through `chrome.storage.sync`.
+- Import and export of all names as a single plain JSON file.
+- Guided two-slide onboarding on first install, reachable again at any time.
+- A per-row link to the public store listing for anything neither source could name.
+- Label health monitoring: warns if Google's "Chrome Web Store developer properties" label has
+  not been matched in 90 days, which would signal that Google silently renamed that element.
+
+---
+
+## Installation
+
+The extension is free. The Chrome Web Store listing is in preparation; it can be loaded from
+source today.
+
+1. Clone `https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions`.
+   There is no build step and no dependencies to install.
+2. Open `chrome://extensions` in Chrome and switch on Developer mode, top right.
+3. Click "Load unpacked" and select the cloned repository folder.
+4. Open the puzzle-piece menu in the toolbar, pin the extension, then open a Chrome Web Store
+   property in Google Analytics.
+
+Requires Google Chrome 88 or later. Manifest V3.
+
+---
+
+## Technical facts
+
+| Field | Value |
+|---|---|
+| Full name | Google Analytics (GA4) Name Changer for Chrome Extension Developers |
+| Short name | GA4 Name Changer |
+| Version | 1.1.0 |
+| Manifest version | 3 |
+| Minimum Chrome version | 88 |
+| Content script host | `https://analytics.google.com/*` |
+| Required permissions | `storage` |
+| Optional permissions | `management` |
+| Content security policy | `script-src 'self'; object-src 'self';` |
+| Dependencies | none |
+| Build step | none |
+| Remote code | none |
+| Network requests | none, except the optional feedback form on submission |
+| Analytics data transmitted | none, ever |
+| Licence | MIT |
+| Publisher | PalWorks |
+| Repository | https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions |
+
+---
+
+## Frequently asked questions
+
+**Q: Why does Google Analytics show my Chrome extension as a 32-character ID?**
+A: Because that string is the extension's ID, and it is what Google uses to name the Google
+Analytics property it creates for the Chrome Web Store listing. Google does not substitute the
+extension's public name, so the property slug stays as the raw ID. Every developer account is
+additionally given the identical label "Chrome Web Store developer properties", distinguished
+only by a 9-digit account number.
+
+**Q: Can I rename a GA4 property for a Chrome Web Store extension in Google Analytics itself?**
+A: No. Those properties are created and managed by Google, and the property name is not
+editable in the Google Analytics admin the way a self-created property would be. GA4 Name
+Changer fills that gap by changing what is displayed in the browser rather than trying to
+change the property.
+
+**Q: How does GA4 Name Changer know my extension's name without asking a server?**
+A: It reads the name off the page already on screen. The "Page title and screen class" report
+lists the store listing pages that were viewed, titled `<Extension Name> - <localised store
+name>`. Splitting on the last `" - "` returns the name. Generic store pages are discarded and
+the remaining candidates ranked by views.
+
+**Q: Does GA4 Name Changer send my analytics data anywhere?**
+A: No. It has no analytics, no telemetry and no tracking, and transmits nothing in the
+background. Traffic figures, revenue, user counts, property names and account numbers never
+leave the device, and working out a name makes no network request at all. The extension's only
+outbound request is the optional feedback form, which sends the message, email address and
+installation details the user is shown, and only when they press send.
+
+**Q: Does it change anything in my Google Analytics account?**
+A: No. The replacement is display-only and happens in the browser as the page renders. The
+user's Google Analytics configuration, data and reports are untouched, and anyone else viewing
+the same account sees the original identifiers.
+
+**Q: Why does it ask for the management permission, and is it required?**
+A: It is optional and off by default. When enabled it calls `chrome.management.get()` with an
+extension ID taken from the user's own Google Analytics property list and reads only that
+extension's name. It never calls `getAll()`, never modifies anything, and returns the
+permission to Chrome when switched off. It exists because Chrome blocks extensions from
+requesting the Chrome Web Store, so a public extension name cannot be fetched.
+
+**Q: What happens to a Google Analytics account that holds several Chrome extensions?**
+A: It is named after all of them, with the combined label capped to fit the Google Analytics
+breadcrumb. Extensions not yet named are counted rather than guessed at, so the label reads
+"... + 1 more" until the rest are opened. Every label is a draft the user can type over.
+
+**Q: Will my names sync to my other computers?**
+A: Names the user types are stored in `chrome.storage.sync` and follow the signed-in Chrome
+profile. Derived names are stored in `chrome.storage.local` and stay on the device that derived
+them, because each machine can derive them again for free. Everything can also be exported and
+imported as JSON.
+
+**Q: Does it work if the extension is not installed in my browser?**
+A: Yes. The primary method reads the name out of the user's Google Analytics reports, which
+works for any extension in the developer account whether or not it is installed locally.
+
+**Q: Is GA4 Name Changer free and open source?**
+A: It is free, and the complete source is published on GitHub. There is no build step, no
+bundler, no dependency and no remote code, so what runs in the browser is exactly what can be
+read in the repository.
+
+---
+
+## Attribution
+
+Built by PalWorks and released under the MIT licence. Not affiliated with, endorsed by, or
+sponsored by Google. Google Analytics, GA4, Chrome and Chrome Web Store are trademarks of
+Google LLC.
+
+Example extension names, extension IDs and account numbers used in this documentation and in
+the listing imagery are fictional.

@@ -48,14 +48,602 @@ body {
   min-height: 100vh;
 }
 
-/* ── Two-card grid ── */
+/* ── Auto-naming toolbar ── */
 
-.cards-grid {
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.toolbar-info {
+  flex: 1;
+  min-width: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 18px 32px;
   align-items: start;
 }
+
+.switch-block { min-width: 0; }
+
+.toolbar-hint {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 6px;
+  /* Indented to the width of the switch, so the text hangs under its own label
+     rather than under the control. */
+  padding-left: 48px;
+  max-width: 62ch;
+}
+
+.toolbar-hint code,
+.fact-list code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-ghost[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-ghost[disabled]:hover { background: transparent; }
+
+@media (max-width: 860px) {
+  /* One column, and drop the hanging indent so narrow text keeps its width */
+  .toolbar-info  { grid-template-columns: 1fr; }
+  .toolbar-hint  { padding-left: 0; }
+}
+
+/* ── "How names are worked out" card ── */
+
+.method-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.method-card > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.method-card > summary::-webkit-details-marker { display: none; }
+.method-card > summary::marker { content: ''; }
+.method-card > summary:hover { background: var(--accent-bg); }
+.method-card > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.method-body {
+  padding: 4px 20px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.method-lead {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 14px 0 0;
+}
+
+.method-list {
+  margin: 14px 0 0;
+  padding-left: 20px;
+}
+
+.method-list li {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.method-list strong { color: var(--text); }
+
+.method-list code,
+.method-lead code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.method-note {
+  display: block;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.method-timing {
+  display: block;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.method-foot {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── "auto" badge on derived rows ── */
+
+.badge-auto {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 20px;
+  padding: 1px 7px;
+  vertical-align: middle;
+}
+
+.mapping-row.is-auto .name-input {
+  color: var(--accent);
+}
+
+/* ── Accordion affordance ──
+   Every collapsible section shows a large chevron that points down when closed
+   and flips up when open, so the control reads as expandable at a glance and
+   also reports its current state. */
+
+.accordion-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  /* Inherit the summary's own colour so the affordance reads as part of the
+     control rather than as faint decoration. */
+  color: currentColor;
+  opacity: 0.7;
+  transition: transform 0.2s ease, opacity 0.15s ease;
+}
+
+.accordion-chevron.is-small { margin-left: 0; }
+
+details[open] > summary > .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+summary:hover > .accordion-chevron { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-chevron { transition: none; }
+}
+
+/* ── Feedback form ── */
+
+.feedback-card { margin-bottom: 20px; }
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+
+.field-label .req,
+.field-label .opt {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-size: 10.5px;
+}
+
+.field-label .req { color: var(--danger); }
+.field-label .opt { color: var(--text-3); }
+
+.field-input {
+  border-color: var(--border);
+  background: var(--card);
+}
+
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.10);
+}
+
+.field-input.is-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.10);
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 92px;
+  font-family: var(--font);
+  line-height: 1.55;
+}
+
+.diag-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  margin: 4px 0 14px;
+}
+
+.diag-box > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.diag-box > summary > span { flex: 1; }
+.diag-box > summary::-webkit-details-marker { display: none; }
+.diag-box > summary::marker { content: ''; }
+.diag-box > summary:hover { color: var(--accent); }
+
+.diag-pre {
+  margin: 0;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diag-note {
+  padding: 8px 12px 12px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .field-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Switch ── */
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: #d8d8dd;
+  transition: background 0.18s ease;
+  flex-shrink: 0;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  transition: transform 0.18s ease;
+}
+
+.switch input:checked + .switch-track            { background: var(--accent); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+.switch input:focus-visible + .switch-track      { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.switch-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── Row hint states ── */
+
+/* Rows handed over from the popup, or detected on the GA4 tab */
+.mapping-row.is-detected {
+  background: rgba(52, 199, 89, 0.05);
+  box-shadow: inset 3px 0 0 var(--success);
+}
+
+/* Display names suggested by a store lookup rather than typed by the user */
+.mapping-row.is-suggested .name-input {
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* ── Welcome modal ── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 24, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  animation: overlay-in 0.18s ease;
+}
+
+.overlay.is-hidden { display: none; }
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  position: relative;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.22);
+  width: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  overflow-y: auto;
+  animation: modal-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-close:hover { color: var(--text); background: var(--bg); }
+.modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.slide { padding: 32px 32px 8px; }
+.slide.is-hidden { display: none; }
+
+.slide-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 20px;
+  padding: 4px 11px;
+  margin-bottom: 14px;
+}
+
+.slide h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.slide p {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.slide-note {
+  font-size: 12.5px !important;
+  color: var(--text-3) !important;
+  margin-top: 14px;
+}
+
+/* Before/after preview block on slide 1 */
+
+.preview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-top: 18px;
+  text-align: center;
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.preview-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-3);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+
+.preview-tag.is-after {
+  color: var(--success);
+  border-color: rgba(52, 199, 89, 0.35);
+  background: rgba(52, 199, 89, 0.08);
+}
+
+.preview-slug {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+  word-break: break-all;
+}
+
+.preview-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.preview-arrow {
+  color: var(--text-3);
+  margin: 8px 0;
+  line-height: 0;
+}
+
+/* Fact list on slide 2 */
+
+.fact-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+}
+
+.fact-list li {
+  position: relative;
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.55;
+  padding-left: 22px;
+  margin-bottom: 7px;
+}
+
+.fact-list li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 9px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.slide-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 32px 24px;
+}
+
+.dots { display: flex; gap: 7px; }
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.18s, width 0.18s;
+}
+
+.dot.is-active {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.modal-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-nav .is-hidden,
+.slide-actions .is-hidden { display: none; }
 
 /* ── Header ── */
 
@@ -79,11 +667,14 @@ header {
 }
 
 h1 {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
   color: var(--text);
-  line-height: 1.2;
+  line-height: 1.25;
+  /* The full product name is long; keep it readable rather than shrinking it
+     further on narrow windows. */
+  text-wrap: balance;
 }
 
 .subtitle {
@@ -95,7 +686,11 @@ h1 {
 /* ── Card ── */
 
 main {
-  flex: 1;
+  /* Deliberately not flex:1. The page holds one table now, so growing main to
+     fill the viewport opened a large blank band above the feedback card on a
+     short list. Everything stacks from the top instead. */
+  flex: 0 0 auto;
+  margin-bottom: 20px;
 }
 
 .card {
@@ -108,7 +703,7 @@ main {
 
 .card-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 40px;
+  grid-template-columns: 1fr 1fr 116px;
   gap: 12px;
   padding: 10px 16px;
   background: var(--bg);
@@ -127,7 +722,7 @@ main {
 
 .mapping-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 40px;
+  grid-template-columns: 1fr 1fr 116px;
   gap: 12px;
   padding: 8px 16px;
   align-items: center;
@@ -214,6 +809,180 @@ main {
   opacity: 1;
 }
 
+/* ── Row actions cell ── */
+
+.row-actions {
+  display: grid;
+  grid-template-columns: 1fr 32px 32px;
+  align-items: center;
+  gap: 2px;
+}
+
+.badge-auto              { grid-column: 1; justify-self: end; }
+.listing-btn,
+.add-prop-btn            { grid-column: 2; }
+.delete-btn              { grid-column: 3; }
+
+.listing-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--accent);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.listing-btn:hover { background: var(--accent-bg); }
+.listing-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.listing-btn.is-hidden { display: none; }
+
+/* A row with a visible listing link could not be resolved locally */
+.mapping-row:has(.listing-btn:not(.is-hidden)) {
+  box-shadow: inset 3px 0 0 rgba(79, 70, 229, 0.45);
+}
+
+/* ── Account groups ──
+   One table, not two. Each account is a group head and the properties it holds
+   are nested beneath it, sharing the same two columns, so an account number
+   lines up with the property slugs and an account name with the property names.
+   The nesting is shown with a rail and a small offset on the slug input alone,
+   which keeps the second column in exact alignment across both row kinds. */
+
+.account-group {
+  border-bottom: 1px solid var(--border);
+}
+
+.account-group:last-child {
+  border-bottom: none;
+}
+
+.account-row {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.account-row .slug-input {
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+
+.account-row .name-input {
+  font-weight: 600;
+}
+
+/* Why this row is blank, said where the blank is */
+.account-row.is-shared .name-input::placeholder {
+  color: var(--text-3);
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* Nesting rail. Offsetting the input by margin rather than padding the row
+   keeps every grid track in the same place on both row kinds. */
+.property-row {
+  position: relative;
+}
+
+.property-row::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--border-strong, #d8d8de);
+}
+
+.property-row .slug-input {
+  margin-left: 16px;
+  width: auto;
+}
+
+/* Properties with no account yet are not nested under anything */
+.account-group.is-ungrouped .property-row::before {
+  display: none;
+}
+
+.account-group.is-ungrouped .property-row .slug-input {
+  margin-left: 0;
+  width: 100%;
+}
+
+.group-props .property-row:last-child {
+  border-bottom: none;
+}
+
+.group-props:empty::after {
+  content: "No properties under this account yet.";
+  display: block;
+  padding: 11px 16px 11px 38px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* Head of the catch-all group: nothing here is nameable, so it is a label */
+.group-head-plain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.group-head-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-2);
+}
+
+.group-head-note {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* Add-a-property button on an account row. Deliberately not .listing-btn: that
+   class doubles as the "could not be resolved" marker on property rows. */
+.add-prop-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-3);
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.add-prop-btn:hover {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.add-prop-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Empty state ── */
 
 .empty-state {
@@ -244,6 +1013,9 @@ main {
 /* ── Card footer (Add button) ── */
 
 .card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   background: var(--bg);
@@ -399,19 +1171,29 @@ a.support-link:hover {
 /* ── Responsive (narrow windows) ── */
 
 @media (max-width: 800px) {
-  .cards-grid {
-    grid-template-columns: 1fr;
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
   }
+
+  .toolbar-actions { justify-content: flex-end; }
 }
 
 @media (max-width: 480px) {
   .container { padding: 0 16px 40px; }
+
+  .overlay      { padding: 12px; }
+  .slide        { padding: 26px 20px 8px; }
+  .modal-footer { padding: 16px 20px 20px; }
+  .slide h2     { font-size: 19px; }
+
   header { padding: 28px 0 20px; }
   h1 { font-size: 22px; }
 
   .card-header,
   .mapping-row {
-    grid-template-columns: 1fr 1fr 36px;
+    grid-template-columns: 1fr 1fr 104px;
     gap: 8px;
     padding: 8px 12px;
   }

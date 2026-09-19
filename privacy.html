@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — GA4 Name Changer</title>
+  <title>Privacy Policy — Google Analytics (GA4) Name Changer for Chrome Extension Developers</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -130,17 +130,20 @@
 
     <header>
       <div class="badge">Privacy Policy</div>
-      <h1>GA4 Name Changer</h1>
-      <p class="meta">Effective date: June 2026 &nbsp;·&nbsp; Chrome Extension</p>
+      <h1>Google Analytics (GA4) Name Changer for Chrome Extension Developers</h1>
+      <p class="meta">Effective date: 19 September 2026 &nbsp;·&nbsp; Chrome Extension &nbsp;·&nbsp; Version 1.1.0</p>
     </header>
 
     <div class="highlight-box">
-      <p>This extension does not collect, transmit, or share any personal data. Ever.</p>
+      <p>This extension has no analytics and no telemetry, and nothing about your Google
+         Analytics data is ever collected or transmitted. It transmits exactly one thing,
+         and only when you ask it to: a support message you have typed and submitted
+         yourself through the feedback form.</p>
     </div>
 
     <section>
       <h2>What data does this extension access?</h2>
-      <p>GA4 Name Changer reads the text content of the Google Analytics interface
+      <p>Google Analytics (GA4) Name Changer for Chrome Extension Developers reads the text content of the Google Analytics interface
          (<code>analytics.google.com</code>) to locate and replace property slugs with your
          custom names. This processing happens entirely within your browser — no data is
          extracted or sent anywhere.</p>
@@ -160,22 +163,117 @@
         <li>This extension never reads, copies, or transmits your mappings to any
             server operated by this extension's developer.</li>
       </ul>
+      <p>A small amount of operational state is also kept in
+         <strong><code>chrome.storage.local</code></strong>, which is never synced and
+         never leaves the device: your preferences, the last Google Analytics context
+         seen so the toolbar popup still works on other tabs, a short-lived handoff of rows
+         between the toolbar popup and the settings page, extension names the
+         extension read from the Google Analytics reports already on your screen, and
+         which Google Analytics account each property sits under, so the settings page can
+         group them.
+         Uninstalling the extension deletes all of it.</p>
     </section>
 
     <section>
       <h2>Does this extension send any data to external servers?</h2>
-      <p>No. The extension has no backend, no analytics, no tracking, and makes
-         zero network requests. It operates entirely offline after installation.</p>
+      <p>Only when you submit the feedback form, and only what you typed into it.</p>
+      <p>Everything the extension actually does &mdash; replacing identifiers, working out
+         names, storing your mappings &mdash; happens entirely inside your browser and makes
+         no network request of any kind. That is true in every configuration, including
+         with the optional auto-naming feature switched on. There is no analytics, no
+         telemetry, no tracking and no background communication of any sort. Your property
+         slugs, account numbers, display names, traffic figures, revenue and user counts
+         are never transmitted anywhere, ever.</p>
+      <p>The single exception is the feedback form on the settings page, described in the
+         next section. It sends only when you fill it in and press the button.</p>
+    </section>
+
+    <section>
+      <h2>The feedback form</h2>
+      <p>The settings page has a feedback form for reporting a problem. It is entirely
+         optional. If you never use it, the extension never makes a network request.</p>
+      <p>When you press the send button, the following is posted to a relay operated by
+         this extension's developer at
+         <code>ga4nc-feedback.sunmooncal.workers.dev</code>, which forwards it to the
+         developer by email through <a href="https://resend.com/legal/privacy-policy"
+         target="_blank" rel="noopener">Resend</a>, an email delivery provider:</p>
+      <ul>
+        <li>The <strong>name</strong> you typed, if you chose to give one. It is optional.</li>
+        <li>The <strong>email address</strong> you typed, so a reply can reach you. This is
+            required, because a report nobody can answer helps nobody.</li>
+        <li>The <strong>message</strong> you wrote.</li>
+        <li>The <strong>installation details</strong> shown to you on that same page,
+            before you send. These are your extension version and ID, your browser user
+            agent, language and platform, whether auto-naming and the optional permission
+            are on, and <em>counts</em> of how many names you have. They deliberately
+            contain no property slugs, no display names, no account numbers and no URLs.
+            You can read the exact block on the page.</li>
+      </ul>
+      <p>That data is used to answer you and to reproduce the problem. It is not sold, not
+         shared with anyone else, and not used for advertising, profiling or any purpose
+         other than replying to your report. The relay stores nothing: it validates the
+         request, passes it to the email provider and forgets it.</p>
+      <p>If the relay cannot be reached, the form falls back to opening a pre-filled
+         message in your own email client, and nothing is transmitted by the extension at
+         all. You can also simply
+         <a href="https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions/issues"
+            target="_blank" rel="noopener">open a GitHub issue</a> instead and never use
+         the form.</p>
+    </section>
+
+    <section>
+      <h2>The optional auto-naming feature</h2>
+      <p>A Chrome Web Store property slug in Google Analytics is the same string as
+         your extension's Chrome Web Store ID. If you turn on <strong>auto-naming</strong>,
+         the extension uses that ID to ask Chrome for the name of the matching extension
+         installed in your browser, and suggests it as the display name, so you do not
+         have to identify each 32-character ID by hand.</p>
+
+      <p>Separately, and with no permission or setting required, the extension reads
+         extension names out of the Google Analytics reports already displayed on your
+         screen. Your Chrome Web Store listing pages appear in those reports titled
+         "&lt;Extension Name&gt; - Chrome Web Store", so the name is already on the page.
+         This is ordinary reading of the page you are looking at, the same thing the
+         extension does to replace text, and it involves no request to anyone.</p>
+
+      <p>This feature is <strong>off by default</strong>. Turning it on requires you to
+         grant Chrome's <code>management</code> permission, which Chrome will prompt you
+         for. Until you do, the feature cannot run.</p>
+
+      <p>What it does and does not do:</p>
+      <ul>
+        <li>Names are read <strong>locally, from your own browser</strong>. Nothing is
+            transmitted anywhere, and no network request is made.</li>
+        <li>The extension calls exactly one method, <code>chrome.management.get()</code>,
+            and reads exactly one field from the result: the extension's name.</li>
+        <li>It <strong>never</strong> installs, enables, disables, or uninstalls anything,
+            and never enumerates your full extension list.</li>
+        <li>Turning the feature off revokes the permission, so the capability is removed
+            rather than just switched off.</li>
+        <li>An extension that is not installed in your current Chrome profile cannot be
+            named this way. Those rows show a link that opens the extension's public
+            Chrome Web Store listing in a new tab, which you can read and type from. That
+            is an ordinary page visit you choose to make, not a background request.</li>
+      </ul>
     </section>
 
     <section>
       <h2>Permissions used</h2>
       <ul>
-        <li><strong>storage</strong> — to save your slug-to-name mappings.</li>
+        <li><strong>storage</strong> — to save your slug-to-name mappings and settings.</li>
         <li><strong>Host permission for analytics.google.com</strong> — to inject the
             content script that performs text replacement on the GA4 interface.</li>
+        <li><strong>Optional permission: management</strong> — requested only if you turn
+            on auto-naming, and only to read the names of extensions already installed in
+            your browser. Not granted at install time. Revoked when you turn the feature
+            off.</li>
       </ul>
-      <p>No other permissions are requested.</p>
+      <p>No other permissions are requested. In particular, the extension does not
+         request the <code>tabs</code> permission and cannot read your browsing history,
+         your open tab URLs, or any page other than Google Analytics.</p>
+      <p>The feedback form needs no permission at all. The relay replies with the CORS
+         header that permits this extension's own origin, so the request is allowed
+         without a host permission being added to the extension.</p>
     </section>
 
     <section>
@@ -187,7 +285,7 @@
     </section>
 
     <footer>
-      <p>GA4 Name Changer is an independent tool and is not affiliated with or endorsed by Google.</p>
+      <p>Google Analytics (GA4) Name Changer for Chrome Extension Developers is an independent tool and is not affiliated with or endorsed by Google.</p>
     </footer>
 
   </div>

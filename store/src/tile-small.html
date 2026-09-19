@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small promo tile 440x280</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+  /* Small tile: read at a glance in a crowded grid, so one idea only. */
+  .stage {
+    width: 440px; height: 280px;
+    padding: 30px 32px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    background:
+      radial-gradient(100% 120% at 100% 0%, rgba(124,116,240,.24), transparent 62%),
+      #fbfbfd;
+  }
+
+  .top { display: flex; align-items: center; gap: 13px; position: relative; z-index: 2; }
+
+  .logo {
+    width: 46px; height: 46px; flex: none; border-radius: 11px;
+    background: linear-gradient(145deg, #6C63F2, #4F46E5);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 5px 14px rgba(79,70,229,.34);
+  }
+
+  .wordmark { font-size: 15.5px; font-weight: 700; letter-spacing: -.3px; line-height: 1.22; }
+  .wordmark span { display: block; font-size: 11.5px; font-weight: 600;
+                   color: var(--text-2); letter-spacing: .2px; }
+
+  h2 {
+    position: relative; z-index: 2;
+    font-size: 27px; font-weight: 800; letter-spacing: -1px; line-height: 1.16;
+    margin-top: 14px;
+  }
+  h2 .hl { color: var(--accent); }
+
+  .swap {
+    position: relative; z-index: 2;
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px 13px; box-shadow: 0 6px 18px rgba(16,16,40,.08);
+  }
+  .was { font-family: var(--mono); font-size: 11.5px; color: var(--text-3);
+         text-decoration: line-through; text-decoration-color: rgba(174,174,178,.7); }
+  .now { display: flex; align-items: center; gap: 7px; margin-top: 5px;
+         font-size: 14.5px; font-weight: 700; color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <div>
+    <div class="top">
+      <div class="logo">
+        <svg width="25" height="25" viewBox="0 0 24 24" fill="none">
+          <path d="M4 8h10M4 8l3-3M4 8l3 3" stroke="#fff" stroke-width="2.1"
+                stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+          <path d="M20 16H10M20 16l-3-3M20 16l-3 3" stroke="#fff" stroke-width="2.1"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="wordmark">
+        GA4 Name Changer
+        <span>for Chrome extension developers</span>
+      </div>
+    </div>
+
+    <h2>Stop reading<br><span class="hl">32-character IDs.</span></h2>
+  </div>
+
+  <div class="swap">
+    <div class="was">inkkcgalfjninhfflfhkflidilkjmhof</div>
+    <div class="now">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" fill="#4F46E5" opacity=".12"/>
+        <path d="M6 10.4l2.7 2.7L14.2 7.6" stroke="#4F46E5" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tab Session Saver Pro
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screenshot 4: one table for every account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="shot.css">
+<style>
+  .cols { display: grid; grid-template-columns: 1fr 296px; gap: 28px;
+          width: 100%; align-items: start; }
+
+  .tbl { border-radius: 14px; border: 1px solid var(--border); background: #fff;
+         box-shadow: 0 10px 32px rgba(16,16,40,.08); overflow: hidden; }
+
+  .thead {
+    display: grid; grid-template-columns: 1fr 1fr 64px; gap: 14px;
+    padding: 11px 20px; background: #fafafc; border-bottom: 1px solid var(--border);
+    font-size: 10.5px; font-weight: 700; letter-spacing: .8px;
+    text-transform: uppercase; color: var(--text-3);
+  }
+
+  .arow, .prow {
+    display: grid; grid-template-columns: 1fr 1fr 64px; gap: 14px;
+    align-items: center; padding: 11px 20px; border-bottom: 1px solid #f1f1f4;
+  }
+  .arow { background: #fafafc; }
+  .arow .id   { font-size: 13px; font-weight: 700; }
+  .arow .name { font-size: 13.5px; font-weight: 700; }
+
+  .prow { position: relative; }
+  .prow::before { content: ""; position: absolute; left: 27px; top: 0; bottom: 0;
+                  width: 2px; border-radius: 1px; background: #dcdce3; }
+  .prow .id   { font-family: var(--mono); font-size: 11px; color: #5855D6; margin-left: 20px; }
+  .prow .name { font-size: 13px; color: var(--accent); }
+
+  .auto {
+    justify-self: end;
+    font-size: 8.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-bg); border-radius: 20px; padding: 2px 7px;
+  }
+
+  .hl-row { background: rgba(79,70,229,.06) !important;
+            box-shadow: inset 3px 0 0 var(--accent); }
+
+  .aside { display: flex; flex-direction: column; gap: 14px; }
+  .note { background: #fff; border: 1px solid var(--border); border-radius: 12px;
+          padding: 17px 18px; box-shadow: 0 6px 18px rgba(16,16,40,.05); }
+  .note h3 { font-size: 13.5px; font-weight: 700; }
+  .note p  { font-size: 12.6px; color: var(--text-2); line-height: 1.52; margin-top: 7px; }
+  .note .eg { display: block; margin-top: 9px; font-family: var(--mono); font-size: 11.5px;
+              color: var(--accent); background: var(--accent-bg);
+              border-radius: 6px; padding: 7px 9px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <div class="head">
+    <div class="step"><span class="dot"></span> Every account, one table</div>
+    <h1>Accounts get real names too,<br><span class="hl">even when they hold several extensions.</span></h1>
+    <p class="lede">
+      Extensions are filed under the account that owns them, worked out from Google Analytics
+      itself. An account holding more than one is named after all of them.
+    </p>
+  </div>
+
+  <div class="body">
+    <div class="cols">
+
+      <div class="tbl">
+        <div class="thead">
+          <span>Account number &nbsp;/&nbsp; Property slug</span>
+          <span>Display name</span>
+          <span></span>
+        </div>
+
+        <div class="arow">
+          <span class="id">268430912</span>
+          <span class="name">Bulk Bookmark Cleaner</span>
+          <span class="auto">auto</span>
+        </div>
+        <div class="prow">
+          <span class="id">ejlobdbekjomjoldppokhledlagjggmm</span>
+          <span class="name">Bulk Bookmark Cleaner and Sorter</span>
+          <span class="auto">auto</span>
+        </div>
+
+        <div class="arow">
+          <span class="id">295718604</span>
+          <span class="name">Quick Screenshot</span>
+          <span class="auto">auto</span>
+        </div>
+        <div class="prow">
+          <span class="id">ofpdipohjmmapogdiiebiblemhceppfd</span>
+          <span class="name">Quick Screenshot and Annotate</span>
+          <span class="auto">auto</span>
+        </div>
+
+        <div class="arow hl-row">
+          <span class="id">241067359</span>
+          <span class="name">Tab Session Saver + Dark Mode</span>
+          <span class="auto">auto</span>
+        </div>
+        <div class="prow">
+          <span class="id">inkkcgalfjninhfflfhkflidilkjmhof</span>
+          <span class="name">Tab Session Saver Pro</span>
+          <span class="auto">auto</span>
+        </div>
+        <div class="prow">
+          <span class="id">babcpedhcpecmfgdbccblgllkpjnhcip</span>
+          <span class="name">Dark Mode Everywhere</span>
+          <span class="auto">auto</span>
+        </div>
+
+        <div class="arow">
+          <span class="id">317249865</span>
+          <span class="name">Price History Tracker</span>
+          <span class="auto">auto</span>
+        </div>
+        <div class="prow">
+          <span class="id">aaomaanggjideicdjgoiohaodklelkjd</span>
+          <span class="name">Price History Tracker</span>
+          <span class="auto">auto</span>
+        </div>
+      </div>
+
+      <div class="aside">
+        <div class="note">
+          <h3>Two extensions, one account</h3>
+          <p>There is no single right name, so the label is built from both rather than left blank.</p>
+          <span class="eg">Tab Session Saver + Dark Mode</span>
+        </div>
+
+        <div class="note">
+          <h3>Not yet named? Counted, not guessed</h3>
+          <p>An account you have only half explored says so, and rewrites itself once you open the rest.</p>
+          <span class="eg">Tab Session Saver Pro + 1 more</span>
+        </div>
+
+        <div class="note">
+          <h3>Import and export</h3>
+          <p>Take your names to another machine, or keep them in version control, as plain JSON.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    Every name here is editable. The worked-out ones are a starting point, not a rule.
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Deploy:  cd worker && npx wrangler deploy
+# Secret:  cd worker && npx wrangler secret put RESEND_API_KEY
+#
+# The Worker exists because the extension cannot hold the Resend API key: an
+# extension package is just files on disk, so a shipped key is a key everyone
+# who installs it can read. See worker/feedback-worker.js and DECISIONS.md.
+
+name = "ga4nc-feedback"
+main = "feedback-worker.js"
+compatibility_date = "2026-09-19"
+account_id = "96ec2a311affbd387b884673c0e84eb8"
+
+workers_dev = true
+
+[observability]
+enabled = true

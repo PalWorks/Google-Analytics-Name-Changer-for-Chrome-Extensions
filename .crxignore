@@ -5,5 +5,17 @@
 .git
 .gitignore
 .crxignore
-dist/
-icons/generate-icons.html
+icons/src/
+icons/icon512.png
+googled*.html
+worker/
+store/
+
+# GitHub Pages listing site. Served from the repo root on `main`; never shipped.
+index.html
+robots.txt
+sitemap.xml
+llms.txt
+llms-full.txt
+.nojekyll
+site/

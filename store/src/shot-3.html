@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screenshot 3: zero setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="shot.css">
+<style>
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; width: 100%; align-content: start; }
+
+  .stepcard {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 8px 26px rgba(16,16,40,.07); padding: 24px 24px 26px;
+    display: flex; flex-direction: column;
+  }
+  .stepcard.final { border: 1.5px solid rgba(79,70,229,.32);
+                    box-shadow: 0 12px 34px rgba(79,70,229,.16); }
+
+  .num {
+    width: 34px; height: 34px; border-radius: 10px; flex: none;
+    background: var(--accent-bg); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800;
+  }
+  .stepcard h3 { font-size: 17.5px; font-weight: 700; letter-spacing: -.4px; margin-top: 14px; }
+  .stepcard p  { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin-top: 8px; }
+
+  .visual { margin-top: auto; padding-top: 20px; }
+
+  .fakebar {
+    border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: #fcfcfd;
+  }
+  .fakebar .u { display: flex; align-items: center; gap: 7px; padding: 8px 10px;
+                font-size: 11px; color: var(--text-3); border-bottom: 1px solid var(--border);
+                background: #f4f4f7; }
+  .fakebar .c { padding: 12px 12px; }
+
+  .line { height: 7px; border-radius: 4px; background: #ececf1; }
+  .line.s { width: 56%; margin-top: 7px; }
+
+  .mrow {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid #f1f1f4; font-size: 12.5px;
+  }
+  .mrow:last-child { border-bottom: none; }
+  .mrow .k { font-family: var(--mono); font-size: 10.5px; color: #8e8e95; }
+  .mrow .n { font-weight: 600; color: var(--accent); }
+
+  .tag {
+    font-size: 8.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-bg); border-radius: 20px; padding: 2px 7px;
+  }
+
+  .saveline { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .btn {
+    font-size: 11.5px; font-weight: 700; color: #fff; background: var(--accent);
+    border-radius: 7px; padding: 7px 13px;
+  }
+  .hintline { font-size: 11.5px; color: var(--text-3); }
+
+  .typed { font-weight: 700; color: var(--text); }
+  .caret { display: inline-block; width: 2px; height: 13px; background: var(--accent);
+           vertical-align: -2px; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <div class="head">
+    <div class="step"><span class="dot"></span> Zero setup</div>
+    <h1>Install it, open Analytics,<br><span class="hl">the names are already there.</span></h1>
+    <p class="lede">
+      No account to create, no key to paste, no list to fill in first. Names appear as you
+      browse and are yours to overrule at any point.
+    </p>
+  </div>
+
+  <div class="body">
+    <div class="steps">
+
+      <div class="stepcard">
+        <div class="num">1</div>
+        <h3>Open a property</h3>
+        <p>Visit any Chrome Web Store property in Google Analytics, exactly as you normally would.</p>
+        <div class="visual">
+          <div class="fakebar">
+            <div class="u">
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M4.5 6.2V4.6a2.5 2.5 0 015 0v1.6M3.4 6.2h7.2v5H3.4z" stroke="#aeaeb2" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              analytics.google.com
+            </div>
+            <div class="c">
+              <div class="mrow"><span class="k">inkkcgalfjninhfflfhkflidilkjmhof</span></div>
+              <div class="line"></div>
+              <div class="line s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stepcard">
+        <div class="num">2</div>
+        <h3>It names itself</h3>
+        <p>The name is read from the report already on your screen and applied in place, with no save step and nothing sent anywhere.</p>
+        <div class="visual">
+          <div class="fakebar">
+            <div class="u">
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M4.5 6.2V4.6a2.5 2.5 0 015 0v1.6M3.4 6.2h7.2v5H3.4z" stroke="#aeaeb2" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              analytics.google.com
+            </div>
+            <div class="c">
+              <div class="mrow"><span class="n">Tab Session Saver Pro</span></div>
+              <div class="line"></div>
+              <div class="line s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stepcard final">
+        <div class="num">3</div>
+        <h3>Rename anything</h3>
+        <p>Every worked-out name is badged <span class="tag">auto</span>. Type your own over it and press Save. Yours always wins.</p>
+        <div class="visual">
+          <div class="fakebar">
+            <div class="u">Settings</div>
+            <div class="c">
+              <div class="mrow">
+                <span class="k">inkkcgalfj…</span>
+                <span class="typed">Tab Saver<span class="caret"></span></span>
+              </div>
+              <div class="mrow">
+                <span class="k">babcpedhcp…</span>
+                <span class="n">Dark Mode Everywhere <span class="tag">auto</span></span>
+              </div>
+              <div class="saveline">
+                <span class="btn">Save Changes</span>
+                <span class="hintline">syncs to your other devices</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    Names you type are stored in Chrome sync; worked-out names stay on this device.
+  </div>
+</div>
+</body>
+</html>

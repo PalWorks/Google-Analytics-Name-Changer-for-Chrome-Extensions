@@ -12,13 +12,27 @@ const exportBtn       = document.getElementById('export-btn');
 const importFile      = document.getElementById('import-file');
 const statusMsg       = document.getElementById('status-msg');
 const openOptionsBtn  = document.getElementById('open-options-btn');
+const helpBtn         = document.getElementById('help-btn');
 const closeBtn        = document.getElementById('close-btn');
 const detectionBanner = document.getElementById('detection-banner');
 const detectionText   = document.getElementById('detection-text');
+const autonameBar     = document.getElementById('autoname-bar');
+const autonameText    = document.getElementById('autoname-text');
+const autonameBtn     = document.getElementById('autoname-btn');
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let isDirty = false;
+
+// Every unmapped slug detected on the GA4 tab, including those beyond the
+// three-row display cap. Carried to the options page on handoff.
+let detectedSlugs = [];
+let detectedAccounts = [];
+let detectedAccountId = null;
+
+// slug -> extension name, read out of GA4's own report widgets by the content
+// script. Free, local, and works for extensions that are not installed here.
+let nameHints = {};
 
 // ── Dirty tracking ────────────────────────────────────────────────────────────
 
@@ -61,13 +75,25 @@ const TRASH_SVG = `
       stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
+
+const LISTING_URL = (id) => `https://chromewebstore.google.com/detail/${id}`;
+
+const LISTING_SVG = `
+  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+    <path d="M6.13 2.33H2.92c-.32 0-.59.26-.59.58v8.17c0 .32.27.58.59.58h8.16c.33 0 .59-.26.59-.58V7.87"
+      stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8.75 1.75h3.5v3.5M12.25 1.75L6.42 7.58"
+      stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
 // ── Row factory ───────────────────────────────────────────────────────────────
 
-function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder, slugAriaLabel }) {
+function makeRow({ slug, name, animate, isDetected, isAuto, parentList, slugPlaceholder, slugAriaLabel }) {
   const row = document.createElement('div');
   let cls = 'mapping-row';
   if (animate)    cls += ' is-new';
   if (isDetected) cls += ' is-detected';
+  if (isAuto)     cls += ' is-auto';
   row.className = cls;
 
   const slugInput = document.createElement('input');
@@ -98,32 +124,58 @@ function makeRow({ slug, name, animate, isDetected, parentList, slugPlaceholder,
     markDirty();
   });
 
-  // Remove the detected highlight once the user starts editing
-  slugInput.addEventListener('input', () => { row.classList.remove('is-detected'); markDirty(); });
-  nameInput.addEventListener('input', () => { row.classList.remove('is-detected'); markDirty(); });
+  // Remove the detected/suggested highlights once the user starts editing
+  const clearHints = () => { row.classList.remove('is-detected', 'is-suggested'); markDirty(); };
+  slugInput.addEventListener('input', clearHints);
+  nameInput.addEventListener('input', clearHints);
 
   if (animate) {
     row.addEventListener('animationend', () => row.classList.remove('is-new'), { once: true });
   }
 
+  // Chrome forbids extensions from fetching the Web Store, so a slug we could
+  // not resolve locally gets a link the user can follow to read the name.
+  const listingBtn = document.createElement('button');
+  listingBtn.type = 'button';
+  listingBtn.className = 'listing-btn is-hidden';
+  listingBtn.title = 'Open this extension\'s Chrome Web Store listing';
+  listingBtn.setAttribute('aria-label', 'Open Chrome Web Store listing');
+  listingBtn.innerHTML = LISTING_SVG;
+  listingBtn.addEventListener('click', () => {
+    const id = slugInput.value.trim();
+    if (id) chrome.tabs.create({ url: LISTING_URL(id) });
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'row-actions';
+  if (isAuto) {
+    const badge = document.createElement('span');
+    badge.className = 'badge-auto';
+    badge.textContent = 'auto';
+    badge.title = 'Worked out automatically. Edit and Save to make it yours.';
+    actions.appendChild(badge);
+  }
+  actions.appendChild(listingBtn);
+  actions.appendChild(deleteBtn);
+
   row.appendChild(slugInput);
   row.appendChild(nameInput);
-  row.appendChild(deleteBtn);
+  row.appendChild(actions);
   return row;
 }
 
-function createRow(slug = '', name = '', animate = false, isDetected = false) {
+function createRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
   return makeRow({
-    slug, name, animate, isDetected,
+    slug, name, animate, isDetected, isAuto,
     parentList: list,
     slugPlaceholder: 'egedbdckafdbomeh…',
     slugAriaLabel: 'GA4 property slug',
   });
 }
 
-function createAccountRow(slug = '', name = '', animate = false, isDetected = false) {
+function createAccountRow(slug = '', name = '', animate = false, isDetected = false, isAuto = false) {
   return makeRow({
-    slug, name, animate, isDetected,
+    slug, name, animate, isDetected, isAuto,
     parentList: accountList,
     slugPlaceholder: '376297388',
     slugAriaLabel: 'GA4 account number',
@@ -155,18 +207,25 @@ function renderEmptyState(targetList) {
 
 // ── Render all rows ───────────────────────────────────────────────────────────
 
-function renderMappings(mappings) {
-  list.innerHTML = '';
-  const entries = Object.entries(mappings || {});
-  if (entries.length === 0) { renderEmptyState(list); return; }
-  entries.forEach(([slug, name]) => list.appendChild(createRow(slug, name)));
+/** User mappings first, then the ones the extension derived, badged "auto". */
+function renderInto(targetList, factory, userMappings, autoMappings) {
+  targetList.innerHTML = '';
+  const user = Object.entries(userMappings || {});
+  const auto = Object.entries(autoMappings || {})
+    .filter(([key]) => !(userMappings || {})[key]);
+
+  if (user.length === 0 && auto.length === 0) { renderEmptyState(targetList); return; }
+
+  user.forEach(([key, name]) => targetList.appendChild(factory(key, name)));
+  auto.forEach(([key, name]) => targetList.appendChild(factory(key, name, false, false, true)));
 }
 
-function renderAccountMappings(mappings) {
-  accountList.innerHTML = '';
-  const entries = Object.entries(mappings || {});
-  if (entries.length === 0) { renderEmptyState(accountList); return; }
-  entries.forEach(([id, name]) => accountList.appendChild(createAccountRow(id, name)));
+function renderMappings(mappings, auto) {
+  renderInto(list, createRow, mappings, auto);
+}
+
+function renderAccountMappings(mappings, auto) {
+  renderInto(accountList, createAccountRow, mappings, auto);
 }
 
 // ── Read current DOM state ────────────────────────────────────────────────────
@@ -306,8 +365,8 @@ importFile.addEventListener('change', () => {
       if (!parsed.mappings && !parsed.accountMappings)
         throw new Error('File must contain mappings and/or accountMappings.');
 
-      if (parsed.mappings)        renderMappings(parsed.mappings);
-      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings);
+      if (parsed.mappings)        renderMappings(parsed.mappings, {});
+      if (parsed.accountMappings) renderAccountMappings(parsed.accountMappings, {});
 
       const total = Object.keys(parsed.mappings || {}).length
                   + Object.keys(parsed.accountMappings || {}).length;
@@ -321,30 +380,261 @@ importFile.addEventListener('change', () => {
   importFile.value = '';
 });
 
+// ── Handoff to the options page ───────────────────────────────────────────────
+// The popup cannot warn before closing (extension popups get no beforeunload),
+// so anything typed here is stashed in local storage and picked up by the
+// options page. Overflow slugs that never got a row are carried too, which is
+// what makes the "open Full Settings to map all" note actually true.
+
+const HANDOFF_TTL_MS = 10 * 60 * 1000; // options.js ignores anything older
+
+function buildHandoff() {
+  const properties = [];
+  const seen = new Set();
+
+  list.querySelectorAll('.mapping-row').forEach((row) => {
+    const slug = row.querySelector('.slug-input').value.trim();
+    const name = row.querySelector('.name-input').value.trim();
+    if (!slug || seen.has(slug)) return;
+    seen.add(slug);
+    properties.push({ slug, name });
+  });
+
+  // Detected slugs the three-row cap never rendered
+  detectedSlugs.forEach((slug) => {
+    if (seen.has(slug)) return;
+    seen.add(slug);
+    properties.push({ slug, name: '' });
+  });
+
+  const accounts = [];
+  const seenAccounts = new Set();
+  accountList.querySelectorAll('.mapping-row').forEach((row) => {
+    const id   = row.querySelector('.slug-input').value.trim();
+    const name = row.querySelector('.name-input').value.trim();
+    if (!id || seenAccounts.has(id)) return;
+    seenAccounts.add(id);
+    accounts.push({ id, name });
+  });
+
+  detectedAccounts.forEach(({ id }) => {
+    if (!id || seenAccounts.has(id)) return;
+    seenAccounts.add(id);
+    accounts.push({ id, name: '' });
+  });
+
+  return { ts: Date.now(), accountId: detectedAccountId, properties, accounts };
+}
+
+function openOptions(hash = '') {
+  chrome.storage.local.set({ pendingDetection: buildHandoff() }, () => {
+    void chrome.runtime.lastError;
+    if (hash && chrome.runtime.getURL) {
+      chrome.tabs.create({ url: chrome.runtime.getURL(`options/options.html${hash}`) });
+    } else {
+      chrome.runtime.openOptionsPage();
+    }
+    window.close();
+  });
+}
+
 // ── Header action buttons ─────────────────────────────────────────────────────
 
-openOptionsBtn.addEventListener('click', () => {
-  chrome.runtime.openOptionsPage();
-  window.close();
-});
+openOptionsBtn.addEventListener('click', () => openOptions());
+
+helpBtn.addEventListener('click', () => openOptions('#welcome'));
 
 closeBtn.addEventListener('click', () => window.close());
 
+// ── Auto-naming from the Chrome Web Store ─────────────────────────────────────
+// A GA4 property slug for a CWS developer property IS the Chrome extension ID,
+// so the store listing URL can be reconstructed from it and its title read back.
+//
+// The network call lives in the service worker, which refuses unless the user
+// has both enabled the setting and granted the optional host permission.
+// Granting cannot happen here: chrome.permissions.request() tears down the
+// popup before its callback runs (crbug.com/952645), so the popup only ever
+// offers to hand the user over to the options page to grant it.
+
+function showAutonameBar(text, { actionLabel = null, state = 'info' } = {}) {
+  autonameText.textContent = text;
+  autonameBar.className = `autoname-bar is-${state}`;
+  if (actionLabel) {
+    autonameBtn.textContent = actionLabel;
+    autonameBtn.classList.remove('is-hidden');
+  } else {
+    autonameBtn.classList.add('is-hidden');
+  }
+}
+
+function unnamedDetectedSlugs() {
+  const out = [];
+  list.querySelectorAll('.mapping-row').forEach((row) => {
+    const slug = row.querySelector('.slug-input').value.trim();
+    const name = row.querySelector('.name-input').value.trim();
+    if (slug && !name) out.push(slug);
+  });
+  return out;
+}
+
+function applyResolvedNames(names, unresolved = []) {
+  const unresolvedSet = new Set(unresolved);
+  let filled = 0;
+
+  list.querySelectorAll('.mapping-row').forEach((row) => {
+    const slugInput = row.querySelector('.slug-input');
+    const nameInput = row.querySelector('.name-input');
+    const slug      = slugInput.value.trim();
+    const resolved  = names[slug];
+
+    if (resolved && !nameInput.value.trim()) {
+      nameInput.value = resolved;
+      row.classList.add('is-suggested');
+      filled++;
+      return;
+    }
+
+    // Not installed locally, so offer the public listing instead
+    if (unresolvedSet.has(slug) && !nameInput.value.trim()) {
+      row.querySelector('.listing-btn').classList.remove('is-hidden');
+    }
+  });
+
+  if (filled > 0) markDirty();
+  return filled;
+}
+
+function runAutoName() {
+  const ids = unnamedDetectedSlugs();
+  if (ids.length === 0) return;
+
+  showAutonameBar('Naming from your installed extensions…', { state: 'working' });
+
+  chrome.runtime.sendMessage({ action: 'resolveNames', ids }, (response) => {
+    if (chrome.runtime.lastError || !response) {
+      showAutonameBar('Name lookup unavailable.', { state: 'info' });
+      return;
+    }
+    if (response.reason === 'no-permission' || response.reason === 'disabled') {
+      offerAutoName();
+      return;
+    }
+    const filled = applyResolvedNames(response.names || {}, response.unresolved || []);
+    const missed = ids.length - filled;
+    if (filled === 0) {
+      showAutonameBar('None are installed here. Use the link on each row to check its listing.',
+        { state: 'info' });
+    } else {
+      showAutonameBar(
+        `Named ${filled}` + (missed > 0 ? `, ${missed} not installed here` : '') + ' · review, then Save',
+        { state: 'done' }
+      );
+    }
+  });
+}
+
+function offerAutoName() {
+  if (unnamedDetectedSlugs().length === 0) return;
+  showAutonameBar('Name these automatically from your installed extensions?',
+    { actionLabel: 'Turn on', state: 'offer' });
+}
+
+autonameBtn.addEventListener('click', () => openOptions('#autoname'));
+
+function initAutoName() {
+  suggestAccountNameFromProperty();
+  const hinted = list.querySelectorAll('.mapping-row.is-suggested').length;
+  if (hinted > 0) {
+    showAutonameBar(
+      `Named ${hinted} from this GA4 report · review, then Save`, { state: 'done' });
+  }
+  chrome.storage.sync.get(['autoResolveNames'], (result) => {
+    if (chrome.runtime.lastError) return;
+    if (result.autoResolveNames === true) runAutoName();
+    else if (unnamedDetectedSlugs().length > 0) offerAutoName();
+  });
+}
+
 // ── GA4 auto-detection ────────────────────────────────────────────────────────
 
-function addDetectedAccountRow(accountId, currentAccountMappings) {
-  if (currentAccountMappings[accountId]) return; // already mapped — skip
+/**
+ * A short form of an extension name, for use as an account display name.
+ *
+ * Chrome Web Store developer accounts hold one extension each, so the account
+ * is best labelled by that extension. The full name is usually too long for the
+ * switcher row, so this keeps roughly the first few words and trims any
+ * dangling connector word left at the end.
+ */
+const TRAILING_STOPWORDS = new Set([
+  'and','or','the','a','an','as','of','for','to','in','on','with','by','my','your'
+]);
+
+function shortenName(name, maxChars = 24) {
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '';
+
+  const kept = [words[0]];
+  for (let i = 1; i < words.length; i++) {
+    if ((kept.join(' ') + ' ' + words[i]).length > maxChars) break;
+    kept.push(words[i]);
+  }
+  while (kept.length > 1 && TRAILING_STOPWORDS.has(kept[kept.length - 1].toLowerCase())) {
+    kept.pop();
+  }
+  return kept.join(' ');
+}
+
+/**
+ * GA4 only puts the currently open account in the URL, but the account switcher
+ * renders every account the user can see. The content script scans for all of
+ * them, so every unmapped account gets a row rather than just the current one.
+ */
+function addDetectedAccountRows(accounts, currentAccountMappings) {
+  const newAccounts = (accounts || []).filter(a => a && a.id && !currentAccountMappings[a.id]);
+  detectedAccounts = newAccounts;
+  if (newAccounts.length === 0) return;
+
   const empty = document.getElementById('account-empty-state');
   if (empty) empty.remove();
-  const row = createAccountRow(accountId, '', true, true);
-  // Insert before existing rows so it's immediately visible
-  accountList.insertBefore(row, accountList.firstChild);
-  row.querySelector('.name-input').focus();
+
+  // Reversed, because each row is inserted at the top: iterating backwards
+  // leaves them in the order GA4 listed them.
+  newAccounts.slice().reverse().forEach(({ id }) => {
+    accountList.insertBefore(createAccountRow(id, '', true, true), accountList.firstChild);
+  });
+
+  accountList.querySelector('.name-input').focus();
+  markDirty();
+}
+
+/**
+ * When a single account and a single named property are on screen, they belong
+ * to each other, so the account can be labelled from the extension's name.
+ * Only ever fills a blank field, and is styled as a suggestion for review.
+ */
+function suggestAccountNameFromProperty() {
+  const accountRows = accountList.querySelectorAll('.mapping-row');
+  if (accountRows.length !== 1) return;
+
+  const nameInput = accountRows[0].querySelector('.name-input');
+  if (nameInput.value.trim()) return;
+
+  const named = list.querySelectorAll('.mapping-row.is-suggested');
+  if (named.length !== 1) return;
+
+  const full = named[0].querySelector('.name-input').value.trim();
+  const short = shortenName(full);
+  if (!short) return;
+
+  nameInput.value = short;
+  accountRows[0].classList.add('is-suggested');
   markDirty();
 }
 
 function addDetectedSlugRows(slugs, currentMappings) {
   const newSlugs = (slugs || []).filter(s => !currentMappings[s]);
+  detectedSlugs = newSlugs; // remembered in full for the options-page handoff
+
   const toShow   = newSlugs.slice(0, 3);
   const overflow = newSlugs.length - toShow.length;
 
@@ -355,7 +645,9 @@ function addDetectedSlugRows(slugs, currentMappings) {
 
   // Reverse so newSlugs[0] lands at list.firstChild after all insertions
   toShow.slice().reverse().forEach(slug => {
-    const row = createRow(slug, '', true, true);
+    const hinted = nameHints[slug] || '';
+    const row = createRow(slug, hinted, true, true);
+    if (hinted) row.classList.add('is-suggested');
     list.insertBefore(row, list.firstChild);
     markDirty();
   });
@@ -374,7 +666,47 @@ function addDetectedSlugRows(slugs, currentMappings) {
 }
 
 function initDetection(currentMappings, currentAccountMappings) {
-  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+  chrome.storage.local.get(['nameHints'], (stored) => {
+    nameHints = (!chrome.runtime.lastError && stored.nameHints) || {};
+    runDetection(currentMappings, currentAccountMappings);
+  });
+}
+
+/**
+ * Ask a GA4 tab for the current page context.
+ *
+ * The active tab is tried first, but the popup is frequently opened while
+ * looking at something else, so a GA4 tab anywhere in the same window is used
+ * as a fallback. Querying by URL needs no extra permission: `tabs` is NOT
+ * declared, and Chrome exposes `url` only for tabs matching the host
+ * permissions this extension already holds for analytics.google.com.
+ */
+function findGA4Tab(callback) {
+  chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
+    if (chrome.runtime.lastError) { callback(null, false); return; }
+
+    const isGA4Active = activeTab && typeof activeTab.url === 'string' &&
+                        activeTab.url.startsWith('https://analytics.google.com/');
+    if (isGA4Active) { callback(activeTab, true); return; }
+
+    // Not looking at GA4 right now: fall back to a GA4 tab in this window
+    chrome.tabs.query(
+      { url: 'https://analytics.google.com/*', currentWindow: true },
+      (tabs) => {
+        if (chrome.runtime.lastError || !tabs || tabs.length === 0) {
+          // Last resort: the active tab may still host the content script even
+          // if its url was not readable.
+          callback(activeTab || null, true);
+          return;
+        }
+        callback(tabs[0], false);
+      }
+    );
+  });
+}
+
+function runDetection(currentMappings, currentAccountMappings) {
+  findGA4Tab((tab, isActive) => {
     if (!tab) { loadLastContext(); return; }
 
     chrome.tabs.sendMessage(tab.id, { action: 'getGA4Data' }, (response) => {
@@ -384,17 +716,32 @@ function initDetection(currentMappings, currentAccountMappings) {
         return;
       }
 
-      const { accountId, slugs } = response;
-      const accountLabel = accountId ? `· Account ${accountId}` : '';
-      showDetectionBanner(`GA4 page detected ${accountLabel}`.trim(), 'live');
+      const { accountId, accounts, slugs, hint } = response;
+      detectedAccountId = accountId || null;
+      if (hint && hint.slug && hint.name) nameHints[hint.slug] = hint.name;
 
-      if (accountId) addDetectedAccountRow(accountId, currentAccountMappings);
+      // Older cached payloads only carried a single accountId
+      const found = Array.isArray(accounts)
+        ? accounts
+        : (accountId ? [{ id: accountId, label: null }] : []);
+
+      const where = isActive ? '' : ' (other tab)';
+      showDetectionBanner(
+        'GA4 page detected' +
+        (found.length > 1 ? ` · ${found.length} accounts`
+          : accountId ? ` · Account ${accountId}` : '') + where,
+        'live'
+      );
+
+      addDetectedAccountRows(found, currentAccountMappings);
       addDetectedSlugRows(slugs, currentMappings);
+
       // If no account row stole focus, land on the first detected slug's name field
-      if (!accountId) {
+      if (!accountList.querySelector('.is-detected')) {
         const firstSlug = list.querySelector('.is-detected');
         if (firstSlug) firstSlug.querySelector('.name-input').focus();
       }
+      initAutoName();
     });
   });
 }
@@ -402,10 +749,10 @@ function initDetection(currentMappings, currentAccountMappings) {
 function loadLastContext() {
   chrome.storage.local.get(['lastGA4Context'], (result) => {
     if (chrome.runtime.lastError || !result.lastGA4Context) return;
-    const { accountId } = result.lastGA4Context;
-    if (accountId) {
-      showDetectionBanner(`Last seen · Account ${accountId}`, 'cached');
-    }
+    const { accountId, accounts } = result.lastGA4Context;
+    const count = Array.isArray(accounts) ? accounts.length : 0;
+    if (count > 1)      showDetectionBanner(`Last seen · ${count} accounts`, 'cached');
+    else if (accountId) showDetectionBanner(`Last seen · Account ${accountId}`, 'cached');
   });
 }
 
@@ -442,15 +789,23 @@ function checkLabelHealth(accountMappings) {
 chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
   if (chrome.runtime.lastError) {
     showStatus('Could not load saved mappings.', 'error');
-    renderMappings({});
-    renderAccountMappings({});
+    renderMappings({}, {});
+    renderAccountMappings({}, {});
     return;
   }
   const m  = result.mappings        || {};
   const am = result.accountMappings || {};
-  renderMappings(m);
-  renderAccountMappings(am);
-  markClean();
-  checkLabelHealth(am);
-  initDetection(m, am);
+
+  chrome.storage.local.get(['autoMappings', 'autoAccountMappings'], (local) => {
+    const auto     = (!chrome.runtime.lastError && local.autoMappings) || {};
+    const autoAccs = (!chrome.runtime.lastError && local.autoAccountMappings) || {};
+
+    renderMappings(m, auto);
+    renderAccountMappings(am, autoAccs);
+    markClean();
+    checkLabelHealth(am);
+
+    // Already-named slugs must not be offered again as "detected"
+    initDetection({ ...auto, ...m }, { ...autoAccs, ...am });
+  });
 });

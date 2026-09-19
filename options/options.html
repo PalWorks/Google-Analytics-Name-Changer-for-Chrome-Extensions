@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GA4 Name Changer — Settings</title>
+  <title>Google Analytics (GA4) Name Changer for Chrome Extension Developers — Settings</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
@@ -11,63 +11,214 @@
 
     <header>
       <div class="header-content">
-        <img src="../icons/icon48.png" alt="GA4 Name Changer" class="logo">
+        <img src="../icons/icon48.png" alt="Google Analytics (GA4) Name Changer for Chrome Extension Developers" class="logo">
         <div class="header-text">
-          <h1>GA4 Name Changer</h1>
+          <h1>Google Analytics (GA4) Name Changer for Chrome Extension Developers</h1>
           <p class="subtitle">Map GA4 account numbers and property slugs to readable names</p>
         </div>
       </div>
     </header>
 
     <main>
-      <div class="cards-grid">
 
-        <!-- GA4 Account Number mappings -->
-        <div class="card">
-          <div class="card-header">
-            <span class="col-label">GA4 Account Number</span>
-            <span class="col-label">Display Name</span>
-            <span class="col-action-header"></span>
+      <!-- Auto-naming controls -->
+      <div class="toolbar">
+        <div class="toolbar-info">
+          <div class="switch-block">
+            <label class="switch">
+              <input id="autoname-toggle" type="checkbox" checked>
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+              <span class="switch-label">Name my extensions automatically</span>
+            </label>
+            <p class="toolbar-hint">
+              On by default. Names are worked out from the Google Analytics page you are already
+              looking at and applied straight away, with no save and no network request. Anything
+              you type below overrides them.
+            </p>
           </div>
 
-          <div id="account-list">
-            <!-- Rows injected by options.js -->
-          </div>
-
-          <div class="card-footer">
-            <button id="add-account-btn" class="btn-ghost" type="button">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-              Add Mapping
-            </button>
-          </div>
-        </div>
-
-        <!-- GA4 Property Name mappings -->
-        <div class="card">
-          <div class="card-header">
-            <span class="col-label">GA4 Property Name</span>
-            <span class="col-label">Display Name</span>
-            <span class="col-action-header"></span>
-          </div>
-
-          <div id="mappings-list">
-            <!-- Rows injected by options.js -->
-          </div>
-
-          <div class="card-footer">
-            <button id="add-btn" class="btn-ghost" type="button">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-              Add Mapping
-            </button>
+          <div class="switch-block">
+            <label class="switch">
+              <input id="management-toggle" type="checkbox">
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+              <span class="switch-label">Also use my installed extensions</span>
+            </label>
+            <p class="toolbar-hint">
+              Asks Chrome for the <code>management</code> permission, then names any slug matching
+              an extension installed in this profile. Only names are read. Turning this off gives
+              the permission back.
+            </p>
           </div>
         </div>
 
+        <div class="toolbar-actions">
+          <span id="autoname-status" class="status-msg" aria-live="polite"></span>
+          <button id="fetch-names-btn" class="btn-ghost" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M12.25 7a5.25 5.25 0 1 1-1.54-3.71" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12.25 1.75V4.5H9.5" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Fill missing names
+          </button>
+        </div>
+      </div>
+
+      <!-- How names are worked out -->
+      <details class="method-card">
+        <summary>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M7 6.2v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="7" cy="4" r="0.7" fill="currentColor"/>
+          </svg>
+          How are these names worked out?
+          <svg class="accordion-chevron" width="22" height="22" viewBox="0 0 20 20"
+               fill="none" aria-hidden="true">
+            <path d="M5.5 8l4.5 4.5L14.5 8" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </summary>
+
+        <div class="method-body">
+          <p class="method-lead">
+            Your GA4 property slug <em>is</em> your extension's Chrome Web Store ID. Three
+            sources turn it into a name, tried in order. Nothing is ever sent anywhere.
+          </p>
+
+          <ol class="method-list">
+            <li>
+              <strong>Your own GA4 reports.</strong> Google's report of your most-viewed pages
+              lists your store listing, and the store titles it
+              <code>&lt;Extension Name&gt; – Chrome Web Store</code>. The name is split off the
+              end of that title, so it is read straight from the page you are already viewing.
+              <span class="method-note">Works in any language, and for extensions you do not
+              have installed.</span>
+            </li>
+            <li>
+              <strong>Your installed extensions.</strong> Optional. If you grant the
+              <code>management</code> permission, any slug matching an extension installed in
+              this Chrome profile is named from Chrome directly.
+            </li>
+            <li>
+              <strong>The store listing link.</strong> Anything the first two cannot name shows
+              a link on its row that opens its public listing, so you can read the name and
+              type it.
+            </li>
+          </ol>
+
+          <p class="method-note method-timing">
+            Names appear a few seconds after you open a property, once Google Analytics has
+            finished loading the report they are read from. Switching property inside Google
+            Analytics takes a moment longer, because its own reports lag the switch.
+          </p>
+
+          <p class="method-foot">
+            An account is named after the extension it holds, shortened. An account holding
+            <strong>more than one</strong> has no single right name, so it gets a draft made from
+            all of them &mdash; <code>Amazon MyOrders + Flip Rotate</code> &mdash; with any
+            extension not yet named counted as <code>+ 1 more</code>. Every draft is yours to
+            rewrite. Names the extension worked out are marked
+            <span class="badge-auto">auto</span>; edit any of them and press Save to make it
+            permanently yours.
+          </p>
+        </div>
+      </details>
+
+      <!-- One table: accounts, each with the properties it holds beneath it -->
+      <div class="card">
+        <div class="card-header">
+          <span class="col-label">Account number &nbsp;/&nbsp; Property slug</span>
+          <span class="col-label">Display name</span>
+          <span class="col-action-header"></span>
+        </div>
+
+        <div id="groups-list">
+          <!-- Account groups injected by options.js -->
+        </div>
+
+        <div class="card-footer">
+          <button id="add-account-btn" class="btn-ghost" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add account
+          </button>
+          <button id="add-btn" class="btn-ghost" type="button">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add property
+          </button>
+        </div>
       </div>
     </main>
+
+    <!-- Feedback -->
+    <details class="method-card feedback-card">
+      <summary>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M12.25 9.33a1.17 1.17 0 0 1-1.17 1.17H3.5L1.75 12.25V2.92c0-.65.52-1.17 1.17-1.17h8.16c.65 0 1.17.52 1.17 1.17v6.41Z"
+            stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Send feedback or report a problem
+        <svg class="accordion-chevron" width="22" height="22" viewBox="0 0 20 20"
+             fill="none" aria-hidden="true">
+          <path d="M5.5 8l4.5 4.5L14.5 8" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+
+      <div class="method-body">
+        <form id="feedback-form" novalidate>
+          <div class="field-grid">
+            <label class="field">
+              <span class="field-label">Name</span>
+              <input id="fb-name" class="input field-input" type="text" autocomplete="name"
+                     maxlength="80" placeholder="Your name">
+            </label>
+            <label class="field">
+              <span class="field-label">Email <span class="req">required</span></span>
+              <input id="fb-email" class="input field-input" type="email" autocomplete="email"
+                     maxlength="150" placeholder="you@example.com" required>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Message <span class="req">required</span></span>
+            <textarea id="fb-message" class="input field-input field-textarea" rows="5"
+                      maxlength="4000" placeholder="What happened, or what would you like to see?"
+                      required></textarea>
+          </label>
+
+          <details class="diag-box">
+            <summary>
+              <span>What gets sent with this</span>
+              <svg class="accordion-chevron is-small" width="16" height="16" viewBox="0 0 20 20"
+                   fill="none" aria-hidden="true">
+                <path d="M5.5 8l4.5 4.5L14.5 8" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </summary>
+            <pre id="fb-diagnostics" class="diag-pre">collecting…</pre>
+            <p class="diag-note">
+              Technical details only, so support can reproduce the problem. No Google Analytics
+              data, no property or account names, and nothing about your browsing.
+            </p>
+            <p class="diag-note">
+              This and your message are sent only when you press Send, and go to the developer
+              to answer you. Nothing is sent in the background.
+            </p>
+          </details>
+
+          <div class="form-actions">
+            <span id="fb-status" class="status-msg" aria-live="polite"></span>
+            <button id="fb-submit" class="btn-primary" type="submit">Send feedback</button>
+          </div>
+        </form>
+      </div>
+    </details>
 
     <footer>
       <div class="footer-left">
@@ -82,6 +233,90 @@
       </div>
     </footer>
 
+  </div>
+
+  <!-- ── Welcome / onboarding modal ───────────────────────────────────────── -->
+  <div id="welcome-overlay" class="overlay is-hidden" role="dialog" aria-modal="true"
+       aria-labelledby="welcome-title">
+    <div class="modal">
+
+      <button id="welcome-close" class="modal-close" type="button" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <!-- Slide 1 — what the extension does -->
+      <section class="slide" data-slide="0">
+        <span class="slide-badge">Welcome</span>
+        <h2 id="welcome-title">Give your GA4 properties real names</h2>
+        <p>
+          Google shares Chrome Web Store analytics under a 32-character extension ID, and labels
+          every account identically. This extension swaps those identifiers for names you choose,
+          live inside Google Analytics.
+        </p>
+
+        <div class="preview">
+          <div class="preview-row">
+            <span class="preview-tag">Before</span>
+            <code class="preview-slug">egedbdckafdbomehjaihjhbcgmngmlah</code>
+          </div>
+          <div class="preview-arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="preview-row">
+            <span class="preview-tag is-after">After</span>
+            <span class="preview-name">Favicon Changer Ultimate</span>
+          </div>
+        </div>
+
+        <p class="slide-note">
+          Nothing in your Google Analytics account is changed. The replacement is display-only
+          and lives in your browser.
+        </p>
+      </section>
+
+      <!-- Slide 2 — auto-naming opt-in -->
+      <section class="slide is-hidden" data-slide="1">
+        <span class="slide-badge">Optional</span>
+        <h2>Let it name them for you</h2>
+        <p>
+          That 32-character slug <em>is</em> your extension's ID. Turn this on and any of those
+          extensions installed in this Chrome profile are named automatically, instantly and
+          entirely offline. You review every suggestion before saving.
+        </p>
+
+        <ul class="fact-list">
+          <li>Names are read locally with Chrome's <code>management</code> API. Nothing is sent
+              anywhere, and no network request is made.</li>
+          <li>Chrome asks your permission first, and turning this back off revokes it.</li>
+          <li>Only names are read. Nothing is installed, enabled, disabled or changed.</li>
+          <li>An extension that is not installed here cannot be named this way. Those rows get a
+              link that opens the public Chrome Web Store listing so you can read the name.</li>
+        </ul>
+
+        <div class="slide-actions">
+          <button id="welcome-enable" class="btn-primary" type="button">Turn on auto-naming</button>
+          <button id="welcome-skip" class="btn-text" type="button">Not now</button>
+        </div>
+      </section>
+
+      <footer class="modal-footer">
+        <div class="dots" role="tablist" aria-label="Onboarding progress">
+          <span class="dot is-active" data-dot="0"></span>
+          <span class="dot" data-dot="1"></span>
+        </div>
+        <div class="modal-nav">
+          <button id="welcome-back" class="btn-text is-hidden" type="button">Back</button>
+          <button id="welcome-next" class="btn-primary" type="button">Next</button>
+          <button id="welcome-done" class="btn-text is-hidden" type="button">Done</button>
+        </div>
+      </footer>
+
+    </div>
   </div>
 
   <script src="options.js"></script>

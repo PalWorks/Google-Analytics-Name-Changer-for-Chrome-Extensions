@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screenshot 1: the problem and the fix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="shot.css">
+<style>
+  .split { display: grid; grid-template-columns: 1fr 74px 1fr; align-items: center; gap: 0; width: 100%; }
+
+  .pane { border-radius: 14px; overflow: hidden; }
+  .pane .win-bar { background: #f1f1f4; }
+  .pane.before { border: 1px solid var(--border); box-shadow: 0 8px 26px rgba(16,16,40,.07); }
+  .pane.after  { border: 1.5px solid rgba(79,70,229,.32); box-shadow: 0 12px 38px rgba(79,70,229,.17); }
+
+  .ga { padding: 26px 26px 30px; background: #fff; }
+
+  .crumb { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-3); }
+  .crumb .sep { color: #d2d2d8; }
+
+  .prop {
+    margin-top: 14px; padding: 13px 15px; border-radius: 10px;
+    border: 1px solid var(--border); background: #fcfcfd;
+    display: flex; align-items: center; gap: 11px;
+  }
+  .prop .ico { width: 26px; height: 26px; border-radius: 7px; flex: none;
+               background: rgba(79,70,229,.10); display: flex; align-items: center; justify-content: center; }
+  .prop-name { font-size: 15.5px; font-weight: 600; }
+  .prop-name.raw { font-family: var(--mono); font-size: 13.5px; font-weight: 500; color: #8a8a90; }
+  .prop-sub  { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+  .prop-sub.on { color: var(--accent); font-weight: 600; }
+
+  .rowlist { margin-top: 18px; }
+  .r {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 4px; border-bottom: 1px solid #f0f0f3; font-size: 13px;
+  }
+  .r:last-child { border-bottom: none; }
+  .r .n { color: var(--text-2); }
+  .r .n.raw { font-family: var(--mono); font-size: 12px; color: #9a9aa0; }
+  .r .v { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .tagline {
+    display: inline-block; margin-bottom: 12px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase;
+  }
+  .tagline.b { color: var(--text-3); }
+  .tagline.a { color: var(--success); }
+
+  .midarrow { display: flex; align-items: center; justify-content: center; }
+  .midarrow div {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 20px rgba(79,70,229,.36);
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <div class="head">
+    <div class="step"><span class="dot"></span> The problem</div>
+    <h1>Google Analytics calls your extension<br><span class="hl">inkkcgalfjninhfflfhkflidilkjmhof</span></h1>
+    <p class="lede">
+      Chrome Web Store analytics arrive under a 32-character extension ID, and every developer
+      account carries the same label. This extension puts your real names in their place.
+    </p>
+  </div>
+
+  <div class="body">
+    <div class="split">
+
+      <div>
+        <span class="tagline b">Before</span>
+        <div class="pane before">
+          <div class="win-bar"><i></i><i></i><i></i><span class="win-title">analytics.google.com</span></div>
+          <div class="ga">
+            <div class="crumb">All accounts <span class="sep">&rsaquo;</span> Chrome Web Store developer properties</div>
+            <div class="prop">
+              <div class="ico">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.6" y="2.6" width="10.8" height="8.8" rx="2" stroke="#9a9aa0" stroke-width="1.4"/></svg>
+              </div>
+              <div>
+                <div class="prop-name raw">inkkcgalfjninhfflfhkflidilkjmhof</div>
+                <div class="prop-sub">241067359</div>
+              </div>
+            </div>
+            <div class="rowlist">
+              <div class="r"><span class="n raw">babcpedhcpecmfgdbccblgllkpjnhcip</span><span class="v">1,284</span></div>
+              <div class="r"><span class="n raw">aaomaanggjideicdjgoiohaodklelkjd</span><span class="v">932</span></div>
+              <div class="r"><span class="n raw">ejlobdbekjomjoldppokhledlagjggmm</span><span class="v">417</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="midarrow">
+        <div>
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+            <path d="M4 10h12M11.5 5l5 5-5 5" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div>
+        <span class="tagline a">After</span>
+        <div class="pane after">
+          <div class="win-bar"><i></i><i></i><i></i><span class="win-title">analytics.google.com</span></div>
+          <div class="ga">
+            <div class="crumb">All accounts <span class="sep">&rsaquo;</span> Tab Session Saver + Dark Mode</div>
+            <div class="prop">
+              <div class="ico">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.6" y="2.6" width="10.8" height="8.8" rx="2" stroke="#4F46E5" stroke-width="1.4"/></svg>
+              </div>
+              <div>
+                <div class="prop-name">Tab Session Saver Pro</div>
+                <div class="prop-sub on">Tab Session Saver + Dark Mode</div>
+              </div>
+            </div>
+            <div class="rowlist">
+              <div class="r"><span class="n">Dark Mode Everywhere</span><span class="v">1,284</span></div>
+              <div class="r"><span class="n">Price History Tracker</span><span class="v">932</span></div>
+              <div class="r"><span class="n">Bulk Bookmark Cleaner</span><span class="v">417</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    Display only. Nothing in your Google Analytics account is changed.
+  </div>
+</div>
+</body>
+</html>
