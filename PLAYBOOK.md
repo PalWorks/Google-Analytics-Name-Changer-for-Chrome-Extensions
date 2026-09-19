@@ -83,6 +83,15 @@ There is a deterministic fixture for this that needs no Google account: it serve
 a fake `accountTree`, a fake page-title report and a scripted delay between the hash changing
 and the report refreshing, so the race can be reproduced on demand at any delay.
 
+### Account labels
+
+- [ ] An account holding one extension is labelled with that extension's name, shortened
+- [ ] An account holding two, both named, reads `A + B` and fits in GA4's breadcrumb
+- [ ] An account holding two with only one named reads `A + 1 more`, and becomes `A + B`
+      after the second property is opened
+- [ ] The label never exceeds 38 characters
+- [ ] Editing a label and pressing **Save Changes** makes it stick, and the `auto` badge goes
+
 ### Settings table
 
 - [ ] Accounts render as group heads with their properties nested beneath them

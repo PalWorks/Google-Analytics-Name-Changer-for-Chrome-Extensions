@@ -914,6 +914,72 @@
     return kept.join(' ');
   }
 
+  // How long a combined account label may run. An account label sits in GA4's
+  // breadcrumb next to the property name, so it has to stay short.
+  const COMBINED_MAX_CHARS = 38;
+
+  /**
+   * Punctuation inside an extension name is noise once the name is cut down to
+   * a couple of words: "Flip, Rotate and Mirror" reads better as "Flip Rotate".
+   */
+  function tidyForCombining(name) {
+    return String(name).replace(/[,:;|]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * Build one account label out of the extensions the account holds.
+   *
+   * One extension: its name, shortened, as before. Several: each cut harder and
+   * joined with " + ", so a two-extension account reads
+   * "Amazon MyOrders + Flip Rotate" rather than sitting blank.
+   *
+   * Extensions we have not named yet are counted, not guessed at, so an account
+   * we only half know says "… + 1 more" instead of quietly labelling itself
+   * after the single extension we happen to have seen. The label is rewritten
+   * as the remaining names are learned.
+   */
+  function combineAccountName(names, unknown) {
+    const known = names.filter(Boolean);
+    if (known.length === 0) return '';
+    if (known.length === 1 && !unknown) return shortenName(known[0]);
+
+    const shown = known.slice(0, 3);
+    const rest  = (known.length - shown.length) + (unknown || 0);
+    const more  = rest > 0 ? `${rest} more` : '';
+
+    const slots  = shown.length + (rest > 0 ? 1 : 0);
+    const budget = COMBINED_MAX_CHARS - 3 * (slots - 1) - more.length;
+    const per    = Math.max(9, Math.floor(budget / shown.length));
+
+    const parts = shown.map(n => shortenName(tidyForCombining(n), per)).filter(Boolean);
+    if (rest > 0) parts.push(more);
+    return parts.join(' + ');
+  }
+
+  /**
+   * Every property slug this account holds: GA4's own tree when it lists the
+   * account, otherwise everything we have filed under it. The tree is exact but
+   * capped, so the filed pairs are what cover the rest (ADR-014).
+   */
+  function slugsOfAccount(accountId, pairs) {
+    const fromTree = accountToSlugs().get(accountId);
+    if (fromTree && fromTree.length > 0) return fromTree;
+    return Object.keys(pairs || {}).filter(slug => pairs[slug] === accountId);
+  }
+
+  function accountLabelFor(accountId, autos, pairs) {
+    const slugs = slugsOfAccount(accountId, pairs);
+    if (slugs.length === 0) return '';
+
+    const names = [];
+    let unknown = 0;
+    for (const slug of slugs) {
+      const name = userMappings[slug] || autos[slug];
+      if (name) names.push(name); else unknown++;
+    }
+    return combineAccountName(names, unknown);
+  }
+
   /**
    * Record a derived name and apply it immediately.
    *
@@ -936,19 +1002,8 @@
     // settled read, so the pairing is exact.
     persistPropertyAccount(hint.slug, accountId);
 
-    // A Chrome Web Store account can hold more than one extension (verified
-    // live: one test account holds two). Naming such an account after a single
-    // one of its extensions would be wrong, so only do it when GA4's own tree
-    // confirms this account holds exactly one property. With no tree available,
-    // fall back to requiring that this page shows exactly one property.
-    const slugsForAccount = accountToSlugs().get(accountId);
-    const soleProperty = slugsForAccount
-      ? slugsForAccount.length === 1
-      : true;
-    const shortName = soleProperty ? shortenName(hint.name) : '';
-
     chrome.storage.local.get(
-      ['nameHints', 'autoMappings', 'autoAccountMappings'],
+      ['nameHints', 'autoMappings', 'autoAccountMappings', 'propertyAccounts'],
       (result) => {
         if (chrome.runtime.lastError) return;
 
@@ -981,13 +1036,29 @@
           });
         }
 
-        const nameChanged    = autos[hint.slug] !== hint.name || claimants.length > 0;
-        const accountChanged = accountId && shortName && autoAccs[accountId] !== shortName;
-        if (!nameChanged && !accountChanged && hints[hint.slug] === hint.name) return;
+        const nameChanged = autos[hint.slug] !== hint.name || claimants.length > 0;
+        const hintChanged = hints[hint.slug] !== hint.name;
 
+        // Written first, so the account label below sees this property's name
+        // alongside its siblings rather than one read behind.
         hints[hint.slug] = hint.name;
         autos[hint.slug] = hint.name;
-        if (accountId && shortName) autoAccs[accountId] = shortName;
+
+        // A Chrome Web Store account can hold more than one extension (verified
+        // live: two accounts here hold two and three). There is no single right
+        // name for such an account, so it gets a draft built from all of them,
+        // badged "auto" and editable like any other.
+        const pairs = result.propertyAccounts || {};
+        if (accountId) {
+          // The pairing for this very property may not have reached storage
+          // yet, so add it here rather than waiting a round.
+          pairs[hint.slug] = accountId;
+        }
+        const label = accountId ? accountLabelFor(accountId, autos, pairs) : '';
+        const accountChanged = !!label && autoAccs[accountId] !== label;
+
+        if (!nameChanged && !accountChanged && !hintChanged) return;
+        if (accountChanged) autoAccs[accountId] = label;
 
         chrome.storage.local.set({
           nameHints: hints,

@@ -117,7 +117,7 @@ Chrome Web Store - Extensions                                       0   <- gener
 ```
 
 ```
-maybeHarvest()                        (throttled to 1 per 5s)
+maybeHarvest()                        (5s settled · 1.2s settling · 2.5s awaiting reports)
   ├─ visibleTextValues()
   ├─ exactly one slug visible?  ──no──▶ skip: cannot attribute the report
   ├─ reportTitleRows()                  find tables headed "page title / screen class"
@@ -132,6 +132,14 @@ maybeHarvest()                        (throttled to 1 per 5s)
 
 Harvesting runs from the observer callback **before** its empty-map early return, because a user with no mappings yet is precisely who benefits most. It also runs once ~2.5 s after init, since GA4 fills its report widgets asynchronously.
 
+### Settling: not every read is safe to believe
+
+GA4 rewrites the URL on a property switch **immediately** and refetches its report widgets about **four seconds later** (measured live). A read inside that window pairs the new property's slug with the previous extension's name. So a harvested name is attributed only once the candidates have **changed** since the switch and then **held still** for a further pass. A full page load skips the "changed" requirement, since a fresh document cannot be showing a previous property's data.
+
+An empty candidate set is not a settled answer: GA4's page is interactive several seconds before its report has rows. While there is nothing on screen to name, the extension keeps waiting on a slower cadence (2.5 s, up to 90 s) instead of concluding "no name". Measured on a live cold load: over 20 s to the first name before this, 8.7 s after.
+
+See [DECISIONS.md](DECISIONS.md) ADR-013.
+
 ### Naming sources, in priority order
 
 | Tier | Source | Cost | Covers |
@@ -140,7 +148,18 @@ Harvesting runs from the observer callback **before** its empty-map early return
 | 2 | `chrome.management.get()` | optional permission | Extensions installed in this profile |
 | 3 | Store listing link | one click, manual | Everything else |
 
-An account row is additionally suggested from its property's name, shortened, when exactly one account and one named property are on screen. Chrome Web Store developer accounts hold one extension each, so that pairing is safe in the common (switcher closed) case.
+### Naming an account
+
+An account label is built from the extensions the account holds, which `propertyAccounts` and GA4's own tree together identify:
+
+| Account holds | Label |
+|---|---|
+| one extension | that name, shortened to 24 chars |
+| several, all named | each cut harder and joined: `Amazon MyOrders + Flip Rotate` |
+| several, some unnamed | the known ones plus a count: `Amazon MyOrders Page Grid + 1 more` |
+| none named yet | nothing written |
+
+Capped at 38 characters, because the label sits in GA4's breadcrumb beside the property name. Unnamed siblings are **counted, never guessed at**: labelling a two-extension account after the single extension we happen to have seen is exactly the arbitrary result the count avoids. The label is rewritten as the remaining names are learned, and is badged `auto`, so editing it and saving promotes it into the user's own `accountMappings`.
 
 ### Storage
 

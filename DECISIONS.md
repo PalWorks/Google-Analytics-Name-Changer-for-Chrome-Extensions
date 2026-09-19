@@ -360,7 +360,7 @@ bottom.
 the shape of the *storage*, not the shape of the user's problem. A developer with three
 accounts and five extensions had to pair them up by eye, and nothing on the page said which
 extension sat under which account. The extension already knows: GA4 ships an inline
-`accountTree` that pairs them exactly (see ADR-008).
+`accountTree` that pairs them exactly (see ADR-009).
 
 **What did NOT change: the storage shape.** Storage stays two flat maps, `sync.mappings`
 (slug → name) and `sync.accountMappings` (accountId → name). The replacement engine, the
@@ -452,7 +452,7 @@ shows, so that delay is visible through it and cannot be fixed from here.
 **Decision.** `local.propertyAccounts` is written from two sources: GA4's inline `accountTree`
 (bulk) and the account and property in the URL of whatever page the user is on (exact).
 
-**Why.** The tree was the obvious single source, and ADR-008 established it as authoritative.
+**Why.** GA4's inline `accountTree` (ADR-009) was the obvious single source, and it is exact.
 It is not complete: measured on a live profile, `window.preload` carried **18 accounts** while
 the user holds more, and the account being viewed was **absent from its own page's tree**. Any
 account outside that preloaded set would never be paired, so the settings table introduced in
@@ -463,3 +463,42 @@ actually opens, and it is read at the same settled moment as the name.
 
 **Consequence.** A property is filed the first time it is opened. Until then it sits in the
 catch-all group, which is a display difference only — nothing about replacement depends on it.
+
+---
+
+## ADR-015 — An account holding several extensions gets a combined draft, not a blank
+
+**Date.** 2026-09-19 · **Status.** Accepted
+
+Replaces the "only name an account that holds exactly one extension" rule, which was never
+written up as an ADR of its own — it lived in a code comment in `persistNameHint`. That is the
+gap this record closes.
+
+**Decision.** An account label is built from **all** the extensions the account holds: one
+extension gives its own name shortened, several give each name cut harder and joined with
+`" + "` — `Amazon MyOrders + Flip Rotate` — capped at 38 characters. Extensions not yet named
+are **counted**, not guessed at, so a half-known account reads `Amazon MyOrders Page Grid +
+1 more`. The label is rewritten as the remaining names are learned.
+
+**Why.** The previous rule left such accounts blank, on the grounds that naming an account
+after one of several extensions is arbitrary. That reasoning is sound and is preserved: what
+was wrong was the conclusion. A blank field is not neutral — it reads as a broken feature, and
+it leaves the user with the unreadable nine-digit account number that this extension exists to
+remove. A draft that names every extension in the account is not arbitrary, and every draft is
+editable and badged `auto`, so the cost of a mediocre draft is one edit while the cost of a
+blank is the original problem.
+
+**Why counting rather than guessing.** Labelling a two-extension account after the single
+extension we have seen so far would reintroduce exactly the arbitrary result this avoids, and
+would look settled rather than partial. `+ 1 more` is honest and self-correcting.
+
+**Rejected.**
+
+* *Concatenating without separators* (`AmazonMyOrdersFlipRotate`). Shorter, unreadable.
+* *Naming after the most-viewed extension.* Arbitrary, and it changes as traffic changes.
+* *Using GA4's own account name.* It is the same generic string for every Chrome Web Store
+  developer account, which is the problem being solved.
+
+**Consequence.** The 38-character cap means a three-extension account gets roughly ten
+characters each, which is terse (`Alpha Tab + Beta + Gamma`). Acceptable: past two extensions
+the label is a signpost, and the user can rewrite it.

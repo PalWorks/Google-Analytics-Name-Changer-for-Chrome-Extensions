@@ -326,10 +326,9 @@ function addPropertyRow(group, slug = '', name = '', opts = {}) {
 }
 
 /**
- * An account holding more than one extension is never named automatically:
- * naming it after one of several would be arbitrary. That is correct, but an
- * empty field with no explanation reads as a bug, so the reason is put in the
- * placeholder of the row it applies to.
+ * An account holding more than one extension has no single right name, so it
+ * gets a draft built from all of them. Say so on the row, both to explain a
+ * two-part name and to explain the field if no draft could be built yet.
  */
 function markSharedAccounts() {
   groupsList.querySelectorAll('.account-group').forEach((group) => {
@@ -338,9 +337,14 @@ function markSharedAccounts() {
     const count = group.querySelectorAll('.property-row').length;
     const shared = count > 1;
     row.classList.toggle('is-shared', shared);
-    row.querySelector('.name-input').placeholder = shared
-      ? `Name this account yourself (holds ${count} extensions)`
+    const input = row.querySelector('.name-input');
+    input.placeholder = shared
+      ? `Name this account (holds ${count} extensions)`
       : 'Account display name';
+    input.title = shared
+      ? `This account holds ${count} extensions, so its name is a draft made from all of them. `
+        + `Edit it and press Save Changes to make it yours.`
+      : '';
   });
 }
 

@@ -122,9 +122,17 @@ permission.
 its row that opens the public Chrome Web Store listing in a new tab, so you can read the name
 and type it.
 
-Accounts are named too: a Chrome Web Store developer account holds one extension, so when a
-single account and a single named property are on screen, the account is suggested a shortened
-form of the extension's name.
+**Accounts are named too.** An account holding one extension takes that extension's name,
+shortened. An account holding several has no single right name, so it gets a draft built from
+all of them:
+
+```
+381439763   Amazon MyOrders + Flip Rotate
+```
+
+Extensions in that account that have not been named yet are counted rather than guessed at, so
+a half-known account reads `Amazon MyOrders Page Grid + 1 more` and is rewritten as the rest are
+learned. Every draft is marked `auto` and is yours to rewrite.
 
 Nothing leaves your browser in any of this. The extension makes no network requests.
 

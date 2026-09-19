@@ -191,6 +191,13 @@ it immediately.
 This is distinct from the bug fixed in ADR-013, where the wrong name was *persisted* rather
 than merely displayed late.
 
+### A combined account label gets terse past two extensions
+
+The label is capped at 38 characters so it fits GA4's breadcrumb beside the property name. Two
+extensions get about 17 characters each, which reads well; three get about ten, which does not
+(`Alpha Tab + Beta + Gamma`), and beyond three the remainder collapses into `+ N more`. This is
+a deliberate trade — see ADR-015 — and the label is editable.
+
 ### A property is filed under its account only once it has been opened
 
 `propertyAccounts` is built from GA4's preloaded account tree, which is capped (18 accounts on

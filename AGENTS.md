@@ -106,7 +106,17 @@ Do not replace that with a fixed delay, and do not weaken it to "held still" alo
 that have not begun refreshing also hold still, which is the exact failure this prevents. It
 was a live bug, not a theoretical one.
 
-### 10. The settings table's grouping is presentation, not storage
+### 10. Never guess which extension an account is named after
+
+An account holding several extensions is labelled from **all** of them
+(`Amazon MyOrders + Flip Rotate`). Extensions not yet named are **counted** (`+ 1 more`), never
+skipped over so the label reads as if it were complete. See [DECISIONS.md](DECISIONS.md)
+ADR-015.
+
+Labelling a two-extension account after the one extension that happens to be on screen is the
+bug this replaced. Do not reintroduce it by dropping the unknown count.
+
+### 11. The settings table's grouping is presentation, not storage
 
 Storage is two flat maps: `sync.mappings` (slug → name) and `sync.accountMappings`
 (accountId → name). The settings page *draws* them as one table grouped by account, using
