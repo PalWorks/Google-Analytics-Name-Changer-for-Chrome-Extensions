@@ -154,6 +154,7 @@ so nothing may read it for replacement.
 | `privacy.html` | Must stay factually true of the shipped code. If you change what the extension sends or stores, update this file in the same change. |
 | `icons/src/icon.mjs` | Renders every icon PNG. The 16px variant is drawn at its own level of detail on purpose. Edit this, never the PNGs. Not shipped; excluded by `.crxignore`. |
 | `googled7379778f776f48c.html` | Google Search Console verification token for the GitHub Pages site. Never rename, edit, or delete. |
+| `index.html`, `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt` | The public listing site, served by GitHub Pages from the repo root on `main`. Every factual claim in them is a claim about the shipped source. Changing what a permission does, what is stored, or what is transmitted means updating these in the same commit. Excluded from the package by `.crxignore`. |
 | `store/LISTING.md` | Every permission justification in it is a factual claim about the source. Changing what a permission is used for means updating it in the same commit, or the next store review is made on a false statement. |
 
 ---

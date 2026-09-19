@@ -180,6 +180,14 @@ Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Go
 │   ├── options.html
 │   ├── options.css
 │   └── options.js              Full-tab settings page + welcome modal
+├── index.html                  Public listing site (GitHub Pages, served from `main`)
+├── robots.txt                  Crawler policy, search and AI bots named explicitly
+├── sitemap.xml
+├── llms.txt                    Plain-text summary for language models
+├── llms-full.txt               Full documentation as one plain-text file
+├── site/
+│   ├── og-image.png            Social preview, 1200x630
+│   └── src/                    Renders it. Not shipped
 ├── icons/
 │   ├── icon16.png              Toolbar. Drawn at its own level of detail
 │   ├── icon32.png
@@ -196,6 +204,7 @@ Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Go
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design, component internals, data flow |
 | [AGENTS.md](AGENTS.md) | Contract for AI agents and contributors: hard invariants, conventions, definition of done |
 | [store/LISTING.md](store/LISTING.md) | Chrome Web Store listing copy, permission justifications and privacy declarations, plus the promo tiles and screenshots in `store/assets/` |
+| [index.html](index.html) | The public listing site at [palworks.github.io](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/), with its structured data, `robots.txt`, `sitemap.xml` and `llms.txt` |
 | [DOMAIN.md](DOMAIN.md) | The four identifiers, the two problems, storage keys |
 | [DECISIONS.md](DECISIONS.md) | Architecture decision records: what was chosen and what was rejected |
 | [PLAYBOOK.md](PLAYBOOK.md) | Setup, manual test checklist, debugging, release, rollback |
@@ -218,6 +227,17 @@ node icons/src/icon.mjs
 The 16px icon is drawn with fewer, fatter segments than the larger sizes rather than
 being scaled down from them, because detail that survives at 128px turns to mush in
 the toolbar. Keep that split if you redraw it.
+
+To regenerate the listing site's social preview after editing `site/src/og.html`:
+
+```bash
+node site/src/render.mjs
+```
+
+The site itself is hand-written `index.html` at the repo root with inline CSS and no
+JavaScript. GitHub Pages serves it from `main`, so a change is live once it is merged
+there. `robots.txt`, `sitemap.xml`, `llms.txt` and `llms-full.txt` sit beside it and
+state facts about the shipped source; keep them true.
 
 ---
 

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <url>
+    <loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/</loc>
+    <lastmod>2026-09-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/site/og-image.png</image:loc>
+      <image:title>GA4 Name Changer</image:title>
+      <image:caption>A Google Analytics property list showing a 32-character Chrome extension ID replaced by the extension's real name.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/store/assets/screenshot-1-1280x800.png</image:loc>
+      <image:caption>Google Analytics before and after: 32-character extension IDs replaced with readable extension names.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/store/assets/screenshot-2-1280x800.png</image:loc>
+      <image:caption>The Page title and screen class report the extension name is derived from, in several languages.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/store/assets/screenshot-4-1280x800.png</image:loc>
+      <image:caption>The settings page: each Google Analytics account with the Chrome extensions it holds nested beneath it.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/store/assets/screenshot-5-1280x800.png</image:loc>
+      <image:caption>The extension's privacy properties: no network requests, no data collection, no remote code.</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html</loc>
+    <lastmod>2026-09-19</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+</urlset>

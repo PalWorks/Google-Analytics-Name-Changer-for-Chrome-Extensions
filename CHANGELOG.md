@@ -43,7 +43,26 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 
 ### Added (listing)
 
-- **Chrome Web Store listing assets** — `store/LISTING.md` holds the product name, short description with three tested alternates, the full detailed description, the single-purpose statement, a permission justification for `storage`, the `analytics.google.com` host permission and the optional `management` permission, and the privacy declarations. `store/assets/` holds a 440×280 small promo tile, a 1400×560 marquee tile and five 1280×800 screenshots, rendered at exact size by `store/src/render.mjs`. Every claim in the permission justifications was checked against the source: no `management.getAll`, no `fetch`/XHR/WebSocket, no `eval`, no external script or style references, one host permission. `store/` is excluded from the package
+- **Chrome Web Store listing assets** — `store/LISTING.md` holds the product name, short description with three tested alternates, the full detailed description, the single-purpose statement, a permission justification for `storage`, the `analytics.google.com` host permission and the optional `management` permission, and the privacy declarations. `store/assets/` holds a 440×280 small promo tile, a 1400×560 marquee tile and five 1280×800 screenshots, rendered at exact size by `store/src/render.mjs`. Every claim in the permission justifications was checked against the source: no `management.getAll`, no `fetch`/XHR/WebSocket, no `eval`, no external script or style references, one host permission. `store/` is excluded from the package. Every example name, extension ID and account number in the copy and the imagery is fictional, and each account label shown is checked against the shipping `combineAccountName()` so nothing depicted is a label the extension could not really produce
+
+- **Public listing site** — a one-page site at
+  [palworks.github.io](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/),
+  served by GitHub Pages from the repo root on `main`. Self-contained HTML with inline CSS, no
+  JavaScript and no third-party requests, so it renders with nothing to block. Carries a
+  JSON-LD `@graph` of `WebSite`, `Organization`, `WebPage`, `SoftwareApplication`, a ten-question
+  `FAQPage` and a four-step `HowTo`; Open Graph and Twitter card metadata over a 1200×630 preview
+  rendered by `site/src/render.mjs`; a canonical URL; `robots.txt` naming the search and AI
+  crawlers explicitly rather than leaving them to a wildcard; an image sitemap; and `llms.txt`
+  plus `llms-full.txt` for language models. Every FAQ answer on the page has a matching
+  `Question` in the structured data. All site files are excluded from the package
+
+- **A new extension icon** — the old one was a card above an arrow above a second card, which
+  reads as a download rather than a rename and collapsed into an indistinct blob at the 16px
+  toolbar size. The new mark shows the substitution itself: a segmented upper row, the way a
+  32-character ID reads to a human, above one solid bar, the way a name reads. The 16px variant
+  is drawn with fewer, fatter segments rather than scaled down from the 128px one. Adds a 32px
+  size, and a 512px and SVG pair for the site. `icons/src/icon.mjs` replaces the old Canvas
+  generator
 
 ### Changed
 

@@ -242,13 +242,16 @@ chrome.storage.local.get(null, console.log);
 
 ```bash
 zip -r ../ga4-name-changer-<version>.zip . \
-  -x '*.git*' -x '*.md' -x '.crxignore' \
+  -x '*.git*' -x '*.md' -x '.crxignore' -x '.nojekyll' \
   -x 'icons/src/*' -x 'icons/icon512.png' -x 'googled*.html' \
-  -x 'worker/*' -x 'store/*'
+  -x 'worker/*' -x 'store/*' -x 'site/*' \
+  -x 'index.html' -x 'robots.txt' -x 'sitemap.xml' -x 'llms*.txt'
 ```
 
 7. Verify the zip: it must contain `manifest.json` at the root, and no `.md` files,
-   no `.git`, no `store/` and no `icons/src/`.
+   no `.git`, no `store/`, no `icons/src/`, and none of the listing-site files
+   (`index.html`, `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, `site/`).
+   The zip should hold 18 files.
 8. Upload at the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole).
    Listing copy, permission justifications and privacy declarations are in
    [store/LISTING.md](store/LISTING.md); the promo tiles and screenshots are in `store/assets/`,
