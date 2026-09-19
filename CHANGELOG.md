@@ -41,6 +41,10 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 - **The first name took over 20 seconds on a cold page load.** GA4's page is interactive well before its page-title report has any rows, and a harvest pass that early saw no candidate names at all. That was treated as "settled on no name", which stopped the polling and left the first name waiting for an unrelated mutation. An empty report is now understood as "not loaded yet" and is waited out. Measured on a live account: 20s+ before, 8.7s after
 - **Harvesting could stall on a page that stopped mutating.** Settling needs two passes and passes were driven only by the MutationObserver, so a page that had finished rendering never completed one. Unsettled passes are now self-driven, and a throttled call re-arms the timer instead of silently ending the chain
 
+### Added (listing)
+
+- **Chrome Web Store listing assets** — `store/LISTING.md` holds the product name, short description with three tested alternates, the full detailed description, the single-purpose statement, a permission justification for `storage`, the `analytics.google.com` host permission and the optional `management` permission, and the privacy declarations. `store/assets/` holds a 440×280 small promo tile, a 1400×560 marquee tile and five 1280×800 screenshots, rendered at exact size by `store/src/render.mjs`. Every claim in the permission justifications was checked against the source: no `management.getAll`, no `fetch`/XHR/WebSocket, no `eval`, no external script or style references, one host permission. `store/` is excluded from the package
+
 ### Changed
 
 - **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it

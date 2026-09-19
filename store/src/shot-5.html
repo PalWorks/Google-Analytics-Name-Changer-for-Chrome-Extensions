@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screenshot 5 — private by design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="shot.css">
+<style>
+  .wrap { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%;
+          align-content: start; }
+
+  .fact {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 24px; box-shadow: 0 8px 24px rgba(16,16,40,.06);
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .fact .ic {
+    width: 42px; height: 42px; flex: none; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-bg);
+  }
+  .fact.green .ic { background: rgba(52,199,89,.12); }
+  .fact h3 { font-size: 17px; font-weight: 700; letter-spacing: -.35px; }
+  .fact p  { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin-top: 7px; }
+  .fact code { font-family: var(--mono); font-size: 11.5px; background: var(--bg);
+               border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+
+  .perm {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #1d1d1f, #2c2c33); color: #fff;
+    border-radius: 14px; padding: 22px 26px;
+    display: flex; align-items: center; gap: 26px;
+    box-shadow: 0 12px 30px rgba(20,20,35,.22);
+  }
+  .perm .lbl { font-size: 11px; font-weight: 700; letter-spacing: 1.3px;
+               text-transform: uppercase; color: #8e8e99; }
+  .perm .row { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; }
+  .perm .k   { font-family: var(--mono); font-size: 15px; font-weight: 500; color: #fff; }
+  .perm .v   { font-size: 13px; color: #b9b9c4; }
+  .perm .div { width: 1px; align-self: stretch; background: rgba(255,255,255,.14); }
+  .perm .none { font-size: 13.5px; color: #b9b9c4; line-height: 1.5; }
+  .perm .none b { color: #fff; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <div class="head">
+    <div class="step"><span class="dot"></span> Private by design</div>
+    <h1>It makes <span class="hl">no network requests.</span><br>Not one.</h1>
+    <p class="lede">
+      Every name is worked out from the page already open in front of you. There is no server,
+      no account, no analytics and no tracking in this extension.
+    </p>
+  </div>
+
+  <div class="body">
+    <div class="wrap">
+
+      <div class="fact green">
+        <div class="ic">
+          <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M10 2.2l6.2 2.6v4.4c0 3.6-2.5 6.6-6.2 8.6-3.7-2-6.2-5-6.2-8.6V4.8L10 2.2z" stroke="#34C759" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.2 9.9l2 2 3.6-4" stroke="#34C759" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <h3>Your analytics stay yours</h3>
+          <p>No traffic figures, revenue, user counts, property names or account numbers are collected, transmitted or stored off your device. Ever.</p>
+        </div>
+      </div>
+
+      <div class="fact">
+        <div class="ic">
+          <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><rect x="2.6" y="5.4" width="14.8" height="10.4" rx="2.2" stroke="#4F46E5" stroke-width="1.6"/><path d="M2.6 8.6h14.8" stroke="#4F46E5" stroke-width="1.4"/><path d="M6.4 5.4V3.2M13.6 5.4V3.2" stroke="#4F46E5" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h3>Works entirely offline</h3>
+          <p>Names come from the Google Analytics page itself and, if you allow it, from the extensions already installed in your own Chrome profile.</p>
+        </div>
+      </div>
+
+      <div class="fact">
+        <div class="ic">
+          <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M10 2.6l7 3.1v5c0 4.1-2.9 7.5-7 8.7-4.1-1.2-7-4.6-7-8.7v-5l7-3.1z" stroke="#4F46E5" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <h3>Nothing in Analytics is altered</h3>
+          <p>The replacement is display-only and lives in your browser. Your Google Analytics configuration, data and reports are untouched.</p>
+        </div>
+      </div>
+
+      <div class="fact">
+        <div class="ic">
+          <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M4 16V8.6M10 16V4.4M16 16v-5.2" stroke="#4F46E5" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h3>Open source, no build step</h3>
+          <p>Plain JavaScript with no dependencies and no bundler. What ships is what you can read on GitHub.</p>
+        </div>
+      </div>
+
+      <div class="perm">
+        <div>
+          <div class="lbl">Permissions requested</div>
+          <div class="row"><span class="k">storage</span><span class="v">saves the names you choose</span></div>
+          <div class="row"><span class="k">analytics.google.com</span><span class="v">the only site it runs on</span></div>
+        </div>
+        <div class="div"></div>
+        <div class="none">
+          <b>Optional, and only if you ask:</b> <code style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);color:#fff">management</code>
+          reads the names of extensions installed here.<br>
+          Switch it off and the permission is handed straight back to Chrome.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    No remote code, no third-party libraries, no analytics on the analytics tool.
+  </div>
+</div>
+</body>
+</html>

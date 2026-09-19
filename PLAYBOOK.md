@@ -249,6 +249,10 @@ zip -r ../ga4-name-changer-<version>.zip . \
 7. Verify the zip: it must contain `manifest.json` at the root, and no `.md` files,
    no `.git`, and no icon generator.
 8. Upload at the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole).
+   Listing copy, permission justifications and privacy declarations are in
+   [store/LISTING.md](store/LISTING.md); the promo tiles and screenshots are in `store/assets/`,
+   already at the sizes the store requires. Regenerate them with `node store/src/render.mjs`
+   after changing anything in `store/src/`. Confirm `store/` is absent from the uploaded zip.
 9. Because the extension declares the optional `management` permission, the store listing
    must justify it, and reviewers scrutinise this one. Say plainly: requested only when the
    user enables auto naming; used solely to call `chrome.management.get()` and read the

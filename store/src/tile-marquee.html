@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marquee promo tile 1400x560</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+<style>
+  .stage {
+    width: 1400px; height: 560px;
+    display: flex; align-items: center;
+    background:
+      radial-gradient(90% 130% at 88% 18%, rgba(124,116,240,.20), transparent 58%),
+      radial-gradient(70% 120% at 6% 88%, rgba(79,70,229,.10), transparent 60%),
+      #fbfbfd;
+  }
+
+  .left  { width: 690px; padding: 0 0 0 76px; position: relative; z-index: 2; }
+  .right { flex: 1; display: flex; justify-content: center; position: relative; z-index: 2; }
+
+  h1 {
+    font-size: 62px; font-weight: 800; letter-spacing: -2.1px;
+    line-height: 1.04; margin: 20px 0 0;
+  }
+  h1 .hl { color: var(--accent); }
+
+  .sub {
+    font-size: 22px; line-height: 1.45; color: var(--text-2);
+    margin-top: 22px; max-width: 580px; font-weight: 400;
+  }
+
+  .marks { display: flex; gap: 26px; margin-top: 34px; }
+  .mark  { display: flex; align-items: center; gap: 9px; font-size: 16px;
+           font-weight: 600; color: var(--text-2); }
+  .tick  { width: 20px; height: 20px; flex: none; }
+
+  /* ── before / after stack ── */
+  .stack { width: 470px; }
+
+  .panel { padding: 20px 24px; }
+  .panel + .panel { border-top: 1px solid var(--border); }
+
+  .ptag {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.3px;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 10px;
+  }
+  .ptag.after { color: var(--success); }
+
+  .val      { font-size: 19px; font-weight: 600; }
+  .val.slug { font-size: 16.5px; font-weight: 500; }
+  .acct     { font-size: 13.5px; color: var(--text-3); margin-top: 6px; }
+  .acct.on  { color: var(--accent); font-weight: 600; }
+
+  .arrow {
+    display: flex; align-items: center; justify-content: center;
+    height: 44px; color: var(--accent); background: var(--accent-bg);
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <div class="left">
+    <div class="eyebrow">Chrome Web Store analytics</div>
+    <h1>Your extensions,<br><span class="hl">by name.</span></h1>
+    <p class="sub">
+      Google Analytics labels your extension with a 32&#8209;character ID and every account
+      identically. This puts the real names back &mdash; automatically, right inside GA4.
+    </p>
+
+    <div class="marks">
+      <div class="mark">
+        <svg class="tick" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#34C759" opacity=".14"/><path d="M6 10.4l2.7 2.7L14.2 7.6" stroke="#34C759" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Names itself
+      </div>
+      <div class="mark">
+        <svg class="tick" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#34C759" opacity=".14"/><path d="M6 10.4l2.7 2.7L14.2 7.6" stroke="#34C759" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Zero network requests
+      </div>
+      <div class="mark">
+        <svg class="tick" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#34C759" opacity=".14"/><path d="M6 10.4l2.7 2.7L14.2 7.6" stroke="#34C759" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        No account needed
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="card stack">
+      <div class="panel">
+        <div class="ptag">What Google Analytics shows</div>
+        <div class="val slug mono">nlbnapelehjkadekmfghljagafhbobhp</div>
+        <div class="acct">Chrome Web Store developer properties &middot; 381439763</div>
+      </div>
+
+      <div class="arrow">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+          <path d="M10 4v12M5 11.5l5 5 5-5" stroke="currentColor" stroke-width="2.1"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="panel">
+        <div class="ptag after">What you see instead</div>
+        <div class="val">Flip, Rotate and Mirror Ultimate</div>
+        <div class="acct on">Amazon MyOrders + Flip Rotate</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

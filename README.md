@@ -194,6 +194,7 @@ Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Go
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design, component internals, data flow |
 | [AGENTS.md](AGENTS.md) | Contract for AI agents and contributors: hard invariants, conventions, definition of done |
+| [store/LISTING.md](store/LISTING.md) | Chrome Web Store listing copy, permission justifications and privacy declarations, plus the promo tiles and screenshots in `store/assets/` |
 | [DOMAIN.md](DOMAIN.md) | The four identifiers, the two problems, storage keys |
 | [DECISIONS.md](DECISIONS.md) | Architecture decision records: what was chosen and what was rejected |
 | [PLAYBOOK.md](PLAYBOOK.md) | Setup, manual test checklist, debugging, release, rollback |

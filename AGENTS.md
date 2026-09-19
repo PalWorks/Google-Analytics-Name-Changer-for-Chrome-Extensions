@@ -154,6 +154,7 @@ so nothing may read it for replacement.
 | `privacy.html` | Must stay factually true of the shipped code. If you change what the extension sends or stores, update this file in the same change. |
 | `icons/generate-icons.html` | Dev tool, not shipped. Excluded by `.crxignore`. |
 | `googled7379778f776f48c.html` | Google Search Console verification token for the GitHub Pages site. Never rename, edit, or delete. |
+| `store/LISTING.md` | Every permission justification in it is a factual claim about the source. Changing what a permission is used for means updating it in the same commit, or the next store review is made on a false statement. |
 
 ---
 
