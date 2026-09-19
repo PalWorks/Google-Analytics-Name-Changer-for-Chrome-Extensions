@@ -1,7 +1,23 @@
 # Chrome Web Store listing
 
 Copy for the developer dashboard. Fields are in the order the dashboard asks for them.
-Nothing in this folder ships inside the package — see `.crxignore`.
+Nothing in this folder ships inside the package. See `.crxignore`.
+
+**Every example name, extension ID and account number in this file and in `src/` is
+fictional.** Real ones are not used: an account number ties our own Analytics estate to a
+public, permanently mirrored asset, and a real product name in a promo tile reads as an
+advertisement for that product rather than for this tool. The cast below is checked against
+the shipping `combineAccountName()` so every label shown is one the extension would really
+produce.
+
+| Example | Role |
+|---|---|
+| `Tab Session Saver Pro` | the hero name, shown in both tiles |
+| `Dark Mode Everywhere` | shares an account with the hero, giving `Tab Session Saver + Dark Mode` |
+| `Coupon Finder - Auto Apply` | contains " - ", so it proves the last-separator split |
+| `Quick Screenshot and Annotate` | long enough to show the account label being shortened |
+| `Bulk Bookmark Cleaner and Sorter` | second shortening case |
+| `Price History Tracker` | short, so account and property labels come out identical |
 
 ---
 
@@ -30,7 +46,7 @@ See real extension names in GA4 instead of 32-character IDs. Automatic, offline,
 | Variant | Chars | Angle |
 |---|---|---|
 | `Replace 32-character extension IDs in Google Analytics with real names. Automatic, offline, nothing leaves your browser.` | 120 | Plain-benefit |
-| `GA4 shows your extension as a 32-character ID. This shows its name — automatically, with no account and no network calls.` | 121 | Problem-first |
+| `GA4 shows your extension as a 32-character ID. This shows its name, automatically, with no account and no network calls.` | 120 | Problem-first |
 | `Rename GA4 property slugs and account numbers to real Chrome extension names. Works automatically. Zero network requests.` | 121 | Keyword-dense |
 
 ---
@@ -50,14 +66,14 @@ See real extension names in GA4 instead of 32-character IDs. Automatic, offline,
 > spacing and capitals rather than syntax.
 
 ```
-Chrome Web Store analytics arrive in Google Analytics 4 under a 32-character extension ID —
+Chrome Web Store analytics arrive in Google Analytics 4 under a 32-character extension ID,
 and every developer account is labelled with the same generic string. If you ship more than
 one extension, every report, comparison and account switcher looks identical.
 
 This extension puts your real names back, live inside analytics.google.com.
 
-egedbdckafdbomehjaihjhbcgmngmlah   →   Favicon Changer Ultimate
-381439763                          →   Amazon MyOrders + Flip Rotate
+inkkcgalfjninhfflfhkflidilkjmhof   →   Tab Session Saver Pro
+241067359                          →   Tab Session Saver + Dark Mode
 
 
 IT NAMES YOUR EXTENSIONS FOR YOU
@@ -71,7 +87,7 @@ report lists your store listing, and the Chrome Web Store titles every listing p
 no lookup and no request to anyone.
 
 Because the split takes the last separator, it works in every language the store is published
-in — Интернет-магазин Chrome, Chrome ウェブストア, Cửa hàng Chrome trực tuyến — and it keeps
+in (Интернет-магазин Chrome, Chrome ウェブストア, Cửa hàng Chrome trực tuyến), and it keeps
 names that themselves contain a dash intact. It also works for extensions you do not have
 installed.
 
@@ -80,16 +96,16 @@ ACCOUNT NUMBERS GET REAL NAMES TOO
 
 Google labels every Chrome Web Store developer account identically, so the nine-digit account
 number is the only thing telling them apart. Each account is named after the extension it
-holds. An account holding several is named after all of them — "Amazon MyOrders + Flip Rotate"
-— and extensions it has not seen yet are counted rather than guessed at, so a half-explored
-account reads "Amazon MyOrders + 1 more" and corrects itself when you open the rest.
+holds. An account holding several is named after all of them, as in "Tab Session Saver + Dark
+Mode". Extensions it has not seen yet are counted rather than guessed at, so a half-explored
+account reads "Tab Session Saver Pro + 1 more" and corrects itself when you open the rest.
 
 
 EVERYTHING IN ONE TABLE
 
 The settings page shows every account with the extensions it owns nested underneath, paired
 from Google Analytics' own account tree. Worked-out names are badged "auto". Type over any of
-them and press Save, and yours wins from then on — on this machine and, through Chrome sync,
+them and press Save, and yours wins from then on: on this machine and, through Chrome sync,
 on your others.
 
 Import and export the whole set as plain JSON, so you can move it between machines or keep it
@@ -102,7 +118,7 @@ Not one. There is no server behind this extension, no account to create, no tele
 analytics and no tracking. Every name is derived from the page already open in front of you.
 
 Your traffic figures, revenue, user counts, property names and account numbers never leave
-your device — not to us, not to anyone.
+your device. Not to us, not to anyone.
 
 Nothing in your Google Analytics account is modified. The replacement is display-only and
 lives in your browser; your configuration, your data and your reports are untouched. Remove
@@ -148,7 +164,7 @@ developers can read their own analytics.
 
 ## Permission justifications
 
-Paste each into the matching box in the dashboard. Keep them literal — every claim here is
+Paste each into the matching box in the dashboard. Keep them literal. Every claim here is
 verifiable from the source.
 
 ### `storage`
