@@ -1078,11 +1078,16 @@ chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
 // on a server. So this form posts a plain JSON body to FEEDBACK_ENDPOINT, and
 // that endpoint (see worker/feedback-worker.js) holds the key and calls Resend.
 //
-// Until an endpoint is deployed, FEEDBACK_ENDPOINT stays empty and the form
-// falls back to opening a pre-filled email instead, so the feature works on day
-// one with no infrastructure and no permissions.
+// The Worker replies with an Access-Control-Allow-Origin echoing this extension's
+// own origin, so the POST satisfies CORS on its own and needs no host permission
+// in the manifest. Keep it that way: a host permission here would buy nothing and
+// cost a line on the store's permission list.
+//
+// If the endpoint is unreachable, misconfigured, or rate-limited, sendByEndpoint()
+// falls back to opening a pre-filled email, so the form still works. Setting
+// FEEDBACK_ENDPOINT back to '' returns the feature to mail-only.
 
-const FEEDBACK_ENDPOINT = '';                       // e.g. 'https://…workers.dev/feedback'
+const FEEDBACK_ENDPOINT = 'https://ga4nc-feedback.sunmooncal.workers.dev/feedback';
 const FEEDBACK_TO       = 'palaniappan.tn2@gmail.com';
 
 const fbForm    = document.getElementById('feedback-form');

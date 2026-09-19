@@ -296,8 +296,12 @@ this itself (ADR-004), but nothing blocks a server of ours from doing it.
 **Decision.** Not built. The three tiers in ADR-009 cover the realistic cases, and a backend
 would cost:
 
-* the unconditional "zero network requests" claim, which is currently true and is a real part
-  of this extension's pitch to a privacy-conscious developer audience
+* the claim that no request is ever made in the course of the extension's own work, which
+  remains true and is a real part of this extension's pitch to a privacy-conscious developer
+  audience. The feedback relay of ADR-016 does not weaken it: that fires only when the user
+  submits a form, carries only what the user typed, and carries nothing about their analytics.
+  A naming backend would be a background request about the user's own data, which is a
+  different thing entirely
 * a host permission for the endpoint, plus privacy policy and Chrome Web Store disclosure
 * an service to run, monitor and keep available
 * server-side scraping of the Chrome Web Store, whose terms around automated access are worth
@@ -335,10 +339,11 @@ machine, not in a user's browser.
   which then needs its own disclosure.
 
 **Consequence.** Until the Worker is deployed the form uses `mailto:`, which needs no
-endpoint, no permission and no network request from the extension, and therefore keeps the
-unconditional privacy claim intact. Switching to the endpoint means adding its origin to
-`optional_host_permissions`, updating `privacy.html`, and declaring the collected fields in the
-Chrome Web Store data disclosure, because name and email are personal data.
+endpoint, no permission and no network request from the extension. Switching to the endpoint
+means updating `privacy.html` and declaring the collected fields in the Chrome Web Store data
+disclosure, because name and email are personal data. **This was done on 2026-09-19; see
+ADR-016,** which also records that the expected `optional_host_permissions` entry turned out
+to be unnecessary.
 
 **Amended 2026-09-18.** The phone field was removed. It was optional, never going to be
 used to answer anyone, and it added a whole extra personal-data category to the Chrome Web
@@ -502,3 +507,69 @@ would look settled rather than partial. `+ 1 more` is honest and self-correcting
 **Consequence.** The 38-character cap means a three-extension account gets roughly ten
 characters each, which is terse (`Alpha Tab + Beta + Gamma`). Acceptable: past two extensions
 the label is a signpost, and the user can rewrite it.
+
+---
+
+## ADR-016 — The feedback relay is deployed, and the privacy claim is narrowed to match
+
+**Status:** accepted 2026-09-19. Supersedes the "not yet deployed" half of ADR-011.
+
+**Context.** ADR-011 built the relay and left it unwired: `FEEDBACK_ENDPOINT` was `''`, so the
+form composed a `mailto:` and the extension made no network request in any configuration. That
+kept an unusually strong privacy claim, and the claim was load-bearing in the store listing,
+the site and the onboarding.
+
+**Decision.** Deploy the Worker and wire it up.
+
+* Worker `ga4nc-feedback` on Cloudflare, endpoint
+  `https://ga4nc-feedback.sunmooncal.workers.dev/feedback`.
+* `FEEDBACK_ENDPOINT` in `options/options.js` points at it.
+* The Resend API key is a Worker secret and is never in the package.
+
+**Why.** A `mailto:` hands the work to the user's mail client, which means the report arrives
+only if the user has a configured desktop mail client, notices the composed draft, and presses
+send in a second application. On a machine using webmail it often arrives as nothing at all.
+A support channel that silently drops reports is worse than a support channel with a
+disclosure.
+
+**What this costs, stated plainly.** The extension can no longer claim it never makes a
+network request. That claim was true and it was good. What replaces it is narrower and still
+true:
+
+> Nothing about your Google Analytics data is ever transmitted. The only thing the extension
+> ever sends is a support message you typed and submitted yourself.
+
+**No host permission was needed.** ADR-011 predicted an `optional_host_permissions` entry. It
+turned out to be unnecessary: the Worker returns `Access-Control-Allow-Origin` echoing the
+calling extension's origin, so the `POST` from the options page satisfies CORS on its own.
+A host permission would have added a line to the store's permission list for no gain, so it
+was deliberately not added. Keep it that way.
+
+**Safety properties, all in `worker/feedback-worker.js` and verified against the deployment:**
+
+| Probe | Result |
+|---|---|
+| `OPTIONS` from an extension origin | 204, CORS headers echo the origin |
+| `GET` | 405 |
+| `POST` from `https://evil.example.com` | 403, so it cannot be used as an open mail relay |
+| `POST` from a `chrome-extension://` origin | reaches validation |
+| Body over 16 KB, bad JSON, invalid email, message under 10 chars | rejected |
+
+The relay stores nothing. It validates, forwards to Resend, and forgets.
+
+**Degradation.** `sendByEndpoint()` falls back to `sendByMail()` on any non-OK response or
+network error, so an unreachable or unconfigured relay returns the feature to its previous
+behaviour rather than breaking it.
+
+**Rejected.**
+
+* *Stay on `mailto:` only.* Keeps the stronger claim, but loses reports, which is the whole
+  point of having the form.
+* *Send diagnostics without asking.* The form renders the exact diagnostics block on screen
+  before the user submits. Nothing is sent that the user has not been shown.
+* *Add the origin to `optional_host_permissions` anyway, for belt and braces.* It would appear
+  on the store's permission list and buy nothing, since CORS already permits the call.
+
+**Reversal.** Set `FEEDBACK_ENDPOINT` back to `''`. The form returns to `mailto:`, and the
+unconditional claim becomes true again. Then revert the privacy wording in `privacy.html`,
+`SECURITY.md`, `store/LISTING.md`, `index.html`, `llms.txt`, `llms-full.txt` and `README.md`.

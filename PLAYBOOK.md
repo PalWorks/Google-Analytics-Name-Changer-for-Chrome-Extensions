@@ -251,7 +251,7 @@ zip -r ../ga4-name-changer-<version>.zip . \
 7. Verify the zip: it must contain `manifest.json` at the root, and no `.md` files,
    no `.git`, no `store/`, no `icons/src/`, and none of the listing-site files
    (`index.html`, `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, `site/`).
-   The zip should hold 18 files.
+   The zip should hold 19 files. `LICENSE` is included deliberately: MIT requires the notice to travel with copies.
 8. Upload at the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole).
    Listing copy, permission justifications and privacy declarations are in
    [store/LISTING.md](store/LISTING.md); the promo tiles and screenshots are in `store/assets/`,

@@ -62,9 +62,14 @@ enabled, disabled or changed.
 
 ### Network behaviour
 
-**The extension makes no network requests.** Not by default, not when auto naming is on, not
-ever. There is no `fetch`, no `XMLHttpRequest`, no `WebSocket`, and no remote resource
-referenced by any page in the package.
+**The extension makes no network request in the course of its own work.** Not by default,
+not when auto naming is on, not ever. Replacement, name derivation and storage are entirely
+local. No page in the package references a remote resource, and there is no
+`XMLHttpRequest` and no `WebSocket` anywhere in the source.
+
+There is exactly one `fetch`, in `options/options.js`, and it runs only when the user fills
+in the feedback form and presses send. It is described under Feedback form below. Nothing
+about the user's analytics is in it, and it never fires on its own.
 
 Auto naming resolves names locally through `chrome.management`, so no identifier leaves the
 device. This is partly a design preference and partly forced: Chrome blocks extensions from
@@ -78,21 +83,44 @@ not a background request, and it carries nothing beyond the extension ID already
 
 ### Feedback form
 
-The options page can send feedback. As shipped it composes a `mailto:` and hands it to the
-user's own mail client, so **the extension still makes no network request** and the user sees
-exactly what is being sent before it leaves.
+The options page can send feedback. This is the extension's only outbound request, and it
+is user-initiated: it fires on form submission and at no other time.
 
-If a relay endpoint is configured, the form posts name, email, the message,
-and installation diagnostics to that endpoint instead. Diagnostics deliberately exclude
-everything about the user's analytics: no property slugs, no account numbers, no display
-names, no URLs, no browsing information. Only counts, versions and flags. The form shows the
-exact payload before sending.
+The form posts name, email, the message and installation diagnostics as JSON to the relay at
+`https://ga4nc-feedback.sunmooncal.workers.dev/feedback`, which validates the request and
+forwards it by email through Resend. Diagnostics deliberately exclude everything about the
+user's analytics: no property slugs, no account numbers, no display names, no URLs, no
+browsing information. Only counts, versions and flags, and the page renders the exact block
+on screen before the user sends it.
 
-The Resend API key is never in the extension. See [DECISIONS.md](DECISIONS.md) ADR-011.
+Properties of the relay, all verifiable in `worker/feedback-worker.js`:
+
+* It rejects any request whose `Origin` is not a `chrome-extension://` origin, so a web page
+  cannot use it as an open mail relay.
+* It rejects any method other than `POST`, bodies over 16 KB, malformed JSON, an invalid
+  email address, and messages under ten characters.
+* It escapes every field before it reaches the HTML email body.
+* It stores nothing. There is no database, no log of message contents and no retention.
+* It caps the diagnostics table at 40 entries and each field at 4000 characters.
+
+No host permission is needed for this. The relay returns an
+`Access-Control-Allow-Origin` echoing the extension's own origin, so the request satisfies
+CORS on its own. Adding a host permission would widen the store's permission list for no
+gain.
+
+If the relay is unreachable or returns an error, the form falls back to composing a
+`mailto:` and handing it to the user's own mail client, so the feature degrades to sending
+nothing from the extension at all.
+
+The Resend API key is never in the extension. It is a Worker secret. See
+[DECISIONS.md](DECISIONS.md) ADR-011 and ADR-016.
 
 ### Data handling
 
-* No analytics, no telemetry, no crash reporting, no remote logging. There is no server.
+* No analytics, no telemetry, no crash reporting and no remote logging. Nothing is sent in
+  the background, and nothing about the user's Google Analytics data is ever transmitted.
+* The only server involved is the feedback relay, which is reached only on form submission
+  and holds nothing.
 * Mappings live in `chrome.storage.sync`, which Chrome may replicate to the user's other
   signed in devices through their Google account. That path is Google's, and subject to
   Google's privacy policy. The developer of this extension has no access to it.

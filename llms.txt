@@ -3,8 +3,9 @@
 > Google Analytics (GA4) Name Changer for Chrome Extension Developers is a free, open-source
 > Chrome extension that replaces the 32-character Chrome Web Store extension IDs and 9-digit
 > Google Analytics account numbers displayed on analytics.google.com with the extensions' real
-> names. It derives those names from the user's own Google Analytics reports, so it makes no
-> network requests and collects no data.
+> names. It derives those names from the user's own Google Analytics reports, so naming makes
+> no network request and no analytics data is ever transmitted. The extension's only outbound
+> request is the optional feedback form, sent when the user submits it.
 
 ## The problem it solves
 
@@ -50,8 +51,11 @@ cannot be fetched.
 - Version: 1.1.0
 - Platform: Google Chrome 88 or later, Manifest V3
 - Runs on: analytics.google.com only
-- Network requests: none
-- Data collected, transmitted or sold: none
+- Network requests: none, except the optional feedback form when the user submits it
+- Analytics data transmitted: none, ever
+- Data collected: only the name, email, message and installation details a user types into the
+  feedback form and submits. Never sold. Used solely to answer the report
+- Licence: MIT
 - Required permissions: `storage`, plus host access to `https://analytics.google.com/*`
 - Optional permissions: `management`, off by default
 - Dependencies: none. Plain JavaScript, no build step, no bundler, no remote code

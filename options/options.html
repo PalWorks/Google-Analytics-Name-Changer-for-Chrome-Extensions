@@ -206,6 +206,10 @@
               Technical details only, so support can reproduce the problem. No Google Analytics
               data, no property or account names, and nothing about your browsing.
             </p>
+            <p class="diag-note">
+              This and your message are sent only when you press Send, and go to the developer
+              to answer you. Nothing is sent in the background.
+            </p>
           </details>
 
           <div class="form-actions">
@@ -287,7 +291,7 @@
 
         <ul class="fact-list">
           <li>Names are read locally with Chrome's <code>management</code> API. Nothing is sent
-              anywhere, and the extension still makes no network requests at all.</li>
+              anywhere, and no network request is made.</li>
           <li>Chrome asks your permission first, and turning this back off revokes it.</li>
           <li>Only names are read. Nothing is installed, enabled, disabled or changed.</li>
           <li>An extension that is not installed here cannot be named this way. Those rows get a

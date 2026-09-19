@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>GA4 Name Changer: Real Extension Names in Google Analytics</title>
-<meta name="description" content="Free Chrome extension that replaces 32-character Chrome Web Store extension IDs in Google Analytics with real names. Automatic, offline, no tracking.">
+<meta name="description" content="Free Chrome extension that replaces 32-character Chrome Web Store extension IDs in Google Analytics with real names. Automatic, local, no tracking.">
 
 <link rel="canonical" href="https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
@@ -15,7 +15,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="GA4 Name Changer">
 <meta property="og:title" content="GA4 Name Changer: Real Extension Names in Google Analytics">
-<meta property="og:description" content="Google Analytics shows your Chrome extension as a 32-character ID. This shows its name instead, automatically, with no account and no network requests.">
+<meta property="og:description" content="Google Analytics shows your Chrome extension as a 32-character ID. This shows its name instead, automatically, with no account and no tracking.">
 <meta property="og:url" content="https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/">
 <meta property="og:image" content="https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/site/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -25,7 +25,7 @@
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="GA4 Name Changer: Real Extension Names in Google Analytics">
-<meta name="twitter:description" content="Google Analytics shows your Chrome extension as a 32-character ID. This shows its name instead, automatically, with no account and no network requests.">
+<meta name="twitter:description" content="Google Analytics shows your Chrome extension as a 32-character ID. This shows its name instead, automatically, with no account and no tracking.">
 <meta name="twitter:image" content="https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/site/og-image.png">
 
 <link rel="icon" type="image/png" sizes="128x128" href="icons/icon128.png">
@@ -187,7 +187,8 @@ footer a{color:var(--text-2)}
   <p class="lede">
     GA4 Name Changer is a Chrome extension that replaces Chrome Web Store property slugs and
     Google Analytics account numbers with real extension names, live inside
-    analytics.google.com. It works it out for you, and it makes no network requests.
+    analytics.google.com. It works it out for you, and your analytics never leave your
+    device.
   </p>
   <div class="cta">
     <a class="btn btn-primary" href="#install">Install it</a>
@@ -278,7 +279,7 @@ footer a{color:var(--text-2)}
       <div class="card"><h3>Cross-device sync</h3><p>Names you type are kept in <code>chrome.storage.sync</code> and follow your signed-in Chrome profile to your other machines.</p></div>
       <div class="card"><h3>Import and export as JSON</h3><p>Move your names between machines or keep them in version control as a single plain JSON file.</p></div>
       <div class="card"><h3>Guided onboarding</h3><p>A two-slide welcome on first install explains what the extension does and what the optional permission is and is not used for.</p></div>
-      <div class="card"><h3>Zero data collection</h3><p>No analytics, no telemetry, no server and no network requests of any kind. Verifiable in the source.</p></div>
+      <div class="card"><h3>Zero data collection</h3><p>No analytics, no telemetry and no tracking. Nothing about your Google Analytics data is ever transmitted. Verifiable in the source.</p></div>
     </div>
   </div>
 </section>
@@ -287,9 +288,9 @@ footer a{color:var(--text-2)}
   <div class="wrap">
     <h2>Privacy</h2>
     <p class="answer">
-      GA4 Name Changer makes no network requests. There is no server behind it, no account to
-      create, no telemetry and no tracking. Every name is derived from the page already open in
-      front of you.
+      Nothing about your Google Analytics data is ever transmitted. There is no account to
+      create, no telemetry and no tracking, and working out a name makes no network request at
+      all: every name is derived from the page already open in front of you.
     </p>
     <div class="privacy-strip">
       <p>
@@ -297,6 +298,8 @@ footer a{color:var(--text-2)}
         counts, property names and account numbers are never collected, transmitted or stored off
         your device, not to the developer and not to anyone else. Names you type are stored in
         your own Chrome profile; names the extension works out are stored on the device only.
+        The one thing the extension ever sends is a support message you type into the feedback
+        form and submit yourself, and it shows you exactly what goes with it beforehand.
       </p>
     </div>
 
@@ -333,7 +336,7 @@ footer a{color:var(--text-2)}
         <figcaption>One table: accounts, and the extensions they hold.</figcaption>
       </figure>
       <figure class="shot">
-        <img src="store/assets/screenshot-5-1280x800.png" width="1280" height="800" loading="lazy" decoding="async" alt="A summary of the extension's privacy properties: no network requests, works offline, nothing in Analytics altered, open source with no build step.">
+        <img src="store/assets/screenshot-5-1280x800.png" width="1280" height="800" loading="lazy" decoding="async" alt="A summary of the extension's privacy properties: analytics never transmitted, names resolved locally, nothing in Analytics altered, open source with no build step.">
         <figcaption>Private by design, and the permissions in full.</figcaption>
       </figure>
     </div>
@@ -374,8 +377,10 @@ footer a{color:var(--text-2)}
           <tr><td>Works on</td><td>analytics.google.com only</td></tr>
           <tr><td>Price</td><td>Free</td></tr>
           <tr><td>Version</td><td>1.1.0</td></tr>
-          <tr><td>Network requests</td><td>None</td></tr>
-          <tr><td>Data collected</td><td>None</td></tr>
+          <tr><td>Network requests</td><td>None, except the optional feedback form when you submit it</td></tr>
+          <tr><td>Analytics data transmitted</td><td>None, ever</td></tr>
+          <tr><td>Data collected</td><td>Only what you type into the feedback form and send</td></tr>
+          <tr><td>Licence</td><td>MIT</td></tr>
           <tr><td>Required permissions</td><td><code>storage</code>, plus the host permission for analytics.google.com</td></tr>
           <tr><td>Optional permissions</td><td><code>management</code>, off by default</td></tr>
           <tr><td>Dependencies</td><td>None. Plain JavaScript, no build step, no remote code</td></tr>
@@ -407,7 +412,7 @@ footer a{color:var(--text-2)}
 
     <details>
       <summary>Does GA4 Name Changer send my analytics data anywhere?</summary>
-      <div class="a"><p>No. The extension makes no network requests of any kind. It has no server, no analytics, no telemetry and no tracking. Traffic figures, revenue, user counts, property names and account numbers never leave your device. This is verifiable in the source, which contains no fetch, no XMLHttpRequest and no WebSocket.</p></div>
+      <div class="a"><p>No. It has no analytics, no telemetry and no tracking, and it transmits nothing in the background. Your traffic figures, revenue, user counts, property names and account numbers never leave your device. Working out a name makes no network request at all.</p><p>There is exactly one request in the whole extension, and you trigger it: if you fill in the feedback form on the settings page and press send, your message, your email address and the installation details shown to you on that page are sent so your report can be answered. Those details are counts and version numbers only, with no slugs, names, account numbers or URLs. Never use the form and the extension never makes a request.</p></div>
     </details>
 
     <details>
@@ -488,7 +493,7 @@ footer a{color:var(--text-2)}
       "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#webpage",
       "url": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/",
       "name": "GA4 Name Changer: Real Extension Names in Google Analytics",
-      "description": "A free, open-source Chrome extension that replaces 32-character Chrome Web Store extension IDs and 9-digit Google Analytics account numbers with real extension names, automatically and with zero network requests.",
+      "description": "A free, open-source Chrome extension that replaces 32-character Chrome Web Store extension IDs and 9-digit Google Analytics account numbers with real extension names, automatically and without ever transmitting your analytics data.",
       "isPartOf": { "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#website" },
       "about": { "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#software" },
       "primaryImageOfPage": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/site/og-image.png",
@@ -499,7 +504,7 @@ footer a{color:var(--text-2)}
       "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#software",
       "name": "Google Analytics (GA4) Name Changer for Chrome Extension Developers",
       "alternateName": "GA4 Name Changer",
-      "description": "A Chrome extension that replaces Chrome Web Store extension IDs and Google Analytics account numbers displayed on analytics.google.com with readable extension names. Names are derived from the user's own Google Analytics reports, so the extension makes no network requests.",
+      "description": "A Chrome extension that replaces Chrome Web Store extension IDs and Google Analytics account numbers displayed on analytics.google.com with readable extension names. Names are derived from the user's own Google Analytics reports, so naming makes no network request and no analytics data is ever transmitted.",
       "applicationCategory": "DeveloperApplication",
       "applicationSubCategory": "Browser Extension",
       "operatingSystem": "Google Chrome 88 or later",
@@ -522,6 +527,7 @@ footer a{color:var(--text-2)}
       "author": { "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#publisher" },
       "publisher": { "@id": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/#publisher" },
       "privacyPolicy": "https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html",
+      "license": "https://opensource.org/licenses/MIT",
       "permissions": "storage; host access to analytics.google.com; management (optional, off by default)",
       "featureList": [
         "Replaces 32-character Chrome Web Store property slugs with extension names inside Google Analytics",
@@ -532,7 +538,7 @@ footer a{color:var(--text-2)}
         "One settings table pairing accounts with the extensions they own",
         "Cross-device sync of user-assigned names through chrome.storage.sync",
         "Import and export all names as JSON",
-        "Makes no network requests and collects no data"
+        "Transmits no analytics data and makes no background network requests"
       ]
     },
     {
@@ -547,7 +553,7 @@ footer a{color:var(--text-2)}
         { "@type": "Question", "name": "How does GA4 Name Changer know my extension's name without asking a server?",
           "acceptedAnswer": { "@type": "Answer", "text": "It reads the name off the page you are already looking at. A Chrome Web Store developer property's Page title and screen class report lists the store listing pages that were viewed, and the Chrome Web Store titles each of those pages with the extension name followed by the localised store name, separated by \" - \". Splitting on the last separator returns the name. Generic store pages are discarded and the remaining candidates are ranked by views." } },
         { "@type": "Question", "name": "Does GA4 Name Changer send my analytics data anywhere?",
-          "acceptedAnswer": { "@type": "Answer", "text": "No. The extension makes no network requests of any kind. It has no server, no analytics, no telemetry and no tracking. Traffic figures, revenue, user counts, property names and account numbers never leave your device. This is verifiable in the source, which contains no fetch, no XMLHttpRequest and no WebSocket." } },
+          "acceptedAnswer": { "@type": "Answer", "text": "No. GA4 Name Changer has no analytics, no telemetry and no tracking, and transmits nothing in the background. Traffic figures, revenue, user counts, property names and account numbers never leave the device, and working out a name makes no network request at all. The extension contains exactly one network request, triggered by the user: submitting the optional feedback form sends the message, email address and installation details shown on that page, so the report can be answered. Those details are counts and version numbers only, with no slugs, names, account numbers or URLs." } },
         { "@type": "Question", "name": "Does it change anything in my Google Analytics account?",
           "acceptedAnswer": { "@type": "Answer", "text": "No. The replacement is display-only and happens in your browser as the page renders. Your Google Analytics configuration, data and reports are untouched, and anyone else looking at the same account sees the original identifiers. Uninstalling the extension returns Google Analytics to exactly how it looked before." } },
         { "@type": "Question", "name": "Why does it ask for the management permission, and is it required?",

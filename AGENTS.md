@@ -44,10 +44,16 @@ slug replacer from also rewriting that node. Reversing the order corrupts accoun
 prefix of a longer one from matching first and corrupting the longer replacement.
 Any code that rebuilds this map must preserve the sort.
 
-### 4. The extension makes no network requests
+### 4. The extension makes exactly one network request, and only when the user submits feedback
 
-There is no `fetch`, `XMLHttpRequest`, or `WebSocket` anywhere in this codebase, and no
-page references a remote resource. Do not add one.
+There is **one** `fetch` in this codebase, in `options/options.js`, and it fires only from the
+feedback form's submit handler. There is no `XMLHttpRequest`, no `WebSocket`, and no page
+references a remote resource. **Do not add a second one.**
+
+Nothing about the user's Google Analytics data may ever be transmitted. Replacement, name
+derivation and storage are local, without exception. If you are adding a request that fires on
+a timer, on page load, on install, or on anything other than a user pressing a send button,
+you are breaking this invariant. See [DECISIONS.md](DECISIONS.md) ADR-016.
 
 If you are about to add a fetch to the Chrome Web Store: **it will not work.** Chrome
 blocks extension-initiated requests to `chromewebstore.google.com`,

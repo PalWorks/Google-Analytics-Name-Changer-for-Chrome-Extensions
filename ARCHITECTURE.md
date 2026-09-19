@@ -4,7 +4,7 @@
 
 Google Analytics (GA4) Name Changer for Chrome Extension Developers is a client-side Manifest V3 Chrome extension. There is no backend, no build step, and no remote code. All text replacement happens in a content script injected into `analytics.google.com`. A lightweight toolbar popup communicates with the content script via message passing to provide quick access to the same mapping functionality.
 
-A service worker exists for two narrow jobs: opening the settings page on first install, and resolving Chrome extension IDs to extension names via `chrome.management`. The extension makes no network requests of any kind.
+A service worker exists for two narrow jobs: opening the settings page on first install, and resolving Chrome extension IDs to extension names via `chrome.management`. Nothing the extension does to name or replace an identifier touches the network. The single outbound request in the codebase is the feedback form's, which fires only when the user submits it (ADR-016).
 
 ---
 
@@ -348,7 +348,7 @@ collapsed disclosure before anything is sent. See [DECISIONS.md](DECISIONS.md) A
 - `host_permissions` scoped to `https://analytics.google.com/*` only
 - `optional_permissions` contains `"management"` — not granted at install; requested only on explicit opt-in, and released via `chrome.permissions.remove()` when the feature is turned off. Only `chrome.management.get()` is ever called, and only its `name` field read
 - `permissions` contains only `"storage"`; `tabs` is deliberately not requested
-- **Zero network egress.** No `fetch`, no `XMLHttpRequest`, no `WebSocket`, no remote resource referenced by any page
+- **No background network egress.** No `XMLHttpRequest`, no `WebSocket`, no remote resource referenced by any page. Exactly one `fetch`, in `options/options.js`, reached only from the feedback form's submit handler and carrying only what the user typed (ADR-016). Nothing about the user's analytics is ever transmitted
 - Message handlers take no caller-supplied selectors or code: `getGA4Data` takes no parameters, `resolveNames` filters its input against `/^[a-p]{32}$/`
 - Explicit `content_security_policy` in manifest: `script-src 'self'; object-src 'self'`
 

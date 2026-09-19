@@ -131,12 +131,14 @@
     <header>
       <div class="badge">Privacy Policy</div>
       <h1>Google Analytics (GA4) Name Changer for Chrome Extension Developers</h1>
-      <p class="meta">Effective date: September 2026 &nbsp;·&nbsp; Chrome Extension &nbsp;·&nbsp; Version 1.1.0</p>
+      <p class="meta">Effective date: 19 September 2026 &nbsp;·&nbsp; Chrome Extension &nbsp;·&nbsp; Version 1.1.0</p>
     </header>
 
     <div class="highlight-box">
-      <p>This extension does not collect, transmit, or share any personal data. Ever.
-         It has no server, no analytics, and no telemetry.</p>
+      <p>This extension has no analytics and no telemetry, and nothing about your Google
+         Analytics data is ever collected or transmitted. It transmits exactly one thing,
+         and only when you ask it to: a support message you have typed and submitted
+         yourself through the feedback form.</p>
     </div>
 
     <section>
@@ -174,10 +176,49 @@
 
     <section>
       <h2>Does this extension send any data to external servers?</h2>
-      <p>No. The extension has no backend, no analytics, no tracking, and makes zero
-         network requests. This is true in every configuration, including with the
-         optional auto-naming feature switched on. It operates entirely offline after
-         installation.</p>
+      <p>Only when you submit the feedback form, and only what you typed into it.</p>
+      <p>Everything the extension actually does &mdash; replacing identifiers, working out
+         names, storing your mappings &mdash; happens entirely inside your browser and makes
+         no network request of any kind. That is true in every configuration, including
+         with the optional auto-naming feature switched on. There is no analytics, no
+         telemetry, no tracking and no background communication of any sort. Your property
+         slugs, account numbers, display names, traffic figures, revenue and user counts
+         are never transmitted anywhere, ever.</p>
+      <p>The single exception is the feedback form on the settings page, described in the
+         next section. It sends only when you fill it in and press the button.</p>
+    </section>
+
+    <section>
+      <h2>The feedback form</h2>
+      <p>The settings page has a feedback form for reporting a problem. It is entirely
+         optional. If you never use it, the extension never makes a network request.</p>
+      <p>When you press the send button, the following is posted to a relay operated by
+         this extension's developer at
+         <code>ga4nc-feedback.sunmooncal.workers.dev</code>, which forwards it to the
+         developer by email through <a href="https://resend.com/legal/privacy-policy"
+         target="_blank" rel="noopener">Resend</a>, an email delivery provider:</p>
+      <ul>
+        <li>The <strong>name</strong> you typed, if you chose to give one. It is optional.</li>
+        <li>The <strong>email address</strong> you typed, so a reply can reach you. This is
+            required, because a report nobody can answer helps nobody.</li>
+        <li>The <strong>message</strong> you wrote.</li>
+        <li>The <strong>installation details</strong> shown to you on that same page,
+            before you send. These are your extension version and ID, your browser user
+            agent, language and platform, whether auto-naming and the optional permission
+            are on, and <em>counts</em> of how many names you have. They deliberately
+            contain no property slugs, no display names, no account numbers and no URLs.
+            You can read the exact block on the page.</li>
+      </ul>
+      <p>That data is used to answer you and to reproduce the problem. It is not sold, not
+         shared with anyone else, and not used for advertising, profiling or any purpose
+         other than replying to your report. The relay stores nothing: it validates the
+         request, passes it to the email provider and forgets it.</p>
+      <p>If the relay cannot be reached, the form falls back to opening a pre-filled
+         message in your own email client, and nothing is transmitted by the extension at
+         all. You can also simply
+         <a href="https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions/issues"
+            target="_blank" rel="noopener">open a GitHub issue</a> instead and never use
+         the form.</p>
     </section>
 
     <section>
@@ -230,6 +271,9 @@
       <p>No other permissions are requested. In particular, the extension does not
          request the <code>tabs</code> permission and cannot read your browsing history,
          your open tab URLs, or any page other than Google Analytics.</p>
+      <p>The feedback form needs no permission at all. The relay replies with the CORS
+         header that permits this extension's own origin, so the request is allowed
+         without a host permission being added to the extension.</p>
     </section>
 
     <section>

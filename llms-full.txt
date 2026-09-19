@@ -17,8 +17,10 @@ https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions
 Google Analytics (GA4) Name Changer for Chrome Extension Developers is a free, open-source
 Chrome extension that replaces the 32-character Chrome Web Store extension IDs and 9-digit
 Google Analytics account numbers displayed on analytics.google.com with the extensions' real
-names. The names are derived from the user's own Google Analytics reports, so the extension
-makes no network requests of any kind and collects no data.
+names. The names are derived from the user's own Google Analytics reports, so naming makes no
+network request at all and nothing about the user's Google Analytics data is ever transmitted.
+The extension's only outbound request is the optional feedback form, and it fires only when the
+user submits it.
 
 ---
 
@@ -101,7 +103,7 @@ installed in the same Chrome profile can be named from Chrome itself via
 - Nothing is installed, uninstalled, enabled, disabled or modified.
 - Switching the feature off calls `chrome.permissions.remove()` to hand the permission straight
   back to Chrome.
-- Resolution is entirely local. The extension still makes no network requests with it enabled.
+- Resolution is entirely local. No network request is made with it enabled.
 
 This source exists because Chrome deliberately blocks extensions from requesting the Chrome Web
 Store (both `chromewebstore.google.com` and the CRX update endpoint), so an extension's public
@@ -127,9 +129,31 @@ always wins and is never overwritten.
 
 ## Privacy and data handling
 
-The extension makes **no network requests of any kind**. There is no server behind it, no
-account to create, no telemetry, no analytics and no tracking. The source contains no `fetch`,
-no `XMLHttpRequest`, no WebSocket, no `eval` and no remote code.
+Nothing about the user's Google Analytics data is ever transmitted. There is no account to
+create, no telemetry, no analytics and no tracking, and nothing is sent in the background.
+Replacing identifiers, deriving names and storing mappings all happen entirely in the browser
+and make no network request at all. The source contains no `XMLHttpRequest`, no WebSocket, no
+`eval` and no remote code.
+
+There is exactly one `fetch` in the extension, in `options/options.js`, reached only from the
+feedback form's submit handler. When a user fills in that form and presses send, the following
+is posted to a relay at `ga4nc-feedback.sunmooncal.workers.dev` and forwarded by email through
+Resend so the report can be answered:
+
+- the name the user typed, if they gave one (optional)
+- the email address they typed (required, so a reply can reach them)
+- the message they wrote
+- installation details, which the page displays to the user before they send: extension version
+  and ID, browser user agent, language, platform, whether auto-naming and the optional
+  permission are on, and counts of how many names exist. These contain no property slugs, no
+  display names, no account numbers and no URLs
+
+That data is used solely to reply to the user and reproduce the problem. It is never sold and
+never used for advertising or profiling. The relay stores nothing: it validates the request,
+forwards it, and forgets it. It refuses any request whose origin is not a `chrome-extension://`
+origin, so it cannot be used as an open mail relay. If the relay is unreachable, the form falls
+back to opening a pre-filled message in the user's own mail client and the extension transmits
+nothing. A user who never opens the form never causes a network request.
 
 What is stored, and where:
 
@@ -213,7 +237,9 @@ Requires Google Chrome 88 or later. Manifest V3.
 | Dependencies | none |
 | Build step | none |
 | Remote code | none |
-| Network requests | none |
+| Network requests | none, except the optional feedback form on submission |
+| Analytics data transmitted | none, ever |
+| Licence | MIT |
 | Publisher | PalWorks |
 | Repository | https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions |
 
@@ -241,9 +267,11 @@ name>`. Splitting on the last `" - "` returns the name. Generic store pages are 
 the remaining candidates ranked by views.
 
 **Q: Does GA4 Name Changer send my analytics data anywhere?**
-A: No. It makes no network requests of any kind. There is no server, no telemetry and no
-tracking. Traffic figures, revenue, user counts, property names and account numbers never leave
-the device.
+A: No. It has no analytics, no telemetry and no tracking, and transmits nothing in the
+background. Traffic figures, revenue, user counts, property names and account numbers never
+leave the device, and working out a name makes no network request at all. The extension's only
+outbound request is the optional feedback form, which sends the message, email address and
+installation details the user is shown, and only when they press send.
 
 **Q: Does it change anything in my Google Analytics account?**
 A: No. The replacement is display-only and happens in the browser as the page renders. The
@@ -281,8 +309,9 @@ read in the repository.
 
 ## Attribution
 
-Built by PalWorks. Not affiliated with, endorsed by, or sponsored by Google. Google Analytics,
-GA4, Chrome and Chrome Web Store are trademarks of Google LLC.
+Built by PalWorks and released under the MIT licence. Not affiliated with, endorsed by, or
+sponsored by Google. Google Analytics, GA4, Chrome and Chrome Web Store are trademarks of
+Google LLC.
 
 Example extension names, extension IDs and account numbers used in this documentation and in
 the listing imagery are fictional.

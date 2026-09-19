@@ -27,7 +27,7 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 - **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
 - **One settings table** — accounts and the extensions they hold in a single grouped view, paired automatically from Google Analytics' own account tree
 - **Feedback form** — report a problem from the settings page, with installation details attached so support can reproduce it
-- **Zero data collection** — no analytics, no telemetry, no server, and no network requests of any kind
+- **Zero data collection** — no analytics, no telemetry and no tracking. Nothing about your Google Analytics data is ever transmitted. The only request the extension ever makes is sending a support message you type and submit yourself in the feedback form
 
 ---
 
@@ -134,7 +134,7 @@ Extensions in that account that have not been named yet are counted rather than 
 a half-known account reads `Amazon MyOrders Page Grid + 1 more` and is rewritten as the rest are
 learned. Every draft is marked `auto` and is yours to rewrite.
 
-Nothing leaves your browser in any of this. The extension makes no network requests.
+Nothing leaves your browser in any of this. Naming and replacement make no network request at all.
 
 > **Why not just read the store listing directly?** Because Chrome will not allow it.
 > Extensions are blocked from making requests to `chromewebstore.google.com`, which is a
@@ -159,7 +159,11 @@ Click **Export** to download a JSON backup of all your mappings. Click **Import*
 
 ## Privacy
 
-The extension processes page text locally inside your browser and stores only the display names you type. It has no server, collects nothing, and makes no network requests of any kind, including with auto-naming enabled. If you are signed into Chrome, `chrome.storage.sync` may sync your mappings between your devices via your Google account, subject to [Google's privacy policy](https://policies.google.com/privacy).
+The extension processes page text locally inside your browser and stores only the display names you type. It has no analytics and no telemetry, and nothing about your Google Analytics data is ever transmitted, including with auto-naming enabled.
+
+The one exception is the feedback form on the settings page: when you fill it in and press send, the name, email, message and the installation details shown to you on that same page are posted to a relay that forwards them by email, so your report can be answered. It sends nothing unless you submit it, the diagnostics contain no slugs, names, account numbers or URLs, and if the relay is unreachable the form falls back to your own mail client. See [privacy.html](privacy.html) and [DECISIONS.md](DECISIONS.md) ADR-016.
+
+If you are signed into Chrome, `chrome.storage.sync` may sync your mappings between your devices via your Google account, subject to [Google's privacy policy](https://policies.google.com/privacy).
 
 Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html)
 

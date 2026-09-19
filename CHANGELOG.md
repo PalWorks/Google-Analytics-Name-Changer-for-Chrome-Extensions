@@ -64,9 +64,37 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   size, and a 512px and SVG pair for the site. `icons/src/icon.mjs` replaces the old Canvas
   generator
 
+- **MIT licence** — the repository, the site and the store copy all described this as open
+  source while no licence file existed, which legally means all rights reserved. `LICENSE`
+  now says MIT, and the site's `SoftwareApplication` schema declares it
+
+- **The feedback relay is deployed, and the feedback form now uses it** — Cloudflare Worker
+  `ga4nc-feedback`, with the Resend API key as a Worker secret and never in the package.
+  `FEEDBACK_ENDPOINT` points at it. A `mailto:` only arrives if the user has a configured
+  desktop mail client and presses send in a second application, so on a machine using webmail
+  reports were being lost silently. The form still falls back to `mailto:` if the relay is
+  unreachable. No host permission was needed: the relay returns an `Access-Control-Allow-Origin`
+  echoing the extension's own origin, so the POST satisfies CORS by itself and the store's
+  permission list is unchanged. See DECISIONS.md ADR-016
+
 ### Changed
 
 - **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it
+
+- **The "no network requests" claim is narrowed to match what the extension now does.** It was
+  unconditional and true; with the relay wired up it is not. Every statement of it in
+  `privacy.html`, `SECURITY.md`, `ARCHITECTURE.md`, `README.md`, `AGENTS.md`, `store/LISTING.md`,
+  `index.html`, `llms.txt`, `llms-full.txt`, the options page and two rendered store assets was
+  rewritten to the narrower claim that is still true: nothing about the user's Google Analytics
+  data is ever transmitted, naming and replacement make no network request at all, and the only
+  thing the extension ever sends is a support message the user typed and submitted. Verified
+  against the source: exactly one `fetch` in the codebase, no `XMLHttpRequest`, no `WebSocket`
+
+- **The Chrome Web Store privacy declaration changes from "none" to Personally identifiable
+  information.** Name and email are now transmitted when a user submits feedback, so the data
+  type has to be declared and a privacy policy URL is now required. `store/LISTING.md` carries
+  the exact wording, and the note tying the declaration back to `FEEDBACK_ENDPOINT` so it is
+  reverted if the endpoint is ever removed
 
 ### Fixed
 

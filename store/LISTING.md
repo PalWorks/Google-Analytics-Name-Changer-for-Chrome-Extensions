@@ -36,18 +36,18 @@ Google Analytics (GA4) Name Changer for Chrome Extension Developers
 Shown under the title in search results and on the listing card. **132 characters maximum.**
 
 ```
-See real extension names in GA4 instead of 32-character IDs. Automatic, offline, and it never sends your analytics anywhere.
+See real extension names in GA4 instead of 32-character IDs. Automatic, local, and it never sends your analytics anywhere.
 ```
 
-124 characters.
+122 characters.
 
 ### Alternates, if you want to test something different
 
 | Variant | Chars | Angle |
 |---|---|---|
-| `Replace 32-character extension IDs in Google Analytics with real names. Automatic, offline, nothing leaves your browser.` | 120 | Plain-benefit |
+| `Replace 32-character extension IDs in Google Analytics with real names. Automatic, local, and your analytics stay yours.` | 120 | Plain-benefit |
 | `GA4 shows your extension as a 32-character ID. This shows its name, automatically, with no account and no network calls.` | 120 | Problem-first |
-| `Rename GA4 property slugs and account numbers to real Chrome extension names. Works automatically. Zero network requests.` | 121 | Keyword-dense |
+| `Rename GA4 property slugs and account numbers to real Chrome extension names. Works automatically. No tracking at all.` | 118 | Keyword-dense |
 
 ---
 
@@ -55,8 +55,10 @@ See real extension names in GA4 instead of 32-character IDs. Automatic, offline,
 
 * **Category:** Developer Tools
 * **Language:** English
-* **Website:** the GitHub repository
-* **Support URL:** the repository issues page
+* **Website:** https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/
+* **Support URL:** https://github.com/PalWorks/Google-Analytics-Name-Changer-for-Chrome-Extensions/issues
+* **Privacy policy URL:** https://palworks.github.io/Google-Analytics-Name-Changer-for-Chrome-Extensions/privacy.html
+  (**required**, because the item now declares a data type. See Privacy practices below.)
 
 ---
 
@@ -112,13 +114,21 @@ Import and export the whole set as plain JSON, so you can move it between machin
 in version control.
 
 
-IT MAKES NO NETWORK REQUESTS
+YOUR ANALYTICS NEVER LEAVE YOUR DEVICE
 
-Not one. There is no server behind this extension, no account to create, no telemetry, no
-analytics and no tracking. Every name is derived from the page already open in front of you.
+There is no account to create, no telemetry, no analytics and no tracking. Every name is
+worked out from the page already open in front of you, and naming and replacing make no
+network request at all.
 
-Your traffic figures, revenue, user counts, property names and account numbers never leave
-your device. Not to us, not to anyone.
+Your traffic figures, revenue, user counts, property names and account numbers are never
+transmitted. Not to us, not to anyone.
+
+The extension sends exactly one thing, and only when you ask it to: if you fill in the
+feedback form on the settings page and press send, your message, your email address, your
+name if you gave one, and the installation details shown to you on that same page are sent
+so that your report can be answered. Those details are counts and version numbers only, with
+no property slugs, no display names, no account numbers and no URLs. If you never use the
+form, the extension never makes a request.
 
 Nothing in your Google Analytics account is modified. The replacement is display-only and
 lives in your browser; your configuration, your data and your reports are untouched. Remove
@@ -130,7 +140,7 @@ ONE OPTIONAL EXTRA
 If you would like it, you can grant Chrome's "management" permission and any extension ID that
 matches something installed in your own Chrome profile is named from Chrome directly. It is
 off by default, it reads names and nothing else, and switching it off hands the permission
-straight back. The extension still makes no network requests with it on.
+straight back. Names are resolved entirely locally, with no network request.
 
 
 WHO IT IS FOR
@@ -175,7 +185,8 @@ numbers, plus their preferences. This is the extension's entire function: withou
 is nothing to substitute onto the page. Names the user types are kept in chrome.storage.sync so
 they follow the user's Chrome profile; names the extension works out for itself are kept in
 chrome.storage.local and stay on the device. No storage is read or written by any remote party,
-because the extension makes no network requests.
+because the extension has no backend for them. The only data the extension ever transmits is
+a support message the user types into the feedback form and submits themselves.
 ```
 
 ### Host permission: `https://analytics.google.com/*`
@@ -214,8 +225,11 @@ own Google Analytics reports have not already named.
 ```
 No. The extension contains no remote code. There is no build step, no bundler, no external
 library, no CDN reference and no eval or dynamically constructed code. Every file in the package
-is plain JavaScript, CSS and HTML that can be read as shipped, and the extension makes no network
-requests of any kind.
+is plain JavaScript, CSS and HTML that can be read as shipped.
+
+The extension makes exactly one network request, and it is not code: the feedback form on the
+settings page posts the user's own message as JSON to a relay that forwards it by email. It
+fires only on form submission, and nothing is ever executed from the response.
 ```
 
 ---
@@ -225,13 +239,24 @@ requests of any kind.
 ### What the extension collects
 
 ```
-Nothing. The extension has no backend, no analytics, no telemetry and no tracking, and it makes
-no network requests. No user data is collected, transmitted or sold.
+Only what a user types into the optional feedback form and submits. The extension has no
+analytics, no telemetry and no tracking, and it transmits nothing in the background. Nothing
+about the user's Google Analytics data is ever collected or transmitted.
+
+When, and only when, a user fills in the feedback form on the settings page and presses send,
+their message, their email address, their name if supplied, and installation details are sent
+to a relay operated by the developer, which forwards them by email so the report can be
+answered. The installation details are shown to the user on that same page before they send,
+and are counts, version numbers and flags only: no property slugs, no display names, no
+account numbers and no URLs. This data is used solely to reply to the user and reproduce the
+problem. It is never sold and never used for advertising or profiling.
 ```
 
 ### Data-use certifications
 
-Tick all three:
+Tick all three. They remain accurate: the email provider is a service provider processing the
+message on the developer's behalf, which is an approved use case, and answering a support
+request the user initiated is within the item's single purpose.
 
 * I do not sell or transfer user data to third parties, outside of approved use cases
 * I do not use or transfer user data for purposes unrelated to my item's single purpose
@@ -239,15 +264,19 @@ Tick all three:
 
 ### Data types
 
-Declare **none**. Nothing on the store's list applies: no personally identifiable information,
-no health information, no financial information, no authentication information, no personal
-communications, no location, no web history, no user activity, and no website content is
-collected or transmitted. The names the user types stay in their own Chrome profile.
+Declare **Personally identifiable information** only, and in the "how it is used" box state:
+name and email address, supplied voluntarily by the user in the feedback form, used only to
+reply to their support request.
 
-> If a feedback relay endpoint is ever deployed, this section must change: the feedback form
-> would then transmit the name, email address and message the user typed, and those must be
-> declared. Until `FEEDBACK_ENDPOINT` is set, the form opens the user's own mail client and
-> sends nothing.
+Everything else on the store's list is **not** collected: no health information, no financial
+information, no authentication information, no personal communications beyond the support
+message the user chose to send, no location, no web history, no user activity, and no website
+content. The names the user assigns stay in their own Chrome profile and are never transmitted.
+
+> This section is tied to `FEEDBACK_ENDPOINT` in `options/options.js`. If that is ever set
+> back to `''`, the form reverts to opening the user's own mail client, the extension
+> transmits nothing, and this declaration must be reverted to "none". See DECISIONS.md
+> ADR-016.
 
 ---
 
