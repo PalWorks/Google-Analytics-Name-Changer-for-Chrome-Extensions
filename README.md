@@ -181,10 +181,11 @@ Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Go
 │   ├── options.css
 │   └── options.js              Full-tab settings page + welcome modal
 ├── icons/
-│   ├── icon16.png
+│   ├── icon16.png              Toolbar. Drawn at its own level of detail
+│   ├── icon32.png
 │   ├── icon48.png
-│   ├── icon128.png
-│   └── generate-icons.html     Dev tool — generates icon PNGs via Canvas API (no build step)
+│   ├── icon128.png             Store listing
+│   └── src/icon.mjs            Renders every size from one definition. Not shipped
 └── privacy.html                Hosted privacy policy page
 ```
 
@@ -208,7 +209,15 @@ Full policy: [palworks.github.io/…/privacy.html](https://palworks.github.io/Go
 
 No build tools are required. The extension runs directly from source — load unpacked and edit files normally.
 
-To regenerate the icon PNGs, open `icons/generate-icons.html` in Chrome and download the three files.
+To regenerate the icon PNGs after editing `icons/src/icon.mjs`:
+
+```bash
+node icons/src/icon.mjs
+```
+
+The 16px icon is drawn with fewer, fatter segments than the larger sizes rather than
+being scaled down from them, because detail that survives at 128px turns to mush in
+the toolbar. Keep that split if you redraw it.
 
 ---
 

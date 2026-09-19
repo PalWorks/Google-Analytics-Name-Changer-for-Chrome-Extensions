@@ -5,7 +5,8 @@
 .git
 .gitignore
 .crxignore
-icons/generate-icons.html
+icons/src/
+icons/icon512.png
 googled*.html
 worker/
 store/

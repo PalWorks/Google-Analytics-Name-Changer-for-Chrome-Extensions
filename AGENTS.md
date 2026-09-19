@@ -152,7 +152,7 @@ so nothing may read it for replacement.
 | `background.js` | Do not add a network call, and do not widen the `chrome.management` surface beyond `get`. |
 | `manifest.json` | Do not add any `permissions`, `optional_permissions` or `host_permissions` entry without recording the reason in DECISIONS.md and updating `privacy.html`, `SECURITY.md` and README in the same change. |
 | `privacy.html` | Must stay factually true of the shipped code. If you change what the extension sends or stores, update this file in the same change. |
-| `icons/generate-icons.html` | Dev tool, not shipped. Excluded by `.crxignore`. |
+| `icons/src/icon.mjs` | Renders every icon PNG. The 16px variant is drawn at its own level of detail on purpose. Edit this, never the PNGs. Not shipped; excluded by `.crxignore`. |
 | `googled7379778f776f48c.html` | Google Search Console verification token for the GitHub Pages site. Never rename, edit, or delete. |
 | `store/LISTING.md` | Every permission justification in it is a factual claim about the source. Changing what a permission is used for means updating it in the same commit, or the next store review is made on a false statement. |
 
