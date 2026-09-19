@@ -427,6 +427,13 @@ before this existed would lock the rightful property out of its own name permane
   still writes the wrong name; too long and naming feels broken.
 * *Trusting GA4's loading spinners.* Class-name dependent, which ADR-003 invariant 3 refuses.
 
+**An empty report is not a settled answer.** Added after measuring: GA4's page is interactive
+several seconds before its "Views by page title" card has any rows. A pass that early sees no
+candidates at all, and treating that as "settled on no name" ended the polling and left the
+first name waiting for whatever mutation happened next — over 20 seconds on a live account.
+While there are no candidates the extension keeps waiting, on a slower cadence and a longer
+budget, which brought the same measurement down to 8.7 seconds.
+
 **Consequence.** A name now appears a second or two later than before, and a property whose
 reports never settle is left unnamed. Both are the right trade: an unnamed property is
 recoverable by typing, a wrongly named one is silently misleading.

@@ -188,6 +188,13 @@ body {
   margin-top: 2px;
 }
 
+.method-timing {
+  display: block;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
 .method-foot {
   font-size: 12.5px;
   color: var(--text-3);
@@ -696,7 +703,7 @@ main {
 
 .card-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 104px;
+  grid-template-columns: 1fr 1fr 116px;
   gap: 12px;
   padding: 10px 16px;
   background: var(--bg);
@@ -715,7 +722,7 @@ main {
 
 .mapping-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 104px;
+  grid-template-columns: 1fr 1fr 116px;
   gap: 12px;
   padding: 8px 16px;
   align-items: center;
@@ -805,11 +812,16 @@ main {
 /* ── Row actions cell ── */
 
 .row-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 32px 32px;
   align-items: center;
-  justify-content: flex-end;
   gap: 2px;
 }
+
+.badge-auto              { grid-column: 1; justify-self: end; }
+.listing-btn,
+.add-prop-btn            { grid-column: 2; }
+.delete-btn              { grid-column: 3; }
 
 .listing-btn {
   display: flex;
@@ -868,6 +880,13 @@ main {
 
 .account-row .name-input {
   font-weight: 600;
+}
+
+/* Why this row is blank, said where the blank is */
+.account-row.is-shared .name-input::placeholder {
+  color: var(--text-3);
+  font-style: italic;
+  font-weight: 500;
 }
 
 /* Nesting rail. Offsetting the input by margin rather than padding the row
@@ -1174,7 +1193,7 @@ a.support-link:hover {
 
   .card-header,
   .mapping-row {
-    grid-template-columns: 1fr 1fr 92px;
+    grid-template-columns: 1fr 1fr 104px;
     gap: 8px;
     padding: 8px 12px;
   }

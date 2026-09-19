@@ -597,6 +597,12 @@
   // name is far too long to wait on an ordinary property switch.
   const SETTLE_INTERVAL_MS = 1200;
 
+  // Before that, there is a slower wait for GA4 to render the report at all.
+  // Measured on a live account: the page is interactive long before the
+  // "Views by page title" card has any rows in it.
+  const AWAIT_REPORTS_INTERVAL_MS = 2500;
+  const AWAIT_REPORTS_MAX_MS      = 90000;
+
   let lastHarvestAt = 0;
 
   // ── Settle tracking ────────────────────────────────────────────────────────
@@ -628,17 +634,33 @@
   let settleAttempts    = 0;
   let settleTimer       = null;
 
+  // True while the page shows no candidate names at all, which means GA4 has
+  // not rendered the report yet rather than that it has settled on nothing.
+  let awaitingReports   = true;
+  let settleStartedAt   = Date.now();
+
   // Settling needs at least two passes, and passes are normally driven by the
   // MutationObserver. A page that has finished rendering stops mutating, so
   // waiting for the next mutation can mean waiting forever: the first pass after
   // a switch would record the fingerprint and nothing would ever confirm it.
   // While unsettled, drive the next pass from here instead.
-  const SETTLE_MAX_ATTEMPTS = 15;   // ~18s, then stop rather than poll forever
+  const SETTLE_MAX_ATTEMPTS = 15;   // settling passes, once there is something to settle
 
   function scheduleSettleCheck() {
-    if (settleConfirmed || settleAttempts >= SETTLE_MAX_ATTEMPTS) return;
+    if (settleConfirmed || !autoNamingEnabled) return;
+
+    if (awaitingReports) {
+      // Still waiting for GA4 to draw the report. Slower cadence, longer budget.
+      if (Date.now() - settleStartedAt > AWAIT_REPORTS_MAX_MS) return;
+    } else if (settleAttempts >= SETTLE_MAX_ATTEMPTS) {
+      return;
+    }
+
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(maybeHarvest, SETTLE_INTERVAL_MS);
+    settleTimer = setTimeout(
+      maybeHarvest,
+      awaitingReports ? AWAIT_REPORTS_INTERVAL_MS : SETTLE_INTERVAL_MS
+    );
   }
 
   /**
@@ -654,6 +676,7 @@
     if (propertyId === settleProperty || settleProperty === null) return;
     settleConfirmed = false;
     settleAttempts  = 0;
+    settleStartedAt = Date.now();
     lastHarvestAt   = 0;      // let the next pass run at once
     scheduleSettleCheck();
   }
@@ -802,6 +825,8 @@
       settleFingerprint = fingerprint;
       settleConfirmed   = false;
       settleAttempts    = 0;
+      awaitingReports   = score.size === 0;
+      settleStartedAt   = Date.now();
 
       // The slug recorded while replacing text belongs to the OLD property.
       // Keeping it would let the fallback below attribute this property's
@@ -811,6 +836,13 @@
     }
 
     if (!settleConfirmed) {
+      // Nothing on screen to name yet. This is GA4 still loading the report,
+      // not a settled answer of "no name", and calling it settled would end the
+      // polling and leave the first name waiting on an unrelated mutation.
+      // Measured before this guard: over 20 seconds to the first name.
+      if (score.size === 0) { awaitingReports = true; return null; }
+      awaitingReports = false;
+
       settleAttempts++;
 
       // Unchanged since the switch: the refetch has not landed yet, so what is
@@ -973,7 +1005,9 @@
    */
   function maybeHarvest() {
     const now = Date.now();
-    const interval = settleConfirmed ? HARVEST_INTERVAL_MS : SETTLE_INTERVAL_MS;
+    const interval = settleConfirmed  ? HARVEST_INTERVAL_MS
+                   : awaitingReports  ? AWAIT_REPORTS_INTERVAL_MS
+                   : SETTLE_INTERVAL_MS;
 
     // Throttled, but still reschedule. This function is called both by the timer
     // below and by the MutationObserver; if a throttled observer call returned

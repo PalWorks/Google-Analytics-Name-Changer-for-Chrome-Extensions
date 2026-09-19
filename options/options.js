@@ -321,7 +321,27 @@ function ensureGroup(accountId, accountName = '', opts = {}) {
 function addPropertyRow(group, slug = '', name = '', opts = {}) {
   const row = makePropertyRow(slug, name, opts);
   group.querySelector('.group-props').appendChild(row);
+  markSharedAccounts();
   return row;
+}
+
+/**
+ * An account holding more than one extension is never named automatically:
+ * naming it after one of several would be arbitrary. That is correct, but an
+ * empty field with no explanation reads as a bug, so the reason is put in the
+ * placeholder of the row it applies to.
+ */
+function markSharedAccounts() {
+  groupsList.querySelectorAll('.account-group').forEach((group) => {
+    const row = group.querySelector('.account-row');
+    if (!row) return;
+    const count = group.querySelectorAll('.property-row').length;
+    const shared = count > 1;
+    row.classList.toggle('is-shared', shared);
+    row.querySelector('.name-input').placeholder = shared
+      ? `Name this account yourself (holds ${count} extensions)`
+      : 'Account display name';
+  });
 }
 
 /**
@@ -333,6 +353,7 @@ function tidy() {
     if (g.querySelectorAll('.property-row').length === 0) g.remove();
   });
   if (groupsList.querySelectorAll('.mapping-row').length === 0) renderEmptyState();
+  markSharedAccounts();
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
@@ -413,6 +434,8 @@ function renderAll({ mappings, accountMappings, autoMappings, autoAccountMapping
       { isAuto: !owned && slug in autoProps }
     );
   });
+
+  markSharedAccounts();
 }
 
 // ── Read current DOM state ────────────────────────────────────────────────────
