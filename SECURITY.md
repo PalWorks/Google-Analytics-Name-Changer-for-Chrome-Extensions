@@ -50,8 +50,21 @@ The relevant guarantees are:
 | `https://analytics.google.com/*` | required host | Inject the replacement content script |
 | `management` | **optional** | Read the names of locally installed extensions, only while auto naming is on |
 
-`tabs` is deliberately **not** requested. The popup calls `chrome.tabs.query` but reads
-only `tab.id`, never `url` or `title`, which does not require the permission.
+`tabs` is deliberately **not** requested, and the extension is careful about what that buys.
+Chrome exposes a tab's `url` and `title` to an extension **only** for tabs matching a host
+permission it already holds, which here is `https://analytics.google.com/*` and nothing else.
+So the extension can see the address of a Google Analytics tab, and cannot see the address,
+title or existence of any other tab, or any browsing history.
+
+Two things use that. The popup finds a GA4 tab elsewhere in the window so it still works when
+you open it from another tab. And the settings page reads the query string off an open GA4 tab
+to keep `authuser` intact, so a user signed into several Google accounts is not sent to a
+different identity's Analytics. Neither is stored anywhere except `local.ga4Base`, which holds
+one Google Analytics URL with no hash, on the device only.
+
+`chrome.tabs.create` and `chrome.tabs.update` are used to open and drive one background GA4
+tab when the user presses **Visit and name the rest**, and it is closed at the end of the run.
+Creating a tab needs no permission; driving this one is bounded by the same host permission.
 
 **On `management`.** It is requested only when the user turns auto naming on, and released
 with `chrome.permissions.remove()` when they turn it off. The extension calls exactly one

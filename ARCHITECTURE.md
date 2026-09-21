@@ -368,6 +368,18 @@ The column is a fixed width on purpose. The switch descriptions beside it are a 
 
 Status is therefore split by kind. **Progress** goes on the button doing the work, replacing its label (`Visiting 2 of 7…`, `Checking 3…`) with the icon spinning, so a running action is visible where the user clicked and costs no layout. **Results** go to `showAutonameStatus()`, which renders a toast into `#toast-host`, a `position: fixed` corner region that fades itself out after 5.5 seconds, or 9 for an error. Neither can move the page.
 
+The table is built from three sources, not two: the user's own `mappings`, the derived
+`autoMappings`, and every slug in `propertyAccounts`. That third one is what gives a property
+Google Analytics has told us about but that nothing has named an empty row of its own. Without
+it such a property was invisible here while the popup listed it, there was nowhere to type its
+name by hand, and **Fill missing names** had nothing to act on.
+
+A run that names something finishes by reloading this page (ADR-021), because an account's
+label is built from all the extensions it holds, so naming one property rewrites the rows
+around it and those are only drawn at load. It reloads only when something changed and only
+when there is nothing unsaved to lose, carries its result across in `sessionStorage`, and
+strips the `#cycle` hash first so the reload does not start another run.
+
 Each mapping row ends in a `.row-actions` cell holding two buttons: a listing link, hidden until resolution reports that slug as unresolved, and delete. Rows carry two hint classes, `is-detected` (arrived from detection or the handoff) and `is-suggested` (name came from resolution, not the user), both cleared on first edit.
 
 ---

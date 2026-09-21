@@ -396,7 +396,18 @@ zip -r ../ga4-name-changer-<version>.zip . \
    user enables auto naming; used solely to call `chrome.management.get()` and read the
    `name` of extensions already installed, so Chrome Web Store properties in Google
    Analytics can be labelled; never used to enable, disable or uninstall anything.
-10. Tag the release: `git tag v<version> && git push --tags`.
+10. Tag the release and publish it on GitHub, with the same zip attached so anyone can
+    verify that the published package matches the tagged source:
+
+```bash
+git tag -a v<version> -m "v<version>"
+git push origin v<version>
+gh release create v<version> ../ga4-name-changer-v<version>.zip \
+  --title "v<version>" --notes-file <notes>
+```
+
+11. After the store review completes, note the review turnaround in this file if it differed
+    materially from previous submissions. It is the only record of what to expect next time.
 
 ---
 

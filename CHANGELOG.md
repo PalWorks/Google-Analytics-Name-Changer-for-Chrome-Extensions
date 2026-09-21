@@ -4,9 +4,15 @@ All notable changes to Google Analytics (GA4) Name Changer for Chrome Extension 
 
 ---
 
-## [1.1.0] — 2026-09-18
+## [1.1.0] — 2026-09-21
 
-Auto-naming, onboarding, and a documentation set for contributors and agents.
+**First public release.** Version 1.0.0 was never published: it required every name to be
+typed by hand. This version works the names out for itself, from the Google Analytics reports
+the user already has, and adds the surfaces around that: onboarding, a listing site, a
+feedback relay, and a documentation set for contributors and agents.
+
+Headings below are grouped by the wave of work they came from, because this version was built
+and tested over several days against a live Chrome Web Store developer account.
 
 ### Added
 
@@ -33,7 +39,7 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 - **Accordion affordance** — every collapsible section now carries a large chevron at the trailing edge that rotates 180 degrees on open, so the control reads as expandable and reports its current state. Previously the sections had only a leading topic icon and nothing indicating they opened
 - **Feedback form** — name, email and message, with installation diagnostics attached. The extension never holds the Resend API key; it posts to a relay Worker that does, and falls back to a pre-filled `mailto:` when no endpoint is configured, so it works with no infrastructure and no permission
 
-### Fixed in this release
+### Fixed: the naming engine
 
 - **A property switch could write another extension's name into a property, permanently.** Google Analytics rewrites the URL as soon as you switch property but refetches its report widgets around four seconds later (measured live). Harvesting inside that window paired the new property's slug with the previous extension's name and persisted it, so the breadcrumb showed the wrong extension until something overwrote it — reported from live use as names that were wrong, that vanished, or that only a refresh would fix. A name is now attributed only once the reports have demonstrably changed since the switch and then held still for a further pass. See ADR-013
 - **A wrong pairing could not heal itself.** The same name under two slugs is always a stale read, since two Chrome Web Store extensions do not share a byte-identical name. The property whose slug comes from GA4's own account tree now takes the name and the other claim is dropped, so a bad pairing written earlier is corrected on the next visit rather than blocking the rightful property forever
@@ -41,7 +47,7 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 - **The first name took over 20 seconds on a cold page load.** GA4's page is interactive well before its page-title report has any rows, and a harvest pass that early saw no candidate names at all. That was treated as "settled on no name", which stopped the polling and left the first name waiting for an unrelated mutation. An empty report is now understood as "not loaded yet" and is waited out. Measured on a live account: 20s+ before, 8.7s after
 - **Harvesting could stall on a page that stopped mutating.** Settling needs two passes and passes were driven only by the MutationObserver, so a page that had finished rendering never completed one. Unsettled passes are now self-driven, and a throttled call re-arms the timer instead of silently ending the chain
 
-### Added (listing)
+### Added: store listing, site and packaging
 
 - **Chrome Web Store listing assets** — `store/LISTING.md` holds the product name, short description with three tested alternates, the full detailed description, the single-purpose statement, a permission justification for `storage`, the `analytics.google.com` host permission and the optional `management` permission, and the privacy declarations. `store/assets/` holds a 440×280 small promo tile, a 1400×560 marquee tile and five 1280×800 screenshots, rendered at exact size by `store/src/render.mjs`. Every claim in the permission justifications was checked against the source: no `management.getAll`, no `fetch`/XHR/WebSocket, no `eval`, no external script or style references, one host permission. `store/` is excluded from the package. Every example name, extension ID and account number in the copy and the imagery is fictional, and each account label shown is checked against the shipping `combineAccountName()` so nothing depicted is a label the extension could not really produce
 
@@ -138,7 +144,7 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   the user's own report rows, because the Chrome Web Store put it in a page title. Recorded in
   ADR-018 so it is not re-investigated
 
-### Fixed after UAT
+### Fixed: user acceptance testing
 
 - **A property nobody has named now has a row in the settings table.** The table was built
   from the names that existed, so a property Google Analytics had told us about but that
@@ -311,13 +317,13 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   the exact wording, and the note tying the declaration back to `FEEDBACK_ENDPOINT` so it is
   reverted if the endpoint is ever removed
 
-### Fixed
+### Fixed: popup and account naming
 
 - **Unsaved popup edits were silently discarded.** Clicking **Full Settings** closed the popup without preserving anything typed into it. Extension popups do not fire `beforeunload`, so the `isDirty` guard used by the options page is unavailable; the `pendingDetection` handoff replaces it
 - **Accounts holding more than one extension were named wrongly.** An account was labelled after whichever single extension happened to be on screen. It is now labelled from all of them (ADR-015); one live test account holds two and another holds three
 - **The slug overflow note was untrue.** It directed the user to Full Settings to map the remaining slugs, but those slugs existed only in popup memory and were never carried anywhere. The handoff now carries every detected slug, including the ones beyond the three-row display cap
 
-### Changed
+### Changed: options page and docs
 
 - The options page row factory gained the `is-detected` and `is-suggested` states the popup already had, plus a shared row actions cell, and editing a row clears both hints
 - `privacy.html` updated for the optional permission, and its "no network requests" claim restated as unconditional, which it now is

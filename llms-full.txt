@@ -146,7 +146,10 @@ the URL when the tree does not list the account.
   remaining properties are opened.
 
 Every derived name is badged "auto" in the settings page and is a draft. A name the user types
-always wins and is never overwritten.
+always wins and is never overwritten. A property Google Analytics has told the extension about
+that nothing has managed to name still gets an empty row in the settings table, so it can
+always be named by hand. Nothing is ever saved on the user's behalf: derived names stay in
+local storage as drafts, and "Save" is what promotes one into the user's own synced mappings.
 
 Because the replacement is display-only, a page the extension has worked on is indistinguishable
 from a page Google rendered correctly. The toolbar icon therefore carries the number of distinct

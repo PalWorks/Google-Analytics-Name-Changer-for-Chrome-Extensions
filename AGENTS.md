@@ -214,8 +214,12 @@ Do not "fix" these without discussion. Each is a deliberate, documented decision
   instead.
 * **The popup never calls `chrome.permissions.request()`.** That call tears down an
   extension popup before its callback runs. Granting happens on the options page only.
-* **`tabs` is not in `permissions`.** Only `tab.id` is read, which does not require it.
-  Do not add the permission.
+* **`tabs` is not in `permissions`, and reading a GA4 tab's `url` does not need it.**
+  Chrome exposes `url` and `title` only for tabs matching a host permission the extension
+  already holds, which here is `analytics.google.com` and nothing else. The popup uses that
+  to find a GA4 tab in another window pane; the settings page uses it to keep `authuser`
+  intact. Do not add the permission: it would widen the install warning to every site for
+  something already available for the one site that matters.
 * **`management` is optional and resolution is gated on a live permission check, not the
   stored flag.** The permission can be revoked from `chrome://extensions` without the
   extension being told, so the flag alone is not trustworthy. See ADR-005.

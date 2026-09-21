@@ -28,7 +28,9 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 - **Automatic naming, no setup** — open a GA4 property and it names itself. The real extension name is read straight out of GA4's own reports and applied on the spot, with no save step and no network request. Anything you type overrides it. Extensions installed in your profile can also be named from Chrome itself (optional, off by default). Anything neither source covers gets a one-click link to its store listing. Every suggestion is reviewed before saving, and none of it touches the network
 - **Guided onboarding** — a three-slide welcome modal on first install: what the extension does, the one thing you have to do (open each property once, with a looping demo showing slugs turning into names), and the auto-naming opt-in; reachable again any time from the popup's **?** button
 - **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
-- **One settings table** — accounts and the extensions they hold in a single grouped view, paired automatically from Google Analytics' own account tree
+- **One settings table** — accounts and the extensions they hold in a single grouped view, paired automatically from Google Analytics' own account tree. A property Google Analytics knows about but that nothing has managed to name gets an empty row of its own, so there is always somewhere to type the name by hand
+- **You can see what is unsaved** — an "Unsaved changes" pill sits beside **Save Changes**, which appears above the table as well as below it, and the browser's own confirm-before-leaving prompt backs it up. Nothing is ever saved on your behalf: **Save** means "make this mine", and promoting a draft you have not read is exactly what the rest of the design avoids
+- **Long jobs say how long** — the naming run counts down on its own button, because a property with no store-listing views legitimately holds for thirty seconds, and a spinner with no number on it reads as a hang
 - **Feedback form** — report a problem from the settings page, with installation details attached so support can reproduce it
 - **Two permissions, both narrow** — `storage` to save your names, and `scripting` so a Google Analytics tab that was already open when you installed or updated the extension starts working without a refresh. `scripting` is bounded by the single host permission for `analytics.google.com`, so it can reach nothing else. `management` is optional and off by default
 - **Zero data collection** — no analytics, no telemetry and no tracking. Nothing about your Google Analytics data is ever transmitted. The only request the extension ever makes is sending a support message you type and submit yourself in the feedback form
@@ -90,7 +92,7 @@ Changes** to make that name permanently yours.
 | Account number | 9-digit integer | Left panel of the GA4 account switcher, beneath the account name |
 | Property slug | 32 chars, `a` to `p` | Displayed as the property name in the GA4 interface. **This is your extension's Chrome Web Store ID**, which is what makes auto-naming possible. |
 
-Note that the numbers in the URL hash (`#a{accountId}p{propertyId}/…`) are GA4's own account and property IDs. The account ID there is the one you want; the property ID is not the slug and is not used by this extension.
+Note that the numbers in the URL hash (`#a{accountId}p{propertyId}/…`) are GA4's own account and property IDs. The account ID there is the one you want. The property ID is **not** the slug and is never replaced or displayed, but it is recorded: it is the only way to build a URL for a property you have never opened, which is what **Visit and name the rest** navigates to.
 
 ### Auto-naming your extensions
 

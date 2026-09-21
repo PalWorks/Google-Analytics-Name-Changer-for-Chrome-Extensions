@@ -131,7 +131,7 @@
     <header>
       <div class="badge">Privacy Policy</div>
       <h1>Google Analytics (GA4) Name Changer for Chrome Extension Developers</h1>
-      <p class="meta">Effective date: 19 September 2026 &nbsp;·&nbsp; Chrome Extension &nbsp;·&nbsp; Version 1.1.0</p>
+      <p class="meta">Effective date: 21 September 2026 &nbsp;·&nbsp; Chrome Extension &nbsp;·&nbsp; Version 1.1.0</p>
     </header>
 
     <div class="highlight-box">
@@ -168,9 +168,12 @@
          never leaves the device: your preferences, the last Google Analytics context
          seen so the toolbar popup still works on other tabs, a short-lived handoff of rows
          between the toolbar popup and the settings page, extension names the
-         extension read from the Google Analytics reports already on your screen, and
-         which Google Analytics account each property sits under, so the settings page can
-         group them.
+         extension read from the Google Analytics reports already on your screen, which
+         Google Analytics account each property sits under and Google's own numeric ID for
+         each one, so the settings page can group them and can open a property you have
+         never visited, and the address of the Google Analytics page you last had open,
+         which is kept only so that the extension opens the same Google account you were
+         already signed in as.
          Uninstalling the extension deletes all of it.</p>
     </section>
 
@@ -273,8 +276,14 @@
             off.</li>
       </ul>
       <p>No other permissions are requested. In particular, the extension does not
-         request the <code>tabs</code> permission and cannot read your browsing history,
-         your open tab URLs, or any page other than Google Analytics.</p>
+         request the <code>tabs</code> permission, so it cannot read your browsing history
+         and cannot see the address of a tab on any other site. It can see the address of a
+         Google Analytics tab, because that is the one site it has permission for, and it
+         uses that only to stay on the Google account you are already signed in as.</p>
+      <p>When you press <strong>Visit and name the rest</strong>, the extension opens one
+         Google Analytics tab in the background, walks it through the properties it could
+         not name, and closes it when it is done. It opens no other page, and it does this
+         only when you ask it to.</p>
       <p>The feedback form needs no permission at all. The relay replies with the CORS
          header that permits this extension's own origin, so the request is allowed
          without a host permission being added to the extension.</p>

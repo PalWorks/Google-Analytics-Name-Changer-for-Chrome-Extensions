@@ -36,18 +36,25 @@ Google Analytics (GA4) Name Changer for Chrome Extension Developers
 Shown under the title in search results and on the listing card. **132 characters maximum.**
 
 ```
-See real extension names in GA4 instead of 32-character IDs. Automatic, local, and it never sends your analytics anywhere.
+See real extension names in Google Analytics instead of 32-character Chrome Web Store IDs. Automatic, local, nothing sent.
 ```
 
 122 characters.
+
+**Why this one.** The Chrome Web Store ranks on the product name, the summary and the detailed
+description; there is no keyword field, and stuffing one is a policy violation. The name
+already carries *Google Analytics*, *GA4*, *Name Changer*, *Chrome Extension* and *Developers*,
+so the summary spends its 132 characters on what the name does **not** say: **Chrome Web
+Store**, **32-character IDs**, **real extension names**, **automatic**, **local**. Between the
+two fields every high-intent term is covered once, in a sentence a human would read.
 
 ### Alternates, if you want to test something different
 
 | Variant | Chars | Angle |
 |---|---|---|
-| `Replace 32-character extension IDs in Google Analytics with real names. Automatic, local, and your analytics stay yours.` | 120 | Plain-benefit |
-| `GA4 shows your extension as a 32-character ID. This shows its name, automatically, with no account and no network calls.` | 120 | Problem-first |
-| `Rename GA4 property slugs and account numbers to real Chrome extension names. Works automatically. No tracking at all.` | 118 | Keyword-dense |
+| `Rename GA4 property slugs and account numbers to your real Chrome extension names. Automatic, local, and nothing is sent.` | 121 | Verb-first, catches "rename" |
+| `Chrome Web Store analytics in GA4 show 32-character IDs. This shows your real extension names, automatically and locally.` | 121 | Problem-first |
+| `See real Chrome extension names in Google Analytics 4 instead of 32-character IDs and 9-digit account numbers. All local.` | 121 | Both identifiers named |
 
 ---
 
@@ -69,10 +76,12 @@ See real extension names in GA4 instead of 32-character IDs. Automatic, local, a
 
 ```
 Chrome Web Store analytics arrive in Google Analytics 4 under a 32-character extension ID,
-and every developer account is labelled with the same generic string. If you ship more than
-one extension, every report, comparison and account switcher looks identical.
+and every Chrome Web Store developer account is labelled with the same generic string. If you
+publish more than one Chrome extension, every GA4 report, comparison and account switcher
+looks identical.
 
-This extension puts your real names back, live inside analytics.google.com.
+GA4 Name Changer puts your real extension names back, live inside analytics.google.com. No
+account to create, no API key, no setup: open a property and it names itself.
 
 inkkcgalfjninhfflfhkflidilkjmhof   →   Tab Session Saver Pro
 241067359                          →   Tab Session Saver + Dark Mode
@@ -128,10 +137,17 @@ at. No count means there is nothing on that page to rename yet, and the tooltip 
 
 EVERYTHING IN ONE TABLE
 
-The settings page shows every account with the extensions it owns nested underneath, paired
-from Google Analytics' own account tree. Worked-out names are badged "auto". Type over any of
-them and press Save, and yours wins from then on: on this machine and, through Chrome sync,
-on your others.
+The settings page shows every Google Analytics account with the extensions it owns nested
+underneath, paired from Google Analytics' own account tree. Worked-out names are badged
+"auto". Type over any of them and press Save, and yours wins from then on: on this machine
+and, through Chrome sync, on your others.
+
+A property Google Analytics knows about that nothing has managed to name still gets a row of
+its own, so there is always somewhere to type it in by hand.
+
+Nothing is ever saved for you. A name the extension worked out stays a draft until you keep
+it, an "Unsaved changes" marker sits beside Save, and your browser asks before you leave with
+work in progress.
 
 Import and export the whole set as plain JSON, so you can move it between machines or keep it
 in version control.
@@ -348,8 +364,28 @@ node store/src/render.mjs shot-3    # just one
 
 ## Search terms worth covering
 
-Already present in the copy above. Listed so they survive a rewrite.
+The Chrome Web Store has **no keyword field**. It ranks on the product name, the summary and
+the detailed description, so a term earns its place by appearing in a sentence someone would
+actually read. Keyword stuffing is a listing-policy violation and a rejection risk, so each
+term below appears in the copy **once or twice**, never as a list.
 
-`GA4` · `Google Analytics 4` · `Chrome Web Store analytics` · `extension ID` · `property slug` ·
-`developer account` · `rename property` · `Chrome extension developer tools` · `store listing` ·
-`installs and uninstalls` · `account switcher` · `display name`
+Listed here so a future rewrite does not quietly drop one.
+
+| Term | Where it is carried |
+|---|---|
+| `Google Analytics`, `GA4`, `Google Analytics 4` | Name, summary, first line of the description |
+| `Chrome Web Store analytics` | Summary, first line of the description |
+| `Chrome extension developer`, `developer account` | Name, description opening, "Who it is for" |
+| `extension ID`, `32-character ID` | Summary, description opening, before/after block |
+| `property slug`, `property name`, `rename property` | Description, "It names your extensions for you" |
+| `account number`, `9-digit`, `account switcher` | "Account numbers get real names too" |
+| `display name` | "Everything in one table" |
+| `store listing`, `page title report` | "It names your extensions for you" |
+| `installs and uninstalls` | "Who it is for" |
+| `free`, `open source`, `MIT` | "Open source" |
+| `privacy`, `no tracking`, `local` | Summary, "Your analytics never leave your device" |
+
+**Deliberately not chased.** "Analytics dashboard", "SEO", "traffic" and similar high-volume
+terms describe something this extension is not. Ranking for them would draw installs from
+people who will uninstall in a minute and rate it one star, which costs more than the traffic
+is worth.
