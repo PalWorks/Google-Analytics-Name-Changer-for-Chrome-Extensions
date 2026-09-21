@@ -505,8 +505,34 @@ would look settled rather than partial. `+ 1 more` is honest and self-correcting
   developer account, which is the problem being solved.
 
 **Consequence.** The 38-character cap means a three-extension account gets roughly ten
-characters each, which is terse (`Alpha Tab + Beta + Gamma`). Acceptable: past two extensions
-the label is a signpost, and the user can rewrite it.
+characters each, which is terse (`Alpha Tab + Beta + Gamma`). See the amendment below: that
+consequence was worse in practice than it reads here, and the rule was changed.
+
+### Amendment, 2026-09-21 — a word floor, and a count past two extensions
+
+The character cap alone produced labels like `OpenFullPage + Google + 1 more`. Two faults, both
+from cutting on characters with no floor on words:
+
+* **One word is rarely the extension.** `Google Analytics Name Changer for Chrome Extensions`
+  cut to thirteen characters is `Google`, which reads as somebody else's product, not as ours.
+* **Three names at ten characters each is not a signpost, it is three fragments.**
+
+The rule is now:
+
+| Extensions in the account | Label |
+| --- | --- |
+| One | its name, shortened as before |
+| Two | both names, each at least **two** words |
+| Three or more | the **first** name at at least **three** words, then `+ N more` |
+
+The word floor **wins over the 38-character cap** when the two disagree, so a label may run a
+character or two long. That is the right way round: a label the user can read and then edit
+beats one that fits and says nothing. Counting past two rather than cramming is the same
+honesty argument as `+ 1 more` above, applied to names we do have.
+
+`shortenName()` takes a third argument, `minWords`, and `tidyForCombining()` now also drops a
+separator dash, because cutting `OpenFullPage - Capture Screen` mid-phrase left the hyphen
+dangling. Both are duplicated in `popup.js`, which must stay in step.
 
 ---
 

@@ -569,18 +569,18 @@ const TRAILING_STOPWORDS = new Set([
   'and','or','the','a','an','as','of','for','to','in','on','with','by','my','your'
 ]);
 
-function shortenName(name, maxChars = 24) {
+function shortenName(name, maxChars = 24, minWords = 1) {
   const words = String(name).trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return '';
 
   const kept = [words[0]];
   for (let i = 1; i < words.length; i++) {
-    if ((kept.join(' ') + ' ' + words[i]).length > maxChars) break;
+    if ((kept.join(' ') + ' ' + words[i]).length > maxChars && kept.length >= minWords) break;
     kept.push(words[i]);
   }
-  while (kept.length > 1 && TRAILING_STOPWORDS.has(kept[kept.length - 1].toLowerCase())) {
-    kept.pop();
-  }
+  const dangling = () => TRAILING_STOPWORDS.has(kept[kept.length - 1].toLowerCase());
+  while (kept.length > Math.max(1, minWords) && dangling()) kept.pop();
+  while (dangling() && words.length > kept.length) kept.push(words[kept.length]);
   return kept.join(' ');
 }
 

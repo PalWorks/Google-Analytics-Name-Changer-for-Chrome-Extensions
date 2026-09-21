@@ -947,17 +947,27 @@
     'and', 'or', 'the', 'a', 'an', 'as', 'of', 'for', 'to', 'in', 'on', 'with', 'by', 'my', 'your'
   ]);
 
-  function shortenName(name, maxChars = 24) {
+  /**
+   * @param {number} maxChars  soft cap: the last word that fits is the last kept
+   * @param {number} minWords  hard floor: this many words survive the cap, because
+   *                           one word is rarely the extension. "Google Analytics
+   *                           Name Changer for Chrome Extensions" cut to a single
+   *                           word is "Google", which reads as somebody else's
+   *                           product rather than as ours.
+   */
+  function shortenName(name, maxChars = 24, minWords = 1) {
     const words = String(name).trim().split(/\s+/).filter(Boolean);
     if (words.length === 0) return '';
     const kept = [words[0]];
     for (let i = 1; i < words.length; i++) {
-      if ((kept.join(' ') + ' ' + words[i]).length > maxChars) break;
+      if ((kept.join(' ') + ' ' + words[i]).length > maxChars && kept.length >= minWords) break;
       kept.push(words[i]);
     }
-    while (kept.length > 1 && TRAILING_STOPWORDS.has(kept[kept.length - 1].toLowerCase())) {
-      kept.pop();
-    }
+    const dangling = () => TRAILING_STOPWORDS.has(kept[kept.length - 1].toLowerCase());
+    // Never end on a connector word: drop it while we can spare it, otherwise
+    // take the next word instead, so the floor is met without reading as a cut.
+    while (kept.length > Math.max(1, minWords) && dangling()) kept.pop();
+    while (dangling() && words.length > kept.length) kept.push(words[kept.length]);
     return kept.join(' ');
   }
 
@@ -967,18 +977,24 @@
 
   /**
    * Punctuation inside an extension name is noise once the name is cut down to
-   * a couple of words: "Tab Session Saver Pro" reads better as "Tab Session Saver".
+   * a couple of words, and a separator dash is worse than noise: cutting
+   * "OpenFullPage - Capture Screen" mid-phrase leaves a hyphen dangling.
    */
   function tidyForCombining(name) {
-    return String(name).replace(/[,:;|]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return String(name)
+      .replace(/\s+[-\u2013\u2014]+\s+/g, ' ')   // "OpenFullPage - Capture" -> "OpenFullPage Capture"
+      .replace(/[,:;|]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   /**
    * Build one account label out of the extensions the account holds.
    *
-   * One extension: its name, shortened, as before. Several: each cut harder and
-   * joined with " + ", so a two-extension account reads
-   * "Tab Session Saver + Dark Mode" rather than sitting blank.
+   * One extension: its name, shortened, as before. Two: both, each cut harder
+   * and joined with " + ", so the account reads "Tab Session Saver + Dark Mode
+   * Everywhere" rather than sitting blank. Three or more: the first name and a
+   * count, "Tab Session Saver Pro + 2 more".
    *
    * Extensions we have not named yet are counted, not guessed at, so an account
    * we only half know says "… + 1 more" instead of quietly labelling itself
@@ -988,17 +1004,24 @@
   function combineAccountName(names, unknown) {
     const known = names.filter(Boolean);
     if (known.length === 0) return '';
-    if (known.length === 1 && !unknown) return shortenName(known[0]);
 
-    const shown = known.slice(0, 3);
-    const rest  = (known.length - shown.length) + (unknown || 0);
+    const total = known.length + (unknown || 0);
+    if (total === 1) return shortenName(known[0]);
+
+    // Two extensions: both names, each at least two words. Three or more: the
+    // first name at three words and a count for the rest, because three names
+    // cut to nine characters each is a label nobody can read. The word floor
+    // wins over COMBINED_MAX_CHARS when the two disagree.
+    const minWords = total >= 3 ? 3 : 2;
+    const shown = known.slice(0, total >= 3 ? 1 : 2);
+    const rest  = total - shown.length;
     const more  = rest > 0 ? `${rest} more` : '';
 
     const slots  = shown.length + (rest > 0 ? 1 : 0);
     const budget = COMBINED_MAX_CHARS - 3 * (slots - 1) - more.length;
     const per    = Math.max(9, Math.floor(budget / shown.length));
 
-    const parts = shown.map(n => shortenName(tidyForCombining(n), per)).filter(Boolean);
+    const parts = shown.map(n => shortenName(tidyForCombining(n), per, minWords)).filter(Boolean);
     if (rest > 0) parts.push(more);
     return parts.join(' + ');
   }

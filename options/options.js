@@ -723,9 +723,12 @@ function consumeHandoff(done) {
 // service worker; this page owns the consent (setting + optional permission).
 
 const autonameToggle = document.getElementById('autoname-toggle');
-const autonameStatus = document.getElementById('autoname-status');
+const toastHost      = document.getElementById('toast-host');
 const fetchNamesBtn  = document.getElementById('fetch-names-btn');
+const fetchBtnLabel  = document.getElementById('fetch-btn-label');
 const managementToggle = document.getElementById('management-toggle');
+
+const FETCH_BTN_LABEL = 'Fill missing names';
 
 // chrome.management.get reports the name of any extension installed in this
 // profile. It is the only way to derive an extension's name locally: Chrome
@@ -736,16 +739,36 @@ const LISTING_URL = (id) => `https://chromewebstore.google.com/detail/${id}`;
 
 let autonameStatusTimer = null;
 
+/**
+ * The result of something the user asked for, spoken from the corner.
+ *
+ * It used to sit inside the toolbar, where a two-line result squeezed the
+ * switch descriptions beside it down to one word per line. A toast cannot
+ * move the page at all, and takes itself away afterwards. Progress does not
+ * come through here: a running button says what it is doing itself.
+ */
 function showAutonameStatus(text, type = '') {
   clearTimeout(autonameStatusTimer);
-  autonameStatus.textContent = text;
-  autonameStatus.className = 'status-msg' + (type ? ` is-${type}` : '');
-  if (type === 'success') {
-    autonameStatusTimer = setTimeout(() => {
-      autonameStatus.textContent = '';
-      autonameStatus.className = 'status-msg';
-    }, 4000);
-  }
+  toastHost.replaceChildren();
+  if (!text) return;
+
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ` is-${type}` : '');
+  el.textContent = text;
+  toastHost.appendChild(el);
+
+  // An error is the one worth reading twice, so it stays longer.
+  autonameStatusTimer = setTimeout(() => {
+    el.classList.add('is-out');
+    setTimeout(() => el.remove(), 320);
+  }, type === 'error' ? 9000 : 5500);
+}
+
+/** Put the work on the button doing it, instead of in a line of status text. */
+function setFetchBusy(busy, text) {
+  fetchNamesBtn.classList.toggle('is-running', busy);
+  fetchNamesBtn.disabled = busy;
+  fetchBtnLabel.textContent = busy ? text : FETCH_BTN_LABEL;
 }
 
 function setAutonameEnabled(on) {
@@ -870,13 +893,12 @@ function fillFromManagement(alreadyHinted) {
     return;
   }
 
-  fetchNamesBtn.disabled = true;
-  showAutonameStatus(`Checking ${targets.length} extension(s)…`);
+  setFetchBusy(true, `Checking ${targets.length}\u2026`);
 
   chrome.runtime.sendMessage(
     { action: 'resolveNames', ids: targets.map(t => t.slug) },
     (response) => {
-      fetchNamesBtn.disabled = false;
+      setFetchBusy(false);
 
       if (chrome.runtime.lastError || !response) {
         showAutonameStatus('Lookup failed. Try again.', 'error');
@@ -946,6 +968,9 @@ function fillFromManagement(alreadyHinted) {
 
 const cycleBtn      = document.getElementById('cycle-btn');
 const cycleBtnLabel = document.getElementById('cycle-btn-label');
+const cycleStopBtn  = document.getElementById('cycle-stop-btn');
+
+const CYCLE_BTN_LABEL = 'Visit and name the rest';
 
 const CYCLE_TIMEOUT_MS = 30000;  // per property, then give up and move on
 const CYCLE_POLL_MS    = 750;
@@ -1012,10 +1037,18 @@ async function waitForName(slug, timeoutMs) {
   return null;
 }
 
+/**
+ * While it runs, the button is the progress indicator: its label is replaced by
+ * the property it is on, and Stop appears under it as its own control rather
+ * than the button changing meaning under the cursor.
+ */
 function setCycleUi(running) {
-  cycleBtnLabel.textContent = running ? 'Stop' : 'Visit and name the rest';
   cycleBtn.classList.toggle('is-running', running);
+  cycleBtn.disabled = running;
+  cycleStopBtn.hidden = !running;
+  cycleStopBtn.disabled = false;
   fetchNamesBtn.disabled = running;
+  if (!running) cycleBtnLabel.textContent = CYCLE_BTN_LABEL;
 }
 
 /** Show a newly named property without re-rendering rows the user may be editing. */
@@ -1055,7 +1088,7 @@ async function runCycle() {
     for (let i = 0; i < targets.length; i++) {
       if (cycleCancelled) break;
       const t = targets[i];
-      showAutonameStatus(`Visiting property ${i + 1} of ${targets.length}…`);
+      cycleBtnLabel.textContent = `Visiting ${i + 1} of ${targets.length}\u2026`;
 
       if (i > 0) {
         if (!(await pTabsGet(tab.id))) { tab = null; break; }  // user closed it
@@ -1106,8 +1139,15 @@ function refreshCycleButton() {
 }
 
 cycleBtn.addEventListener('click', () => {
-  if (cycleRunning) { cycleCancelled = true; showAutonameStatus('Stopping…'); return; }
+  if (cycleRunning) return;
   runCycle();
+});
+
+cycleStopBtn.addEventListener('click', () => {
+  if (!cycleRunning) return;
+  cycleCancelled = true;
+  cycleStopBtn.disabled = true;
+  cycleBtnLabel.textContent = 'Stopping\u2026';
 });
 
 fetchNamesBtn.addEventListener('click', fillMissingNames);

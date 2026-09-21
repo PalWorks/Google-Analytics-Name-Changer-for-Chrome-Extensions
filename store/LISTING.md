@@ -98,9 +98,10 @@ ACCOUNT NUMBERS GET REAL NAMES TOO
 
 Google labels every Chrome Web Store developer account identically, so the nine-digit account
 number is the only thing telling them apart. Each account is named after the extension it
-holds. An account holding several is named after all of them, as in "Tab Session Saver + Dark
-Mode". Extensions it has not seen yet are counted rather than guessed at, so a half-explored
-account reads "Tab Session Saver Pro + 1 more" and corrects itself when you open the rest.
+holds. An account holding two is named after both, as in "Tab Session Saver + Dark Mode"; one
+holding three or more is named after the first plus a count. Extensions it has not seen yet are
+counted rather than guessed at, so a half-explored account reads "Tab Session Saver Pro + 1
+more" and corrects itself when you open the rest.
 
 
 NAME THE ONES YOU HAVE NEVER OPENED

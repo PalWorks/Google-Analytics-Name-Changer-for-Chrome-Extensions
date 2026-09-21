@@ -94,12 +94,91 @@ body {
   padding: 1px 5px;
 }
 
+/* A fixed-width column of stacked buttons. Fixed, because the text beside it
+   is a two-column grid: anything elastic here (a status message, a longer
+   button label) squeezed those columns down to one word per line. */
 .toolbar-actions {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 212px;
   flex-shrink: 0;
 }
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--accent);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-action:hover:not([disabled]):not(.is-running) {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+
+.btn-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A running button is not dimmed: it is the thing reporting progress. */
+.btn-action[disabled]:not(.is-running) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-action-icon { flex-shrink: 0; }
+
+/* A working button says what it is doing, in place of its label, so progress
+   never needs a line of its own. */
+.btn-action.is-running {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  cursor: default;
+}
+
+.btn-action.is-running .btn-action-icon { animation: cycleSpin 1.1s linear infinite; }
+
+.btn-stop {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-stop:hover { background: var(--danger-bg); }
+
+.btn-stop:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+
+/* `hidden` alone loses to the `display` on these classes, because an author
+   rule beats the user-agent one whatever its specificity. */
+.btn-action[hidden],
+.btn-stop[hidden],
+.btn-ghost[hidden] { display: none; }
 
 .btn-ghost[disabled] {
   opacity: 0.4;
@@ -110,8 +189,10 @@ body {
 
 @media (max-width: 860px) {
   /* One column, and drop the hanging indent so narrow text keeps its width */
-  .toolbar-info  { grid-template-columns: 1fr; }
-  .toolbar-hint  { padding-left: 0; }
+  .toolbar          { flex-direction: column; }
+  .toolbar-info     { grid-template-columns: 1fr; }
+  .toolbar-hint     { padding-left: 0; }
+  .toolbar-actions  { width: 100%; }
 }
 
 /* ── "How names are worked out" card ── */
@@ -641,19 +722,57 @@ summary:hover > .accordion-chevron { opacity: 1; }
   .cycle-name { opacity: 1; transform: none; }
 }
 
-/* The cycle button turns into its own Stop control while it runs, rather than
-   putting a second button on the toolbar that is disabled most of the time. */
-#cycle-btn.is-running {
-  color: var(--danger);
-  border-color: var(--danger);
-  background: rgba(255, 59, 48, 0.06);
-}
-#cycle-btn.is-running svg { animation: cycleSpin 1.1s linear infinite; }
-
 @keyframes cycleSpin { to { transform: rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  #cycle-btn.is-running svg { animation: none; }
+  .btn-action.is-running .btn-action-icon { animation: none; }
+}
+
+/* ── Toasts ── */
+
+/* Results of a run: the corner, out of the way of everything, fading by
+   themselves. A result can be two lines long and still move nothing. */
+.toast-host {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(400px, calc(100vw - 40px));
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--text);
+  color: #fff;
+  font-size: 12.5px;
+  line-height: 1.45;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--text-3);
+  padding: 10px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s, transform 0.3s;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast.is-success { border-left-color: var(--success); }
+.toast.is-error   { border-left-color: var(--danger); }
+
+.toast.is-out {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
 }
 
 .preview {

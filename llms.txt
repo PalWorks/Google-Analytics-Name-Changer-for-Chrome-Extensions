@@ -33,10 +33,11 @@ offers a button that visits the remaining properties itself, in one background t
 when done. Roughly ten seconds per property, and it never takes focus.
 
 An account is named after the extensions it holds, paired using Google Analytics' own account
-tree. An account holding several extensions gets a combined label capped to fit the Google
-Analytics breadcrumb; extensions the account holds that have not been named yet are counted
-rather than guessed at, so a half-explored account reads "... + 1 more" and rewrites itself as
-the rest are opened. Every derived name is a draft the user can type over, and a name the user
+tree. An account holding two extensions gets a combined label of both names, kept short
+enough for the Google Analytics breadcrumb; three or more give the first name and a count of
+the rest. Extensions the account holds that have not been named yet are counted rather than
+guessed at, so a half-explored account reads "... + 1 more" and rewrites itself as the rest
+are opened. Every derived name is a draft the user can type over, and a name the user
 types always wins.
 
 A second, optional source is `chrome.management.get()`, which reads the name of an extension

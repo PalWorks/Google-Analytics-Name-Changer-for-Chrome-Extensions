@@ -155,11 +155,12 @@ An account label is built from the extensions the account holds, which `property
 | Account holds | Label |
 |---|---|
 | one extension | that name, shortened to 24 chars |
-| several, all named | each cut harder and joined: `Tab Session Saver + Dark Mode` |
-| several, some unnamed | the known ones plus a count: `Dark Mode Everywhere Page Grid + 1 more` |
+| two | both, each cut harder, joined, **two words minimum each**: `Tab Session Saver + Dark Mode` |
+| three or more | the first, **three words minimum**, plus a count: `Tab Session Saver Pro + 2 more` |
+| some unnamed | the unnamed ones counted into that same `+ N more` |
 | none named yet | nothing written |
 
-Capped at 38 characters, because the label sits in GA4's breadcrumb beside the property name. Unnamed siblings are **counted, never guessed at**: labelling a two-extension account after the single extension we happen to have seen is exactly the arbitrary result the count avoids. The label is rewritten as the remaining names are learned, and is badged `auto`, so editing it and saving promotes it into the user's own `accountMappings`.
+Capped at 38 characters, because the label sits in GA4's breadcrumb beside the property name. The **word floor wins over the cap** where they disagree (ADR-015 amendment): cutting on characters alone turned `Google Analytics Name Changer for Chrome Extensions` into `Google`, which reads as somebody else's product. Unnamed siblings are **counted, never guessed at**: labelling a two-extension account after the single extension we happen to have seen is exactly the arbitrary result the count avoids. The label is rewritten as the remaining names are learned, and is badged `auto`, so editing it and saving promotes it into the user's own `accountMappings`.
 
 ### Storage
 
@@ -315,7 +316,11 @@ Full-tab (`open_in_tab: true`) two-column CSS Grid layout, each column independe
 
 The `isDirty` flag and `beforeunload` guard prevent accidental loss of unsaved changes. The popup cannot do this (extension popups get no `beforeunload`), which is what the handoff above exists to solve.
 
-Above the grid sits the auto-naming toolbar: the opt-in switch and the **Fill missing names** button. `initAutoNameState()` reconciles the stored `autoResolveNames` flag against a live `chrome.permissions.contains()` check on every load, because the permission can be revoked from `chrome://extensions` without the extension being told. The live check wins, and a disagreement resets the flag.
+Above the grid sits the auto-naming toolbar: the two opt-in switches on the left, and on the right a **fixed-width column** of stacked buttons, **Fill missing names** and **Visit and name the rest**, with **Stop** appearing under the latter while it runs. `initAutoNameState()` reconciles the stored `autoResolveNames` flag against a live `chrome.permissions.contains()` check on every load, because the permission can be revoked from `chrome://extensions` without the extension being told. The live check wins, and a disagreement resets the flag.
+
+The column is a fixed width on purpose. The switch descriptions beside it are a two-column grid sharing the same flex row, so anything elastic in the action column — a status message, a longer button label — took width from them; a two-line result once squeezed those descriptions to one word per line.
+
+Status is therefore split by kind. **Progress** goes on the button doing the work, replacing its label (`Visiting 2 of 7…`, `Checking 3…`) with the icon spinning, so a running action is visible where the user clicked and costs no layout. **Results** go to `showAutonameStatus()`, which renders a toast into `#toast-host`, a `position: fixed` corner region that fades itself out after 5.5 seconds, or 9 for an error. Neither can move the page.
 
 Each mapping row ends in a `.row-actions` cell holding two buttons: a listing link, hidden until resolution reports that slug as unresolved, and delete. Rows carry two hint classes, `is-detected` (arrived from detection or the handoff) and `is-suggested` (name came from resolution, not the user), both cleared on first edit.
 

@@ -140,6 +140,32 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 
 ### Changed
 
+- **A combined account label keeps whole words, and counts past two extensions.** The cap was
+  in characters with no floor on words, so `Google Analytics Name Changer for Chrome
+  Extensions` shortened to `Google` and an account read `OpenFullPage + Google + 1 more`: one
+  word that reads as somebody else's product. Two extensions now give both names at **two**
+  words each, three or more give the **first** at **three** words plus `+ N more`, and the word
+  floor wins over the 38-character cap when they disagree. A separator dash inside a name is
+  dropped before cutting, so `OpenFullPage - Capture Screen` no longer leaves a hyphen
+  dangling. The same account now reads `OpenFullPage Capture Screen + 2 more`. See ADR-015 and
+  its 2026-09-21 amendment
+
+- **The settings toolbar stopped stealing space from the text beside it.** The status message
+  and the two action buttons sat in one horizontal row in the same flex container as the switch
+  descriptions, so a two-line result — `Named 6 of 7. The other 1 had no store-listing views to
+  read a name from.` — squeezed those descriptions down to roughly one word per line. The
+  actions are now a fixed-width column of stacked buttons, which cannot take width from
+  anything, and status is split by kind: **progress** goes on the button doing the work,
+  replacing its label (`Visiting 2 of 7…`, `Checking 3…`) with its icon spinning, and
+  **results** go to a toast pinned to the corner that fades itself out. Neither can move the
+  page. **Stop** is now its own button beneath the running one instead of the running button
+  changing meaning under the cursor
+
+- **Buttons marked `hidden` are actually hidden.** `.btn-ghost` sets `display: inline-flex`, and
+  an author rule beats the user agent's `[hidden] { display: none }` whatever its specificity,
+  so **Visit and name the rest** stayed on screen with nothing to do and read `Visit and name 0
+  more`. An explicit `[hidden]` rule per button class fixes it
+
 - **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it
 
 - **Feedback now sends from `GA4NameChanger.Support@palworks.ai` to `support@palworks.ai`.**

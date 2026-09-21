@@ -89,7 +89,13 @@ and the report refreshing, so the race can be reproduced on demand at any delay.
 - [ ] An account holding two, both named, reads `A + B` and fits in GA4's breadcrumb
 - [ ] An account holding two with only one named reads `A + 1 more`, and becomes `A + B`
       after the second property is opened
-- [ ] The label never exceeds 38 characters
+- [ ] Each name in a two-extension label keeps **at least two words**: no label contains a
+      bare `Google`, `Tab` or other single word standing in for an extension
+- [ ] An account holding **three or more** reads `A B C + N more`, one name at three words or
+      more, never three fragments
+- [ ] A name containing a separator dash (`OpenFullPage - Capture Screen`) never leaves the
+      hyphen dangling at the cut
+- [ ] The label stays near 38 characters, and runs over only where the word floor requires it
 - [ ] Editing a label and pressing **Save Changes** makes it stick, and the `auto` badge goes
 
 ### Settings table
@@ -191,6 +197,22 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
       rather than silently skipped
 - [ ] Signed into more than one Google account: the properties are read from the same account
       as the GA4 tab already open, not a different one (this is the `authuser` case)
+
+### Toolbar, progress and results
+
+- [ ] The two action buttons are stacked in one fixed-width column at the right of the card
+- [ ] A long result does **not** narrow the switch descriptions beside it: measure
+      `.toolbar-hint` width before and after, it must not change
+- [ ] While **Visit and name the rest** runs, its label reads `Visiting 2 of 7…`, its icon
+      spins, it is not dimmed, and **Stop** appears beneath it
+- [ ] While **Fill missing names** runs, its label reads `Checking 3…` and the other button
+      is disabled
+- [ ] A result appears as a toast in the bottom-right corner and fades by itself; an error
+      stays visibly longer than a success
+- [ ] With nothing to do, **Visit and name the rest** is gone from the page, not showing
+      `0 more` (regression: `hidden` loses to the `display` on the button class)
+- [ ] With `prefers-reduced-motion: reduce`, the spinner does not spin and the toast does not
+      animate in
 
 ### Feedback relay
 

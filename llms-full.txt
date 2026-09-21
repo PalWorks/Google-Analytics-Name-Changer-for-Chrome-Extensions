@@ -130,8 +130,12 @@ account using Google Analytics' own preloaded account tree, falling back to pair
 the URL when the tree does not list the account.
 
 - An account holding one extension is named after that extension, shortened.
-- An account holding several is named after all of them, joined and capped so the label still
-  fits the Google Analytics breadcrumb, for example `Tab Session Saver + Dark Mode`.
+- An account holding two is named after both, joined and kept short enough for the Google
+  Analytics breadcrumb, for example `Tab Session Saver + Dark Mode`. Each name keeps at least
+  two words, because one word is rarely the extension.
+- An account holding three or more is named after the first, at three words or more, and a
+  count of the rest: `Tab Session Saver Pro + 2 more`. Three names cut to fit would be three
+  fragments.
 - Extensions the account holds that have not been named yet are **counted, not guessed at**, so
   a half-explored account reads `Tab Session Saver Pro + 1 more` and rewrites itself once the
   remaining properties are opened.
@@ -305,9 +309,10 @@ permission to Chrome when switched off. It exists because Chrome blocks extensio
 requesting the Chrome Web Store, so a public extension name cannot be fetched.
 
 **Q: What happens to a Google Analytics account that holds several Chrome extensions?**
-A: It is named after all of them, with the combined label capped to fit the Google Analytics
-breadcrumb. Extensions not yet named are counted rather than guessed at, so the label reads
-"... + 1 more" until the rest are opened. Every label is a draft the user can type over.
+A: Two extensions give a combined label, "Tab Session Saver + Dark Mode", kept short enough for
+the Google Analytics breadcrumb. Three or more give the first name and a count, "Tab Session
+Saver Pro + 2 more". Extensions not yet named are counted rather than guessed at, so the label
+reads "... + 1 more" until the rest are opened. Every label is a draft the user can type over.
 
 **Q: Will my names sync to my other computers?**
 A: Names the user types are stored in `chrome.storage.sync` and follow the signed-in Chrome
