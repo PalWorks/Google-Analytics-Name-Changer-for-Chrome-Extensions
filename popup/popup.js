@@ -20,6 +20,14 @@ const autonameBar     = document.getElementById('autoname-bar');
 const autonameText    = document.getElementById('autoname-text');
 const autonameBtn     = document.getElementById('autoname-btn');
 
+const popupActions      = document.getElementById('popup-actions');
+const fillBtn           = document.getElementById('fill-btn');
+const fillBtnLabel      = document.getElementById('fill-btn-label');
+const cycleHandoffBtn   = document.getElementById('cycle-handoff-btn');
+const cycleHandoffLabel = document.getElementById('cycle-handoff-label');
+
+const FILL_BTN_LABEL = 'Fill missing names';
+
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let isDirty = false;
@@ -504,18 +512,29 @@ function applyResolvedNames(names, unresolved = []) {
   return filled;
 }
 
-function runAutoName() {
+/**
+ * @param {boolean} manual  true when the user pressed the button rather than
+ *                          the popup running this for itself on open. A manual
+ *                          press reports on the button, and means "do it", so
+ *                          a missing permission hands over to the page that can
+ *                          ask for it instead of quietly offering again.
+ */
+function runAutoName({ manual = false } = {}) {
   const ids = unnamedDetectedSlugs();
   if (ids.length === 0) return;
 
-  showAutonameBar('Naming from your installed extensions…', { state: 'working' });
+  if (manual) setFillBusy(true, `Checking ${ids.length}\u2026`);
+  else showAutonameBar('Naming from your installed extensions…', { state: 'working' });
 
   chrome.runtime.sendMessage({ action: 'resolveNames', ids }, (response) => {
+    if (manual) setFillBusy(false);
+
     if (chrome.runtime.lastError || !response) {
       showAutonameBar('Name lookup unavailable.', { state: 'info' });
       return;
     }
     if (response.reason === 'no-permission' || response.reason === 'disabled') {
+      if (manual) { openOptions('#autoname'); return; }
       offerAutoName();
       return;
     }
@@ -530,8 +549,70 @@ function runAutoName() {
         { state: 'done' }
       );
     }
+    refreshActionStrip();
   });
 }
+
+// ── Naming actions ───────────────────────────────────────────────────────────
+//
+// The same two actions the settings page offers, because the popup is where the
+// user already is when they notice a row has no name.
+
+/** Put the work on the button doing it, as the settings page does. */
+function setFillBusy(busy, text) {
+  fillBtn.classList.toggle('is-running', busy);
+  fillBtn.disabled = busy;
+  fillBtnLabel.textContent = busy ? text : FILL_BTN_LABEL;
+}
+
+function showActionStrip() {
+  const any = !fillBtn.classList.contains('is-hidden')
+           || !cycleHandoffBtn.classList.contains('is-hidden');
+  popupActions.classList.toggle('is-hidden', !any);
+}
+
+function refreshActionStrip() {
+  fillBtn.classList.toggle('is-hidden', unnamedDetectedSlugs().length === 0);
+  showActionStrip();
+}
+
+/**
+ * Properties GA4 has told us about that still have no name.
+ *
+ * Kept in step with collectCycleTargets() in options.js, which is what actually
+ * runs them. The popup cannot run them itself: Chrome destroys a popup the
+ * moment it loses focus, and the walk takes about ten seconds per property, so
+ * this button hands over to the settings page and starts the run there.
+ */
+function countUnvisitedProperties(cb) {
+  chrome.storage.local.get(['autoMappings', 'propertyAccounts', 'propertyIds'], (local) => {
+    if (chrome.runtime.lastError) { cb(0); return; }
+    const auto  = local.autoMappings || {};
+    const pairs = local.propertyAccounts || {};
+    const ids   = local.propertyIds || {};
+
+    chrome.storage.sync.get(['mappings'], (sync) => {
+      const user = (!chrome.runtime.lastError && sync.mappings) || {};
+      cb(Object.keys(ids)
+        .filter(slug => pairs[slug] && ids[slug] && !user[slug] && !auto[slug]).length);
+    });
+  });
+}
+
+function initActionStrip() {
+  refreshActionStrip();
+  countUnvisitedProperties((n) => {
+    cycleHandoffBtn.classList.toggle('is-hidden', n === 0);
+    cycleHandoffLabel.textContent = n === 1
+      ? 'Visit and name 1 more'
+      : `Visit and name ${n} more`;
+    showActionStrip();
+  });
+}
+
+fillBtn.addEventListener('click', () => runAutoName({ manual: true }));
+
+cycleHandoffBtn.addEventListener('click', () => openOptions('#cycle'));
 
 function offerAutoName() {
   if (unnamedDetectedSlugs().length === 0) return;
@@ -543,6 +624,7 @@ autonameBtn.addEventListener('click', () => openOptions('#autoname'));
 
 function initAutoName() {
   suggestAccountNameFromProperty();
+  initActionStrip();
   const hinted = list.querySelectorAll('.mapping-row.is-suggested').length;
   if (hinted > 0) {
     showAutonameBar(

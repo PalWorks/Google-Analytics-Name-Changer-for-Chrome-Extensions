@@ -143,6 +143,12 @@ the URL when the tree does not list the account.
 Every derived name is badged "auto" in the settings page and is a draft. A name the user types
 always wins and is never overwritten.
 
+Because the replacement is display-only, a page the extension has worked on is indistinguishable
+from a page Google rendered correctly. The toolbar icon therefore carries the number of distinct
+identifiers named on the current page, with a tooltip reading "3 names applied on this page",
+and no badge at all on a page with nothing to rename. It is per tab, and it clears when the tab
+leaves Google Analytics or moves to a property that has no name yet.
+
 ---
 
 ## Privacy and data handling

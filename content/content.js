@@ -78,6 +78,66 @@
     ]);
   }
 
+  // ── Toolbar badge ──────────────────────────────────────────────────────────
+  //
+  // The page itself gives no sign the extension is alive: a name we substituted
+  // looks exactly like a name Google rendered, so "working" and "not installed"
+  // are indistinguishable on screen. The toolbar badge is the one place we can
+  // say so, and it costs no permission — `chrome.action` is addressed from the
+  // service worker, which owns it.
+  //
+  // What is counted is distinct identifiers, not text nodes: GA4 prints the same
+  // slug in the breadcrumb, the switcher and several report rows, and "17" would
+  // say nothing useful about a page holding three extensions.
+
+  const applied = new Set();
+  let badgeReported = -1;
+  let badgeTimer = null;
+  let badgeProperty;   // the property the current count belongs to
+
+  function noteApplied(key) {
+    if (applied.has(key)) return;
+    applied.add(key);
+    scheduleBadgeReport();
+  }
+
+  // Coalesced: a single GA4 render fires the observer many times, and each pass
+  // would otherwise wake the service worker for a number it already has.
+  function scheduleBadgeReport() {
+    clearTimeout(badgeTimer);
+    badgeTimer = setTimeout(reportBadge, 400);
+  }
+
+  /**
+   * A property switch is a hash change, not a page load, so nothing else clears
+   * the count: without this the badge still read "1" while the user stared at
+   * the raw slug of a property that has no name. Once per property, because
+   * clearing repeatedly during the switch would drop names already counted:
+   * `processedNodes` will not offer those nodes a second time unless GA4
+   * rewrites them.
+   */
+  function resetBadgeForView(propertyId) {
+    if (propertyId === badgeProperty) return;
+    badgeProperty = propertyId;
+    applied.clear();
+    badgeReported = -1;
+    scheduleBadgeReport();
+  }
+
+  function reportBadge() {
+    if (applied.size === badgeReported) return;
+    badgeReported = applied.size;
+    try {
+      chrome.runtime.sendMessage(
+        { action: 'namesApplied', count: badgeReported },
+        () => { void chrome.runtime.lastError; }
+      );
+    } catch (err) {
+      // Orphaned content script: the extension was reloaded under us, so the
+      // DOM half still runs but chrome.* is gone. Nothing to report to.
+    }
+  }
+
   // ── Text-node replacement ──────────────────────────────────────────────────
 
   function replaceInNode(node) {
@@ -94,6 +154,7 @@
       if (text.includes(slug)) {
         // Replace ALL occurrences of this slug in the text node
         text = text.split(slug).join(name);
+        noteApplied(slug);
       }
     }
 
@@ -184,6 +245,7 @@
       processedNodes.add(labelNode);
       ourWrittenNodes.add(labelNode);
       labelNode.nodeValue = labelNode.nodeValue.replace(ACCOUNT_LABEL, match.name);
+      noteApplied('account:' + match.name);
 
       // Leave the raw numeric ID in place so it renders below the display name
       replaced++;
@@ -247,8 +309,19 @@
     pendingRoots.clear();
     processedNodes = new WeakSet();
     ourWrittenNodes = new WeakSet();
+
+    // A full pass recounts from scratch, so a mapping the user deleted stops
+    // being counted. -1 forces the next report through even if it lands on the
+    // same number the badge already shows. Claiming the current property here
+    // matters: without it the first observer callback of the page reads as a
+    // property switch and wipes a count that has already been earned.
+    applied.clear();
+    badgeReported = -1;
+    badgeProperty = currentPropertyId();
+
     pairAccountLabels(document.body);
     walkTree(document.body);
+    scheduleBadgeReport();
   }
 
   // ── MutationObserver ───────────────────────────────────────────────────────
@@ -720,6 +793,7 @@
    */
   function noticePropertySwitch() {
     const propertyId = currentPropertyId();
+    resetBadgeForView(propertyId);
     if (propertyId === settleProperty || settleProperty === null) return;
     settleConfirmed = false;
     settleAttempts  = 0;
@@ -1258,8 +1332,10 @@
       if (observer) { observer.disconnect(); observer = null; }
       clearTimeout(debounceTimer);
       clearTimeout(settleTimer);
+      clearTimeout(badgeTimer);
       debounceTimer = null;
       settleTimer = null;
+      badgeTimer = null;
     }
   };
 

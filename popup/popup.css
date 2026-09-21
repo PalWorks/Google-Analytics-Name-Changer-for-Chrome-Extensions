@@ -207,6 +207,71 @@ html, body {
 
 .autoname-bar.is-hidden { display: none; }
 
+/* ── Naming actions ── */
+
+/* Two buttons on one row: the popup is 460px wide, so a column would cost more
+   height than the rows they exist to fill. Either may be hidden on its own. */
+.popup-actions {
+  display: flex;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.popup-actions.is-hidden { display: none; }
+
+.btn-action-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-action-sm:hover:not([disabled]):not(.is-running) {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+
+.btn-action-sm:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A running button is not dimmed: it is the thing reporting progress. */
+.btn-action-sm[disabled]:not(.is-running) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-action-sm.is-running {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  cursor: default;
+}
+
+.btn-action-sm .btn-action-icon { flex-shrink: 0; }
+.btn-action-sm.is-running .btn-action-icon { animation: popupSpin 1.1s linear infinite; }
+.btn-action-sm.is-hidden { display: none; }
+
+@keyframes popupSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-action-sm.is-running .btn-action-icon { animation: none; }
+}
+
 .btn-inline {
   font-family: var(--font);
   font-size: 11px;

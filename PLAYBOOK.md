@@ -214,6 +214,29 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
 - [ ] With `prefers-reduced-motion: reduce`, the spinner does not spin and the toast does not
       animate in
 
+### Toolbar badge
+
+- [ ] On a property that has a name, the toolbar icon carries a count and the tooltip reads
+      "N names applied on this page"
+- [ ] Switching to a property with **no** name clears the badge rather than leaving the
+      previous property's count on screen
+- [ ] Switching back brings the count back
+- [ ] Navigating the tab away from Google Analytics clears the badge and restores the default
+      tooltip
+- [ ] A second tab on a different property carries its own count, independent of the first
+- [ ] `chrome://extensions` shows no new permission
+
+### Popup naming actions
+
+- [ ] With a row that has no name, **Fill missing names** appears in the popup
+- [ ] Pressing it fills what it can, reporting `Checking N…` on the button while it runs
+- [ ] With auto-naming off, pressing it opens the settings page at the opt-in slide rather
+      than failing quietly (a popup cannot request a permission: crbug.com/952645)
+- [ ] With properties GA4 knows about but has never named, **Visit and name N more** appears
+      and carries the count
+- [ ] Pressing it opens the settings page and the run starts there by itself
+- [ ] With nothing for either to do, the strip is absent, not empty
+
 ### Feedback relay
 
 - [ ] Submitting the form shows "Thanks. Your feedback has been sent." and clears the fields

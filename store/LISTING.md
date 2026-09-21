@@ -119,6 +119,13 @@ If you already had Google Analytics open in a tab, that tab starts showing real 
 away. You are not asked to refresh anything.
 
 
+YOU CAN SEE THAT IT IS WORKING
+
+Because the names are swapped in place, a page it has fixed looks like a page Google got
+right. So the toolbar icon carries a count of the names applied to the page you are looking
+at. No count means there is nothing on that page to rename yet, and the tooltip says so.
+
+
 EVERYTHING IN ONE TABLE
 
 The settings page shows every account with the extensions it owns nested underneath, paired

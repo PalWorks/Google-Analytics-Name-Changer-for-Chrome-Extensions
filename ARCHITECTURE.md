@@ -310,6 +310,29 @@ The popup links in with a hash: `#welcome` opens slide 1 on demand, `#autoname` 
 
 ---
 
+## Telling the user it is running
+
+A display-only extension is invisible once it works: a name it substituted looks exactly like a
+name Google rendered. The toolbar badge is the only place the extension can say so, and it is
+the idiom users already read.
+
+```
+content script                       service worker
+  replaceInNode / pairAccountLabels
+    └─ noteApplied(<identifier>)
+         └─ debounce 400ms
+              └─ sendMessage {namesApplied, count} ──▶ chrome.action.setBadgeText({tabId})
+                                                      chrome.action.setTitle({tabId})
+```
+
+Distinct identifiers are counted, not replacements: GA4 prints the same slug in the breadcrumb,
+the switcher and several report rows. The count is per tab, cleared by Chrome when the tab
+navigates, and reset by the content script on a property switch, which is a hash change rather
+than a page load. Reports are suppressed when the number has not changed. No new permission:
+`chrome.action` comes with the `action` manifest key the popup already needs. See ADR-019.
+
+---
+
 ## Options page design
 
 Full-tab (`open_in_tab: true`) two-column CSS Grid layout, each column independently managing its own list of mapping rows via a shared `makeRow()` factory. Both columns write through the same `save()` function, which persists both mapping keys in a single `chrome.storage.sync.set` call.

@@ -1243,13 +1243,18 @@ welcomeEnable.addEventListener('click', () => {
 });
 
 /**
- * The popup links here with #welcome (help) or #autoname (turn auto-naming on).
+ * The popup links here with #welcome (help), #autoname (turn auto-naming on) or
+ * #cycle (visit the properties it cannot name from here).
  * Anything else falls back to showing onboarding once per WELCOME_VERSION.
  */
 function initWelcome(autoNameIsOn) {
   const hash = window.location.hash;
 
   if (hash === '#welcome') { openWelcome(); return; }
+
+  // The popup offers this button but cannot run it: Chrome destroys a popup as
+  // soon as it loses focus, and the walk takes about ten seconds per property.
+  if (hash === '#cycle') { runCycle(); return; }
 
   if (hash === '#autoname') {
     if (autoNameIsOn) { fillMissingNames(); return; }

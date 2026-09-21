@@ -759,3 +759,86 @@ faster would mean exposing the content script's `awaitingReports` state so the d
 give up as soon as the report is known to be empty rather than merely slow; worth doing if
 users report the wait, not before.
 
+
+---
+
+## ADR-019 — The toolbar badge is the only place the extension says it is running
+
+**Date.** 2026-09-21 · **Status.** Accepted
+
+**Context.** Raised during UAT, by the person who specified the product: *"I'm not clear. How
+to use our extension post load?"* That is the whole finding. A display-only extension has a
+structural problem no other kind has — **once it works, it is invisible**. A name we
+substituted looks exactly like a name Google rendered, so a working extension and an extension
+that never loaded are pixel-identical. The user cannot tell the difference unless they already
+know what the slug was, which is the knowledge the extension exists to spare them.
+
+**Decision.** The content script counts the **distinct identifiers** it has named on the page
+and reports the number to the service worker, which writes it to that tab's action badge and
+title: *"GA4 Name Changer — 3 names applied on this page"*.
+
+* **Distinct identifiers, not replacements.** GA4 prints the same slug in the breadcrumb, the
+  account switcher and several report rows. "17" would say nothing about a page holding three
+  extensions.
+* **Per tab, never global.** The count belongs to one page. Chrome clears a tab-scoped badge
+  when the tab navigates, so leaving Google Analytics needs no handling here.
+* **Reset on a property switch.** A switch is a hash change, not a page load. Without an
+  explicit reset the badge still read `1` while the user looked at the raw slug of a property
+  with no name. Reset once per property: clearing repeatedly during the switch would drop
+  names already counted, because `processedNodes` will not offer those nodes again unless GA4
+  rewrites them.
+* **Coalesced.** One GA4 render fires the observer many times. Reports are debounced 400ms and
+  suppressed when the number has not changed, so the service worker is not woken to be told
+  what it already knows.
+
+**No new permission.** `chrome.action` is granted by declaring `action` in the manifest, which
+this extension already does for its popup. The permission warning list at install is unchanged.
+
+**Rejected.**
+
+* *A banner or toast on the GA4 page.* Louder, and it breaks the rule that the page is never
+  decorated: the extension edits text Google rendered and adds nothing of its own. A user who
+  screenshots a report should not find our UI in it.
+* *Colouring replaced names.* Same objection, and it would survive into screenshots and
+  exported PDFs.
+* *A badge on every Google Analytics page regardless of count.* It would say "installed", not
+  "working", which is the question actually being asked.
+
+**Consequence.** The badge reads empty on a property that has no name yet, which is correct but
+can be read as "broken" by a user who does not know the property is unnamed. The title string
+says so in words — *"nothing to rename on this page yet"* — and the popup, opened from that
+same icon, offers the two naming actions directly (ADR-020).
+
+---
+
+## ADR-020 — The popup carries the naming actions, and hands the long one over
+
+**Date.** 2026-09-21 · **Status.** Accepted
+
+**Context.** Both naming actions lived only on the settings page. The popup is where the user
+already is when they notice a row has no name, and it was the surface reached from the badge
+that had just told them something was unnamed.
+
+**Decision.** The popup gets the same two buttons, side by side, each shown only when it has
+something to do:
+
+* **Fill missing names** runs in the popup, exactly as on the settings page, reporting progress
+  on the button itself.
+* **Visit and name N more** does **not** run in the popup. It hands over to the settings page
+  with `#cycle`, which starts the run there.
+
+**Why the second one cannot run here.** Chrome destroys a popup the moment it loses focus, and
+the walk takes about ten seconds per property. A run started in the popup would die the first
+time the user looked at anything else, halfway through, with a stray tab left open. Handing
+over is not a workaround for a missing API; it is the only correct place for a long-running
+job with visible state.
+
+**Why a missing permission hands over too.** `chrome.permissions.request()` dismisses an
+extension popup before its callback runs ([crbug.com/952645](https://crbug.com/952645)), so the
+popup cannot ask. Pressing the button means "do it", so it opens the settings page at the
+opt-in rather than quietly offering again in the strip above.
+
+**Consequence.** `countUnvisitedProperties()` in `popup.js` duplicates the filter in
+`collectCycleTargets()` in `options.js`. Two copies of one rule, which must stay in step; the
+alternative was a shared module, which this codebase does not have and which would be its
+first, for eight lines.

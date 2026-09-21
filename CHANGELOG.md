@@ -20,7 +20,7 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 - **Welcome modal** — two-slide onboarding on the options page, opened automatically on first install via `chrome.runtime.onInstalled`, and reachable any time from the popup's new **?** button. Slide 2 is the auto-naming opt-in and states exactly what the permission is and is not used for
 - **Fill missing names** — options-page button that resolves every row holding a valid extension ID with no display name yet. Suggested names render italic until reviewed and saved
 - **Popup → options handoff** — the popup stashes its rows under `chrome.storage.local.pendingDetection` before navigating to Full Settings, and the options page merges them in once and clears the key. TTL 10 minutes
-- **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (sixteen ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
+- **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (twenty ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
 
 - **Automatic naming with no save step** — derived names live in `chrome.storage.local.autoMappings` and are merged **under** the user's own `sync.mappings`, so they apply to the page immediately while anything the user typed still wins. The content script watches local storage, so a name lands the moment it is derived. `mappings` is never written to by the extension, so nothing the user owns is clobbered or synced without them asking. Auto rows show badged "auto" in both surfaces and are ordinary editable rows, so **Save** now means "make this mine". `autoNamingEnabled` (default on) turns the layer off without deleting anything
 - **GA4's own account tree as the authoritative source** — every GA4 page inlines `window.preload = JSON.parse(...)` carrying every account ID, property ID and property slug with exact pairing. A content script cannot read page JS variables but can read that script element's text. This gives the current property exactly (via the property ID in the URL), every account without opening the switcher, and every property slug. It fixed a real deadlock: on one live page the slug was rendered only inside a `<button>`, so scraping could not attribute it and nothing was ever named
@@ -139,6 +139,22 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   ADR-018 so it is not re-investigated
 
 ### Changed
+
+- **The extension now says it is running.** Raised in UAT, by the person who wrote the spec:
+  *"I'm not clear. How to use our extension post load?"* A display-only extension is invisible
+  once it works, because a name it substituted looks exactly like a name Google rendered, so
+  "working" and "never loaded" are pixel-identical. The toolbar icon now carries the number of
+  distinct identifiers named on that page, with the tooltip reading "3 names applied on this
+  page", or "nothing to rename on this page yet" when there is nothing. Per tab, cleared by
+  Chrome when the tab navigates, and reset by the content script on a property switch, which
+  is a hash change rather than a page load. No new permission: `chrome.action` comes with the
+  `action` manifest key the popup already needs. See ADR-019
+
+- **Both naming actions are in the popup too**, which is where the user already is when they
+  notice a row has no name, and where the badge sends them. **Fill missing names** runs in the
+  popup and reports on its own button. **Visit and name N more** hands over to the settings
+  page with `#cycle` and the run starts there, because Chrome destroys a popup the moment it
+  loses focus and the walk takes about ten seconds per property. See ADR-020
 
 - **A combined account label keeps whole words, and counts past two extensions.** The cap was
   in characters with no floor on words, so `Google Analytics Name Changer for Chrome

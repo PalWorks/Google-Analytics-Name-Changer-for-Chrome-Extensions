@@ -90,6 +90,39 @@ chrome.runtime.onInstalled.addListener((details) => {
   chrome.runtime.openOptionsPage();
 });
 
+// ── Toolbar badge ────────────────────────────────────────────────────────────
+//
+// A display-only extension has a real problem: once it works, the page looks
+// like a page Google rendered correctly, so there is nothing to tell the user
+// it is running. The badge is the answer, and it is the idiom users already
+// read. It carries the number of distinct identifiers named on that tab.
+//
+// Per-tab, never global: the count belongs to one page. Chrome clears a
+// tab-scoped badge when the tab navigates, so nothing has to be reset here
+// when the user leaves Google Analytics.
+//
+// No new permission. `chrome.action` is granted by declaring `action` in the
+// manifest, which this extension already does for its popup.
+
+const BADGE_BG = '#4F46E5';
+const BADGE_MAX = 99;
+
+function setBadge(tabId, count) {
+  const n = Number(count) || 0;
+  const text = n <= 0 ? '' : (n > BADGE_MAX ? BADGE_MAX + '+' : String(n));
+
+  chrome.action.setBadgeText({ tabId, text }, () => { void chrome.runtime.lastError; });
+  chrome.action.setBadgeBackgroundColor({ tabId, color: BADGE_BG },
+    () => { void chrome.runtime.lastError; });
+
+  chrome.action.setTitle({
+    tabId,
+    title: n <= 0
+      ? 'GA4 Name Changer — nothing to rename on this page yet'
+      : `GA4 Name Changer — ${n} name${n === 1 ? '' : 's'} applied on this page`
+  }, () => { void chrome.runtime.lastError; });
+}
+
 // ── Gating ───────────────────────────────────────────────────────────────────
 
 function isEnabled() {
@@ -161,7 +194,17 @@ async function resolveNames(rawIds) {
 // ── Message handler ──────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.action !== 'resolveNames') return false;
+  if (!msg) return false;
+
+  // Reported by the content script after each pass. Fire and forget: the badge
+  // is cosmetic, and a tab that has gone away is not an error worth raising.
+  if (msg.action === 'namesApplied') {
+    const tabId = sender.tab && sender.tab.id;
+    if (typeof tabId === 'number') setBadge(tabId, msg.count);
+    return false;
+  }
+
+  if (msg.action !== 'resolveNames') return false;
 
   resolveNames(msg.ids)
     .then(sendResponse)
