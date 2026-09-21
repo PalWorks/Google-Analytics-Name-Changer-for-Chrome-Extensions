@@ -374,9 +374,15 @@ chrome.storage.local.get(null, console.log);
    fresh profile is the only way to exercise first install and the default off state.
 6. Build the upload package. `.crxignore` lists what must not ship:
 
+The package is written to `build/`, inside the repository, so the artefact sits beside the
+source it came from. `build/` is gitignored and excluded from the package, so it can neither
+be committed nor end up inside itself.
+
 ```bash
-zip -r ../ga4-name-changer-<version>.zip . \
-  -x '*.git*' -x '*.md' -x '.crxignore' -x '.nojekyll' \
+mkdir -p build
+rm -f build/ga4-name-changer-v<version>.zip
+zip -r build/ga4-name-changer-v<version>.zip . \
+  -x '*.git*' -x '*.md' -x '.crxignore' -x '.nojekyll' -x 'build/*' \
   -x 'icons/src/*' -x 'icons/icon512.png' -x 'googled*.html' \
   -x 'worker/*' -x 'store/*' -x 'site/*' \
   -x 'index.html' -x 'robots.txt' -x 'sitemap.xml' -x 'llms*.txt'
@@ -402,7 +408,7 @@ zip -r ../ga4-name-changer-<version>.zip . \
 ```bash
 git tag -a v<version> -m "v<version>"
 git push origin v<version>
-gh release create v<version> ../ga4-name-changer-v<version>.zip \
+gh release create v<version> build/ga4-name-changer-v<version>.zip \
   --title "v<version>" --notes-file <notes>
 ```
 

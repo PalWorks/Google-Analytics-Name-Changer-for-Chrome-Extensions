@@ -3,6 +3,10 @@
 Thumbs.db
 
 # Build / packaging artifacts
+# build/ is where `zip` writes the upload package. It lives inside the repo so
+# the artefact sits beside the source it was built from, and it is ignored so a
+# stale package can never be committed and mistaken for the real one.
+build/
 *.zip
 *.crx
 *.pem

@@ -35,11 +35,16 @@ Google Analytics (GA4) Name Changer for Chrome Extension Developers
 
 Shown under the title in search results and on the listing card. **132 characters maximum.**
 
+> **This field comes from the package, not from the dashboard.** The store fills the summary
+> from `description` in `manifest.json`. Editing the copy here and not there ships the old
+> sentence to every search result. The two must be changed together, and the character limit
+> is the manifest's as well as the listing's.
+
 ```
 See real extension names in Google Analytics instead of 32-character Chrome Web Store IDs. Automatic, local, nothing sent.
 ```
 
-122 characters.
+122 characters. Identical to `manifest.json` → `description`.
 
 **Why this one.** The Chrome Web Store ranks on the product name, the summary and the detailed
 description; there is no keyword field, and stuffing one is a policy violation. The name

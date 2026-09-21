@@ -157,6 +157,18 @@ copy stops the old one. See [DECISIONS.md](DECISIONS.md) ADR-017.
 
 ---
 
+### 13. `manifest.json` → `description` is the Chrome Web Store summary
+
+It is not just metadata. The store fills the listing summary, the line under the item name in
+every search result, from that field. Changing the summary in
+[store/LISTING.md](store/LISTING.md) without changing the manifest ships the old sentence to
+every search result, and nothing in the build will complain.
+
+Keep the two byte-identical, and keep it inside 132 characters, which is the store's limit
+for that field as well as the manifest's.
+
+---
+
 ## Coding conventions
 
 * `'use strict';` at the top of every JS file.
