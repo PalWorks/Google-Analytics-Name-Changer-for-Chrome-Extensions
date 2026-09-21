@@ -17,9 +17,9 @@ let isDirty = false;
 
 // ── Dirty tracking ────────────────────────────────────────────────────────────
 
+/** Every "Unsaved changes" pill on the page, top and bottom. */
 function showDirtyFlag(on) {
-  const flag = document.getElementById('dirty-flag');
-  if (flag) flag.hidden = !on;
+  document.querySelectorAll('.dirty-flag').forEach((flag) => { flag.hidden = !on; });
 }
 
 function markDirty() {
@@ -433,6 +433,15 @@ function renderAll({ mappings, accountMappings, autoMappings, autoAccountMapping
   const propKeys = uniqueKeys(userProps, autoProps);
   const accKeys  = uniqueKeys(userAccs, autoAccs);
 
+  // Properties Google Analytics has told us about that nothing has named yet.
+  // They belong in the table exactly as much as the named ones: an empty row is
+  // how the user sees there is something still to name, it is the only place
+  // they can type that name by hand, and without it "Fill missing names" has
+  // nothing to act on. The popup has always listed them; this page did not.
+  Object.keys(parent).forEach((slug) => {
+    if (!propKeys.includes(slug)) propKeys.push(slug);
+  });
+
   // An account earns a group if it is named, or if it holds a known property
   propKeys.forEach((slug) => {
     const id = parent[slug];
@@ -542,6 +551,11 @@ addBtn.addEventListener('click', () => {
 // ── Save button ───────────────────────────────────────────────────────────────
 
 saveBtn.addEventListener('click', save);
+
+// The table is long enough that the footer button is off screen while the user
+// is editing the rows at the top, so there is a second one up there.
+const saveBtnTop = document.getElementById('save-btn-top');
+if (saveBtnTop) saveBtnTop.addEventListener('click', save);
 
 // ── Export JSON ───────────────────────────────────────────────────────────────
 

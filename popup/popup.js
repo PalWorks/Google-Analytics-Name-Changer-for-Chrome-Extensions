@@ -44,11 +44,33 @@ let nameHints = {};
 
 // ── Dirty tracking ────────────────────────────────────────────────────────────
 
+/**
+ * A popup gets no `beforeunload`, so it cannot ask before it disappears. This
+ * pill is the whole warning: it says there is something to press Save for,
+ * while the popup is still open to press it in. See LIMITATIONS.md.
+ */
+function showDirtyFlag(on) {
+  document.querySelectorAll('.dirty-flag').forEach((flag) => { flag.hidden = !on; });
+}
+
 function markDirty() {
   if (!isDirty) { isDirty = true; clearStatus(); }
 }
 
-function markClean() { isDirty = false; }
+/**
+ * The pill says "you changed something", not "there is something unsaved".
+ *
+ * Detection fills the popup with rows every time it opens, and all of them are
+ * unsaved, so a pill driven by `isDirty` would be lit before the user had done
+ * anything at all and would stop meaning anything. `isDirty` still governs
+ * saving; this governs the warning.
+ */
+function markUserEdit() {
+  markDirty();
+  showDirtyFlag(true);
+}
+
+function markClean() { isDirty = false; showDirtyFlag(false); }
 
 // ── Status messages ───────────────────────────────────────────────────────────
 
@@ -129,11 +151,11 @@ function makeRow({ slug, name, animate, isDetected, isAuto, parentList, slugPlac
   deleteBtn.addEventListener('click', () => {
     row.remove();
     if (parentList.children.length === 0) renderEmptyState(parentList);
-    markDirty();
+    markUserEdit();
   });
 
   // Remove the detected/suggested highlights once the user starts editing
-  const clearHints = () => { row.classList.remove('is-detected', 'is-suggested'); markDirty(); };
+  const clearHints = () => { row.classList.remove('is-detected', 'is-suggested'); markUserEdit(); };
   slugInput.addEventListener('input', clearHints);
   nameInput.addEventListener('input', clearHints);
 
@@ -289,7 +311,7 @@ addBtn.addEventListener('click', () => {
   const row = createRow('', '', true);
   list.appendChild(row);
   row.querySelector('.slug-input').focus();
-  markDirty();
+  markUserEdit();
   row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
@@ -299,7 +321,7 @@ addAccountBtn.addEventListener('click', () => {
   const row = createAccountRow('', '', true);
   accountList.appendChild(row);
   row.querySelector('.slug-input').focus();
-  markDirty();
+  markUserEdit();
   row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 

@@ -140,6 +140,13 @@
         </div>
       </details>
 
+      <!-- Save is repeated above the table: it is long, and the footer button
+           is off screen while the rows at the top are being edited. -->
+      <div class="table-bar">
+        <span class="dirty-flag" hidden>Unsaved changes</span>
+        <button id="save-btn-top" class="btn-primary" type="button">Save Changes</button>
+      </div>
+
       <!-- One table: accounts, each with the properties it holds beneath it -->
       <div class="card">
         <div class="card-header">
@@ -243,7 +250,7 @@
       </div>
       <div class="footer-right">
         <span id="status-msg" class="status-msg" aria-live="polite"></span>
-        <span id="dirty-flag" class="dirty-flag" hidden>Unsaved changes</span>
+        <span class="dirty-flag" hidden>Unsaved changes</span>
         <button id="save-btn" class="btn-primary" type="button">Save Changes</button>
       </div>
     </footer>

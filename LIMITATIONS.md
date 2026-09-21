@@ -140,14 +140,6 @@ it dirty immediately. Close that tab having clicked nothing and the carried rows
 prompt. They are not lost work in any real sense, since detection re-runs, and anything typed
 by hand needed a gesture to type, which arms the guard.
 
-### A property with no name has no row in the settings table
-
-The table is built from the names that exist, so a property Google Analytics has told us
-about but that has never been named appears in the popup's detected list and **not** in the
-settings table. "Fill missing names" therefore cannot act on it, which is why it greys out on
-a profile whose unnamed properties are all of that kind. "Visit and name the rest" is the path
-for those, and it works from `propertyIds` rather than from the table.
-
 ### The popup caps detection at three rows
 
 More detected slugs than that produce an overflow note. All of them are carried to the

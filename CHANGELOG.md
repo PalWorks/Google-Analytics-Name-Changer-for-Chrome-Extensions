@@ -140,6 +140,22 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 
 ### Fixed after UAT
 
+- **A property nobody has named now has a row in the settings table.** The table was built
+  from the names that existed, so a property Google Analytics had told us about but that
+  nothing had managed to name was listed in the popup and missing from the settings page, with
+  no way to type a name for it by hand and nothing for "Fill missing names" to act on. Those
+  properties now get an empty row in their own account's group, which is also what re-enables
+  the fill button on a profile whose only unnamed property is one of them
+
+- **"Unsaved changes" appears next to Save in both surfaces**, and a second **Save Changes**
+  sits above the table as well as below it, because the table is long enough that the footer
+  button is off screen while the rows at the top are being edited. In the popup the pill means
+  "you changed something" rather than "something is unsaved": detection fills the popup with
+  unsaved rows every time it opens, so a pill driven by the dirty flag would be lit before the
+  user had done anything. The popup gets no `beforeunload` at all, so the pill is the only
+  warning it can give
+
+
 - **A run now shows how long it is waiting.** "Visiting 1 of 1…" with a spinner and no number
   reads as a hang, and the wait is real: up to 30 seconds per property, and a property with no
   store-listing views uses all of it. The button now counts down, "Visiting 1 of 1… 18s", and

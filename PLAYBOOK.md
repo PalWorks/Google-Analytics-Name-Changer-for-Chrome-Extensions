@@ -221,6 +221,21 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
 - [ ] With `prefers-reduced-motion: reduce`, the spinner does not spin and the toast does not
       animate in
 
+### Unnamed properties
+
+- [ ] A property Google Analytics knows about that nothing has named appears in the settings
+      table, in its own account's group, with an empty display name and no `auto` badge
+- [ ] Typing a name into it and pressing Save keeps it
+- [ ] It is the same set of properties the popup lists
+
+### Save and unsaved changes
+
+- [ ] **Save Changes** appears above the table as well as in the footer, and both save
+- [ ] "Unsaved changes" appears beside both Save buttons on the first edit, and clears on save
+- [ ] In the popup the pill is **absent** when it opens on a GA4 page with detected rows, and
+      appears as soon as anything is typed, deleted or added
+- [ ] Saving from the top button clears the pill in both places
+
 ### Fill missing names
 
 - [ ] With an empty table, the button is greyed out and its tooltip says why
