@@ -5,7 +5,7 @@
 .git
 .gitignore
 .crxignore
-build/
+dist/
 icons/src/
 icons/icon512.png
 googled*.html

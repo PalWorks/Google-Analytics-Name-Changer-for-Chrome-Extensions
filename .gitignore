@@ -3,10 +3,14 @@
 Thumbs.db
 
 # Build / packaging artifacts
-# build/ is where `zip` writes the upload package. It lives inside the repo so
+# dist/ is where `zip` writes the upload package. It lives inside the repo so
 # the artefact sits beside the source it was built from, and it is ignored so a
 # stale package can never be committed and mistaken for the real one.
-build/
+#
+# Not to be confused with the dist/ removed in 1.1.0: that one was a checked-in
+# hand-maintained copy of the source, which could and did drift. This one holds
+# build output only, and holds it for exactly as long as an upload takes.
+dist/
 *.zip
 *.crx
 *.pem
