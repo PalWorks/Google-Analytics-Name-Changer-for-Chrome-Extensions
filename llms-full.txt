@@ -89,6 +89,20 @@ This method requires no permission beyond the host access the extension already 
 extensions that are not installed in the user's browser, and costs nothing because the data is
 already on screen.
 
+Its one limit is that Google Analytics renders only the property being viewed, so a property
+the user has never opened cannot be named from a report. The settings page therefore offers a
+button, "Visit and name the rest", which opens a single tab in the background, walks it through
+each unnamed property in turn, reads each name, and closes the tab at the end. A backgrounded
+Google Analytics tab keeps rendering its reports, measured at under ten seconds per property,
+so this never takes focus and can be stopped at any point. It needs no additional permission
+and makes no network request; it is ordinary navigation inside the site the extension already
+runs on.
+
+Note that no Google-side source contains the extension's name. Each property object in Google
+Analytics' own data carries fourteen fields and its "name" field is the extension ID itself;
+the page's local storage, session storage, IndexedDB and cookies contain no human name either.
+This is why names are read from report titles rather than fetched from an API.
+
 ### Secondary source: the local Chrome profile, optional
 
 A Chrome Web Store property slug is the extension's own ID, so any of those extensions
@@ -199,6 +213,8 @@ information about this extension only.
   Analytics tab elsewhere in the same window.
 - Cross-device sync of user-assigned names through `chrome.storage.sync`.
 - Import and export of all names as a single plain JSON file.
+- A button that visits the properties the user has never opened, in one background tab, and
+  names them from their own reports.
 - Guided three-slide onboarding on first install, reachable again at any time. The middle
   slide teaches the only manual step there is: open each property once, because a name is read
   from that property's own report and a property never opened cannot be named yet.

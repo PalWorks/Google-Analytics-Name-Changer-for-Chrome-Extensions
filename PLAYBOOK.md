@@ -179,6 +179,19 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
 - [ ] The same after an update (bump `version` in the manifest and reload): the tab keeps
       working, and the page does not end up with two observers fighting over the same text
 
+### Visiting unopened properties
+
+- [ ] With every known property named, the button is hidden
+- [ ] With unnamed properties known to GA4, it appears and states the count
+- [ ] Pressing it opens exactly one background tab; focus never leaves the settings page
+- [ ] Rows appear as names land, and an edit typed in another row is not lost
+- [ ] Pressing Stop mid-run halts it, closes the tab, and reports how many were named
+- [ ] The tab is closed at the end in every case, including Stop and an error
+- [ ] A property with no store-listing views times out after 30 s and is reported as such,
+      rather than silently skipped
+- [ ] Signed into more than one Google account: the properties are read from the same account
+      as the GA4 tab already open, not a different one (this is the `authuser` case)
+
 ### Feedback relay
 
 - [ ] Submitting the form shows "Thanks. Your feedback has been sent." and clears the fields

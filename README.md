@@ -17,6 +17,7 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 ## Features
 
 - **Works immediately, with no refresh** — a Google Analytics tab that was already open when you installed or updated the extension is adopted on the spot. Chrome does not inject content scripts into pages that were already loaded, so without this those tabs would sit showing raw IDs until you happened to reload them
+- **Name the properties you have never opened** — a name is read from each property's own report, so a property you have not visited cannot be named. One button on the settings page visits them for you: it opens a single background tab, walks it through each unnamed property, and closes it when done. Roughly ten seconds each, it never takes focus, and you can stop it at any point
 - **Live text replacement** — slugs and account labels replaced as GA4 renders; works seamlessly across SPA navigation without requiring a page reload
 - **Toolbar popup** — left-click the extension icon to view and edit mappings from any tab without leaving your current page
 - **GA4 auto-detection** — open the popup and it scans the GA4 page for unmapped property slugs and for **every account** in the account switcher, not just the one you are viewing, pre-filling rows ready to name. Works even when GA4 is in another tab in the same window

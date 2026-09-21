@@ -657,3 +657,79 @@ justification for `scripting`; it is in `store/LISTING.md`.
 delete the teardown export and the `ping` handler from the content script. The extension returns
 to needing a refresh.
 
+---
+
+## ADR-018 — The extension visits unopened properties itself, in a background tab
+
+**Status:** accepted 2026-09-21
+
+**Context.** A name is read out of a property's own "Page title and screen class" report, and
+GA4 renders only the property being viewed. So a property the user has never opened cannot be
+named. ADR-009's tiers cover everything else; this is the one remaining gap, and until now the
+only remedy was asking the user to click through their properties by hand, which is what the
+onboarding slide added in this release does.
+
+Two measurements changed what was possible.
+
+**One: GA4's own data does not contain the name.** The inlined account tree gives every
+property object, and on a live profile those objects carry fourteen fields:
+
+```
+id  name  trackingId  premium  s4id  trashed  entityId  isEnhancedProperty
+type  accountId  propertySubtype  standardPropertyConfig  upwardAccessOnly
+permitsEditAccess
+```
+
+`name` **is** the extension ID. There is no display name anywhere. The page's `localStorage`
+(seven keys), `sessionStorage` (empty), IndexedDB (no databases) and its seventeen
+JS-readable cookies were all searched for ten known extension names: zero hits. This closes
+off the whole family of "read it from storage or cache" ideas, and it also disposes of the GA4
+Admin API, which would return the same `displayName` we already have, at the cost of OAuth, a
+client secret and a network request. The report-title trick is not a workaround for a missing
+API. The name is genuinely absent from Google's analytics data, and present only in the user's
+own report rows because the Chrome Web Store put it in a page title.
+
+**Two: a backgrounded GA4 tab still renders its reports.** Measured: a tab driven to an
+unnamed property while a different tab held focus harvested the name in under ten seconds.
+That is what makes this acceptable rather than obnoxious.
+
+**Decision.** A "Visit and name the rest" button on the settings page. It opens **one** tab
+with `active: false`, walks it through each unnamed property in turn, waits for the content
+script to file a name, and closes the tab at the end.
+
+* The button appears only when there is something to do, and carries the count.
+* It turns into its own Stop control while running.
+* Each property gets 30 seconds before it moves on.
+* Rows are appended as names land, rather than re-rendering the table, so edits in progress
+  survive.
+
+**The query string is preserved.** The base URL is taken from a GA4 tab the user already has
+open, because it carries `authuser`. Someone signed into several Google accounts is looking at
+a specific one, and a URL without that parameter opens a different account's Analytics, where
+none of these properties exist. This is the detail most likely to be lost in a rewrite.
+
+**Why a new tab rather than the user's own.** Navigating a tab the user is reading, and
+leaving it on a property they did not choose, is worse than opening and closing our own. The
+cost is one extra tab for the duration.
+
+**Rejected.**
+
+* *Several tabs in parallel.* Finishes sooner, but it is a lot of load on someone else's
+  servers to save a minute of something already running unattended.
+* *Doing it automatically on install.* It would generate report queries the user never asked
+  for. This is a button, pressed deliberately, with a count on it saying what it will do.
+* *Reloading in the foreground.* Steals focus for minutes.
+* *`chrome.tabs` permission.* Not needed. Querying GA4 tabs by URL, creating, updating and
+  removing a tab all work under the host permission already held.
+
+**Cost.** `local.propertyIds` is a new stored map, slug to GA4's numeric property id, mirrored
+from the same tree that already supplies `propertyAccounts`. No new permission, no network
+request, and nothing new is transmitted.
+
+**Known limitation.** A property with no store-listing views has no title to read, so it times
+out after 30 seconds and is reported honestly: *"the other N had no store-listing views to
+read a name from."* Measured on a real account with a brand-new property. Detecting that
+faster would mean exposing the content script's `awaitingReports` state so the driver could
+give up as soon as the report is known to be empty rather than merely slow; worth doing if
+users report the wait, not before.
+

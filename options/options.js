@@ -926,6 +926,190 @@ function fillFromManagement(alreadyHinted) {
   );
 }
 
+
+// ── Naming the properties the user has never opened ──────────────────────────
+//
+// A name is read out of a property's own "Page title and screen class" report,
+// and GA4 renders only the property being viewed, so a property the user has
+// never opened cannot be named. The onboarding slide asks them to click through
+// their properties once; this does it for them (ADR-018).
+//
+// Two facts make it cheap. GA4's inlined account tree gives every property's
+// numeric id, mirrored into `local.propertyIds` by the content script, so a URL
+// can be built for a property that has never been visited. And a GA4 tab keeps
+// rendering its reports while in the background, measured at under ten seconds
+// to harvest a name, so this runs in a tab the user never sees and never has to
+// look away from.
+//
+// Sequential on purpose: several GA4 tabs at once is a lot of load on someone
+// else's servers to save a few seconds of something already running unattended.
+
+const cycleBtn      = document.getElementById('cycle-btn');
+const cycleBtnLabel = document.getElementById('cycle-btn-label');
+
+const CYCLE_TIMEOUT_MS = 30000;  // per property, then give up and move on
+const CYCLE_POLL_MS    = 750;
+
+let cycleRunning   = false;
+let cycleCancelled = false;
+
+const pSleep       = (ms)        => new Promise(r => setTimeout(r, ms));
+const pLocal       = (keys)      => new Promise(r => chrome.storage.local.get(keys, r));
+const pSync        = (keys)      => new Promise(r => chrome.storage.sync.get(keys, r));
+const pTabsQuery   = (q)         => new Promise(r => chrome.tabs.query(q, (x) => { void chrome.runtime.lastError; r(x || []); }));
+const pTabsCreate  = (props)     => new Promise(r => chrome.tabs.create(props, (x) => { void chrome.runtime.lastError; r(x || null); }));
+const pTabsUpdate  = (id, props) => new Promise(r => chrome.tabs.update(id, props, (x) => { void chrome.runtime.lastError; r(x || null); }));
+const pTabsRemove  = (id)        => new Promise(r => chrome.tabs.remove(id, () => { void chrome.runtime.lastError; r(); }));
+const pTabsGet     = (id)        => new Promise(r => chrome.tabs.get(id, (x) => { void chrome.runtime.lastError; r(x || null); }));
+
+/**
+ * The origin, path and query to hang a property hash off.
+ *
+ * Taken from a GA4 tab the user already has open, when there is one, because
+ * the query string carries `authuser`. Someone signed into several Google
+ * accounts is looking at a specific one, and dropping that parameter would
+ * open a different account's Analytics, where none of these properties exist.
+ */
+function ga4Base(openTabUrl) {
+  const fallback = 'https://analytics.google.com/analytics/web/';
+  if (!openTabUrl) return fallback;
+  try {
+    const u = new URL(openTabUrl);
+    if (u.hostname !== 'analytics.google.com') return fallback;
+    return u.origin + u.pathname + u.search;
+  } catch (err) {
+    return fallback;
+  }
+}
+
+const ga4PropertyUrl = (base, t) =>
+  `${base}#/a${t.accountId}p${t.propertyId}/reports/intelligenthome`;
+
+/** Properties GA4 has told us about, that we can address, and that have no name. */
+async function collectCycleTargets() {
+  const sync  = await pSync(['mappings']);
+  const local = await pLocal(['autoMappings', 'propertyAccounts', 'propertyIds']);
+  const user  = sync.mappings || {};
+  const auto  = local.autoMappings || {};
+  const pairs = local.propertyAccounts || {};
+  const ids   = local.propertyIds || {};
+
+  return Object.keys(ids)
+    .filter(slug => pairs[slug] && ids[slug] && !user[slug] && !auto[slug])
+    .map(slug => ({ slug, accountId: pairs[slug], propertyId: ids[slug] }));
+}
+
+/** Poll until the content script files a name for this slug, or we give up. */
+async function waitForName(slug, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (cycleCancelled) return null;
+    await pSleep(CYCLE_POLL_MS);
+    const local = await pLocal(['autoMappings']);
+    const name = (local.autoMappings || {})[slug];
+    if (name) return name;
+  }
+  return null;
+}
+
+function setCycleUi(running) {
+  cycleBtnLabel.textContent = running ? 'Stop' : 'Visit and name the rest';
+  cycleBtn.classList.toggle('is-running', running);
+  fetchNamesBtn.disabled = running;
+}
+
+/** Show a newly named property without re-rendering rows the user may be editing. */
+function addNamedRow(slug, accountId, name) {
+  propertyAccounts[slug] = accountId;
+  addPropertyRow(ensureGroup(accountId || UNGROUPED), slug, name, { isAuto: true });
+  markSharedAccounts();
+}
+
+async function runCycle() {
+  const targets = await collectCycleTargets();
+  if (targets.length === 0) {
+    showAutonameStatus('Every property Google Analytics has told us about already has a name.');
+    refreshCycleButton();
+    return;
+  }
+
+  cycleRunning = true;
+  cycleCancelled = false;
+  setCycleUi(true);
+
+  const open = await pTabsQuery({ url: 'https://analytics.google.com/*' });
+  const base = ga4Base(open.length ? open[0].url : null);
+
+  let tab = null;
+  let named = 0;
+
+  try {
+    // Our own tab, opened in the background and closed at the end, so the
+    // user's own GA4 tab is never navigated away from what they were reading.
+    tab = await pTabsCreate({ url: ga4PropertyUrl(base, targets[0]), active: false });
+    if (!tab) {
+      showAutonameStatus('Could not open a Google Analytics tab.', 'error');
+      return;
+    }
+
+    for (let i = 0; i < targets.length; i++) {
+      if (cycleCancelled) break;
+      const t = targets[i];
+      showAutonameStatus(`Visiting property ${i + 1} of ${targets.length}…`);
+
+      if (i > 0) {
+        if (!(await pTabsGet(tab.id))) { tab = null; break; }  // user closed it
+        await pTabsUpdate(tab.id, { url: ga4PropertyUrl(base, t), active: false });
+      }
+
+      const name = await waitForName(t.slug, CYCLE_TIMEOUT_MS);
+      if (name) {
+        named++;
+        addNamedRow(t.slug, t.accountId, name);
+      }
+    }
+  } finally {
+    if (tab) await pTabsRemove(tab.id);
+    cycleRunning = false;
+    setCycleUi(false);
+  }
+
+  const missed = targets.length - named;
+  if (cycleCancelled) {
+    showAutonameStatus(`Stopped. Named ${named} of ${targets.length}.`, named ? 'success' : '');
+  } else if (missed === 0) {
+    showAutonameStatus(`Named all ${named}. Review them, then Save Changes.`, 'success');
+  } else if (named > 0) {
+    showAutonameStatus(
+      `Named ${named} of ${targets.length}. The other ${missed} had no store-listing views to read a name from.`);
+  } else {
+    showAutonameStatus(
+      'Could not read any names. Check you are signed in to Google Analytics in this browser.', 'error');
+  }
+  refreshCycleButton();
+}
+
+/** Offer the button only when it has something to do, with the count on it. */
+function refreshCycleButton() {
+  if (!cycleBtn) return;
+  collectCycleTargets().then((targets) => {
+    if (cycleRunning) return;
+    cycleBtn.hidden = targets.length === 0;
+    cycleBtnLabel.textContent = targets.length === 1
+      ? 'Visit and name 1 more'
+      : `Visit and name ${targets.length} more`;
+    cycleBtn.title =
+      `Opens a background Google Analytics tab, visits ${targets.length} `
+      + `unnamed propert${targets.length === 1 ? 'y' : 'ies'} in turn, and reads each name `
+      + 'from its own report. Roughly 10 seconds each. You can keep working.';
+  });
+}
+
+cycleBtn.addEventListener('click', () => {
+  if (cycleRunning) { cycleCancelled = true; showAutonameStatus('Stopping…'); return; }
+  runCycle();
+});
+
 fetchNamesBtn.addEventListener('click', fillMissingNames);
 
 function initAutoNameState(onReady) {
@@ -1069,6 +1253,9 @@ chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
       // Strictly sequenced: the handoff rows must exist before initWelcome is
       // allowed to reach fillMissingNames(), or there is nothing for it to name.
       consumeHandoff(() => initAutoNameState(initWelcome));
+
+      // Offered only when GA4 has told us about a property we cannot name yet.
+      refreshCycleButton();
     }
   );
 });

@@ -177,6 +177,7 @@ Capped at 38 characters, because the label sits in GA4's breadcrumb beside the p
 | `autoAccountMappings` | local | `{ [accountId]: name }` | Derived account names, merged under `accountMappings`. |
 | `autoNamingEnabled` | local | `boolean` | On-page automatic naming. Absent or `true` means on. |
 | `propertyAccounts` | local | `{ [slug]: accountId }` | Which account each property sits under, from GA4's inline account tree **and** from the account/property in the URL (the tree is capped and omits accounts, see ADR-014). Presentation only: it groups the settings table and is never read by the replacement engine. Merged, never replaced. |
+| `propertyIds` | local | `{ [slug]: propertyId }` | GA4's numeric property id, from the same two sources. Paired with `propertyAccounts` it yields `#/a<account>p<property>`, the address of a property the user has never opened. Written whether or not auto-naming is on, because it is structure rather than a name. Merged, never replaced. |
 
 `mappings` and `accountMappings` are each stored as a single `chrome.storage.sync` item. A pre-save byte-size check against `QUOTA_BYTES_PER_ITEM` (8 192 bytes) surfaces quota errors before Chrome silently rejects them. The other two sync keys are scalars and are not size-checked.
 
@@ -281,6 +282,22 @@ The handoff is consumed exactly once and cleared immediately, so it cannot repla
 ## Welcome modal
 
 Three slides in the options page, driven by `slideIndex` over `.slide[data-slide]` elements. Slide 1 explains the replacement with a before/after preview. Slide 2 teaches the only manual step in the product: open each property once, because a name is read from that property's own report and GA4 renders only the property being viewed. It carries a CSS-only looping demo (`.cycle-demo`) of slugs turning into names; three rows share one set of keyframes, offset by a per-row `--d` delay, and `prefers-reduced-motion` settles it on the end state. Slide 3 is the auto-naming opt-in and states exactly what the `management` permission is and is not used for.
+
+### Visiting unopened properties
+
+`runCycle()` in `options/options.js` closes the last naming gap. GA4 renders only the property
+being viewed, so a property the user has never opened has no report to read a name from. The
+driver opens one tab with `active: false`, walks it through each unnamed property using
+`propertyAccounts` + `propertyIds` to build `#/a<account>p<property>`, polls
+`local.autoMappings` until the content script files a name or 30 seconds pass, and removes the
+tab at the end. A backgrounded GA4 tab keeps rendering its reports, measured at under ten
+seconds to harvest, so this never takes focus.
+
+The base URL comes from a GA4 tab the user already has open, to preserve `authuser`: a user
+signed into several Google accounts would otherwise be sent to a different account's Analytics.
+New rows are appended as names land rather than re-rendering, so edits in progress survive.
+No new permission: querying, creating, updating and removing a tab all work under the host
+permission already held. See ADR-018.
 
 `WELCOME_VERSION` in `options/options.js` gates whether onboarding is shown. Bump it whenever a slide is added or materially rewritten, or existing users will never see the change; it was bumped to `2` when slide 2 was added, because they had never been told the one thing they must do.
 

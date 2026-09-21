@@ -117,6 +117,7 @@ English string that Google controls. That is why the label health heartbeat exis
 | `autoAccountMappings` | local | `{ [accountId]: name }` | content script | Derived account names, likewise merged under `accountMappings` |
 | `autoNamingEnabled` | local | `boolean` | options | On-page automatic naming. Absent or true means on. |
 | `propertyAccounts` | local | `{ [slug]: accountId }` | content script | Account each property belongs to, from GA4's inline tree and from the URL. Groups the settings table; never used for replacement. |
+| `propertyIds` | local | `{ [slug]: propertyId }` | content script | GA4's **numeric** id for each property, from the same tree. With `propertyAccounts` it is enough to build a GA4 URL for a property the user has never opened, which is what "Visit and name the rest" navigates to (ADR-018). Never used for replacement. |
 
 Sync keys count against `chrome.storage.sync.QUOTA_BYTES_PER_ITEM` (8192 bytes per
 item). Both mapping objects are size checked before every save. Local keys are not

@@ -103,6 +103,15 @@ Mode". Extensions it has not seen yet are counted rather than guessed at, so a h
 account reads "Tab Session Saver Pro + 1 more" and corrects itself when you open the rest.
 
 
+NAME THE ONES YOU HAVE NEVER OPENED
+
+A name is read from each property's own report, so a property you have never opened has
+nothing to read yet. One button on the settings page visits them for you: it opens a single
+tab in the background, goes through your remaining properties in turn, and closes it when it
+is done. About ten seconds each. It never takes over your screen, and you can stop it at any
+point.
+
+
 IT WORKS THE MOMENT YOU INSTALL IT
 
 If you already had Google Analytics open in a tab, that tab starts showing real names straight

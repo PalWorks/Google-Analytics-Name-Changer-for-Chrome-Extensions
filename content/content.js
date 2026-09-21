@@ -546,15 +546,25 @@
    * time. So every property the user visits is filed from the URL, and the tree
    * fills in the rest for free.
    */
-  function persistPropertyAccount(slug, accountId) {
+  function persistPropertyAccount(slug, accountId, propertyId) {
     if (!slug || !accountId || !SLUG_RE.test(slug)) return;
 
-    chrome.storage.local.get(['propertyAccounts'], (result) => {
+    chrome.storage.local.get(['propertyAccounts', 'propertyIds'], (result) => {
       if (chrome.runtime.lastError) return;
       const known = result.propertyAccounts || {};
-      if (known[slug] === accountId) return;
-      known[slug] = accountId;
-      chrome.storage.local.set({ propertyAccounts: known });
+      const ids   = result.propertyIds || {};
+
+      const pairChanged = known[slug] !== accountId;
+      const idChanged   = !!propertyId && ids[slug] !== propertyId;
+      if (!pairChanged && !idChanged) return;
+
+      if (pairChanged) known[slug] = accountId;
+      if (idChanged)   ids[slug]   = propertyId;
+
+      const write = {};
+      if (pairChanged) write.propertyAccounts = known;
+      if (idChanged)   write.propertyIds = ids;
+      chrome.storage.local.set(write);
     });
   }
 
@@ -562,11 +572,32 @@
     const pairs = accountToSlugs();
     if (pairs.size === 0) return;
 
-    chrome.storage.local.get(['propertyAccounts'], (result) => {
+    // slug -> numeric property id, from the same tree. The settings page needs
+    // it to build a GA4 URL for a property the user has not visited, which is
+    // what "name my remaining properties" navigates to (ADR-018).
+    const idBySlug = new Map();
+    const tree = parseAccountTree() || [];
+    for (const account of tree) {
+      for (const property of account.properties) {
+        if (SLUG_RE.test(property.slug) && property.propertyId) {
+          idBySlug.set(property.slug, property.propertyId);
+        }
+      }
+    }
+
+    chrome.storage.local.get(['propertyAccounts', 'propertyIds'], (result) => {
       if (chrome.runtime.lastError) return;
 
       const known = result.propertyAccounts || {};
+      const ids   = result.propertyIds || {};
       let changed = false;
+      let idsChanged = false;
+
+      for (const [slug, propertyId] of idBySlug) {
+        if (ids[slug] === propertyId) continue;
+        ids[slug] = propertyId;
+        idsChanged = true;
+      }
 
       for (const [accountId, slugs] of pairs) {
         if (!accountId) continue;
@@ -577,7 +608,10 @@
         }
       }
 
-      if (changed) chrome.storage.local.set({ propertyAccounts: known });
+      const write = {};
+      if (changed)    write.propertyAccounts = known;
+      if (idsChanged) write.propertyIds = ids;
+      if (changed || idsChanged) chrome.storage.local.set(write);
     });
   }
 
@@ -1013,7 +1047,7 @@
 
     // File this property under the account in the URL. Both come from the same
     // settled read, so the pairing is exact.
-    persistPropertyAccount(hint.slug, accountId);
+    persistPropertyAccount(hint.slug, accountId, currentPropertyId());
 
     chrome.storage.local.get(
       ['nameHints', 'autoMappings', 'autoAccountMappings', 'propertyAccounts'],
@@ -1106,7 +1140,7 @@
       // is exact but incomplete, so the property in the URL is filed directly
       // as well — that covers properties whose name can never be derived.
       persistAccountTree();
-      persistPropertyAccount(slugFromTree(), currentAccountId());
+      persistPropertyAccount(slugFromTree(), currentAccountId(), currentPropertyId());
       if (!autoNamingEnabled) return;
       persistNameHint(harvestNameHint(visibleTextValues()));
     } catch (err) {

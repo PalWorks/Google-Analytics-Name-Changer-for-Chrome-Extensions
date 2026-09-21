@@ -108,6 +108,36 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   the instruction forever; verified by loading the options page with `welcomeSeenVersion: 1`
   stored and watching onboarding reopen
 
+- **"Visit and name the rest": the extension names the properties you never opened** — the last
+  naming gap. A name is read from a property's own report and GA4 renders only the property
+  being viewed, so a property never opened could not be named; the onboarding slide asks the
+  user to click through them by hand, and this does it for them. One tab, opened with
+  `active: false`, walked through each unnamed property, closed at the end. The button appears
+  only when there is something to do, carries the count, and becomes its own Stop control while
+  running. Rows are appended as names land rather than re-rendering, so an edit in progress is
+  not lost.
+
+  Two measurements made it possible. A backgrounded GA4 tab keeps rendering its reports,
+  measured at under ten seconds to harvest a name, so this never takes focus. And GA4's inlined
+  tree carries every property's numeric id, now mirrored into `local.propertyIds`, so a URL can
+  be built for a property that has never been visited. The base URL is taken from a GA4 tab the
+  user already has open so that `authuser` is preserved: without it, a user signed into several
+  Google accounts would be sent to a different account's Analytics entirely.
+
+  No new permission. Querying, creating, updating and removing a tab all work under the host
+  permission already held. Verified end to end on a live account: two unnamed properties, one
+  named in under ten seconds, the other correctly reported as having no store-listing views to
+  read from, the temporary tab closed in both the completed and the stopped case. See
+  DECISIONS.md ADR-018
+
+- **Ruled out, with measurements, every other way of getting the name** — GA4's own property
+  objects carry fourteen fields and the `name` field *is* the extension ID; the page's
+  localStorage, sessionStorage, IndexedDB and cookies were searched for ten known extension
+  names and returned zero hits. The GA4 Admin API would return the same `displayName` we
+  already have. The name is genuinely absent from Google's analytics data and present only in
+  the user's own report rows, because the Chrome Web Store put it in a page title. Recorded in
+  ADR-018 so it is not re-investigated
+
 ### Changed
 
 - **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it
