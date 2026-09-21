@@ -30,7 +30,9 @@ the remaining candidates are ranked by views.
 
 A property the user has never opened has no report to read a name from, so the settings page
 offers a button that visits the remaining properties itself, in one background tab, closing it
-when done. Roughly ten seconds per property, and it never takes focus. The same button, and
+when done. Roughly ten seconds per property, and it never takes focus. On a profile that has
+never named anything, the same button reads the property list out of Google Analytics first,
+so it works from a standing start. The same button, and
 the one that fills names from installed extensions, are also in the toolbar popup.
 
 Because the replacement is display-only, a page it has worked on looks like a page Google

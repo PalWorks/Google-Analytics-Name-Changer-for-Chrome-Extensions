@@ -140,6 +140,29 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 
 ### Changed
 
+- **The naming button works from nothing.** Found in UAT on an empty profile: the button was
+  not there at all. It was hidden whenever there was nothing to visit, and a profile Google
+  Analytics has never spoken to has nothing to visit for the same reason a fully named one
+  does. With nothing known it now reads **"Open GA4 and name all properties"** and the run
+  begins by opening Analytics in the background tab and reading the property list out of it.
+  Hidden in exactly one case: GA4 has told us about properties and every one is named.
+
+  Two measurements were needed. Opening Analytics with no `authuser` loaded a **different
+  Google identity** — 18 accounts in its inlined tree and not one Chrome Web Store property,
+  against 5 accounts and all 8 extensions with `?authuser=1` — so the content script now
+  remembers that base in `local.ga4Base` and the settings page falls back to it. And the
+  property list arrives in two writes, the URL's property at about 7.5 seconds and the full
+  account tree at about 10, so discovery waits for the count to hold still rather than acting
+  on the first one and calling the other seven absent. See ADR-018 and its amendment
+
+- **"Fill missing names" is greyed out when there is nothing to fill**, with the reason on
+  hover, instead of staying live and answering "no rows are waiting for a name" after the
+  fact. It tracks the table as rows are typed, filled and deleted
+
+- **A run that reads no names no longer blames your sign-in.** Reaching that point means the
+  properties were found and visited, so the message now says what is actually true: they have
+  no store-listing views to read a name from
+
 - **The extension now says it is running.** Raised in UAT, by the person who wrote the spec:
   *"I'm not clear. How to use our extension post load?"* A display-only extension is invisible
   once it works, because a name it substituted looks exactly like a name Google rendered, so

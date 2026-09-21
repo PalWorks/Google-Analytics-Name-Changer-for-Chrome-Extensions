@@ -187,6 +187,13 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
 
 ### Visiting unopened properties
 
+- [ ] On a profile GA4 has never spoken to, the button is **present** and reads "Open GA4 and
+      name all properties" (regression: it used to be hidden, leaving a new user no way in)
+- [ ] Pressing it there opens Analytics in the background, reads the property list from it,
+      and then walks the unnamed ones. Allow about 13 seconds before the first visit
+- [ ] Signed into more than one Google account, with no GA4 tab open: it still reaches the
+      right identity, because the base URL comes from `local.ga4Base`. Clear that key and it
+      should fail honestly rather than silently reading another account's property list
 - [ ] With every known property named, the button is hidden
 - [ ] With unnamed properties known to GA4, it appears and states the count
 - [ ] Pressing it opens exactly one background tab; focus never leaves the settings page
@@ -213,6 +220,13 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
       `0 more` (regression: `hidden` loses to the `display` on the button class)
 - [ ] With `prefers-reduced-motion: reduce`, the spinner does not spin and the toast does not
       animate in
+
+### Fill missing names
+
+- [ ] With an empty table, the button is greyed out and its tooltip says why
+- [ ] Typing an extension ID into a blank row enables it without a page reload
+- [ ] Filling the last empty name greys it out again
+- [ ] Deleting the only named row's name enables it again
 
 ### Toolbar badge
 

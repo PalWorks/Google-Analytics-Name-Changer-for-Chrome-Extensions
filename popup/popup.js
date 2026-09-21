@@ -586,26 +586,32 @@ function refreshActionStrip() {
  */
 function countUnvisitedProperties(cb) {
   chrome.storage.local.get(['autoMappings', 'propertyAccounts', 'propertyIds'], (local) => {
-    if (chrome.runtime.lastError) { cb(0); return; }
+    if (chrome.runtime.lastError) { cb({ targets: 0, known: 0 }); return; }
     const auto  = local.autoMappings || {};
     const pairs = local.propertyAccounts || {};
     const ids   = local.propertyIds || {};
+    const addressable = Object.keys(ids).filter(slug => pairs[slug] && ids[slug]);
 
     chrome.storage.sync.get(['mappings'], (sync) => {
       const user = (!chrome.runtime.lastError && sync.mappings) || {};
-      cb(Object.keys(ids)
-        .filter(slug => pairs[slug] && ids[slug] && !user[slug] && !auto[slug]).length);
+      cb({
+        known: addressable.length,
+        targets: addressable.filter(slug => !user[slug] && !auto[slug]).length
+      });
     });
   });
 }
 
 function initActionStrip() {
   refreshActionStrip();
-  countUnvisitedProperties((n) => {
-    cycleHandoffBtn.classList.toggle('is-hidden', n === 0);
-    cycleHandoffLabel.textContent = n === 1
-      ? 'Visit and name 1 more'
-      : `Visit and name ${n} more`;
+  countUnvisitedProperties(({ targets, known }) => {
+    // Hidden only when GA4 has told us about properties and all are named. An
+    // empty count with nothing known means we have not looked yet, which is
+    // work: see refreshCycleButton() in options.js, which follows the same rule.
+    cycleHandoffBtn.classList.toggle('is-hidden', targets === 0 && known > 0);
+    cycleHandoffLabel.textContent = targets === 0
+      ? 'Open GA4 and name all'
+      : (targets === 1 ? 'Visit and name 1 more' : `Visit and name ${targets} more`);
     showActionStrip();
   });
 }

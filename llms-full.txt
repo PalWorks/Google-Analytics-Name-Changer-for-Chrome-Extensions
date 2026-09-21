@@ -98,6 +98,11 @@ so this never takes focus and can be stopped at any point. It needs no additiona
 and makes no network request; it is ordinary navigation inside the site the extension already
 runs on.
 
+On a profile where nothing has been named yet there is no property list to walk, so the same
+button reads one out of Google Analytics first: it opens Analytics in that background tab,
+takes the account tree Google inlines on every page, and then visits the unnamed properties it
+found. The button reads "Open GA4 and name all properties" in that state.
+
 Note that no Google-side source contains the extension's name. Each property object in Google
 Analytics' own data carries fourteen fields and its "name" field is the extension ID itself;
 the page's local storage, session storage, IndexedDB and cookies contain no human name either.

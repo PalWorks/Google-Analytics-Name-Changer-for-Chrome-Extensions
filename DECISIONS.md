@@ -760,6 +760,36 @@ give up as soon as the report is known to be empty rather than merely slow; wort
 users report the wait, not before.
 
 
+### Amendment, 2026-09-21 — the button works from nothing, and that took a measurement
+
+Found in UAT on an empty profile: the button was **not there**. `refreshCycleButton()` hid it
+whenever there were no targets, and a profile GA4 has never spoken to has no targets for the
+same reason a fully named one has none. The two states need opposite buttons, and only the
+count of properties GA4 has told us about separates them.
+
+So the button is hidden in exactly one case now: GA4 has told us about properties and every
+one is named. With nothing known it reads **"Open GA4 and name all properties"** and the run
+starts with a discovery pass: open Analytics in the background tab, wait for the content
+script to file the inlined account tree, then walk what it finds.
+
+Two measurements were needed to make that work, and both were surprises.
+
+**The `authuser` trap is worse than recorded above.** ADR-018 preserves `authuser` by taking
+the base URL from an open GA4 tab. On a cold start there is no open tab. Opening
+`analytics.google.com/analytics/web/` without it loaded a **different Google identity**: 18
+accounts in the inlined tree and not one Chrome Web Store property. With `?authuser=1`: 5
+accounts and all 8 extensions. Same browser, same moment. The content script now remembers
+that base in `local.ga4Base` whenever a GA4 page is open, and the settings page falls back to
+it. A profile that has never opened Analytics at all still cannot discover anything, and says
+so in words rather than reporting an empty list as success.
+
+**The list arrives in two writes, not one.** Timed on a cold background tab: the property in
+the URL is filed at about 7.5 seconds and the full account tree at about 10. A discovery pass
+that acted on the first write set off after one property and called the other seven absent.
+Discovery therefore waits for the count to hold still across six polls and for at least twelve
+seconds, and `waitForTargets()` returns both the count and the targets so that "GA4 told us
+nothing" and "everything is already named" are answered differently.
+
 ---
 
 ## ADR-019 — The toolbar badge is the only place the extension says it is running

@@ -641,6 +641,30 @@
     });
   }
 
+  /**
+   * Remember the base URL of a Google Analytics page the user actually opened.
+   *
+   * Everything except the hash, which is origin + path + query, and the query
+   * is the point: it carries `authuser`. A user signed into several Google
+   * accounts is looking at one specific identity, and Analytics opened without
+   * that parameter loads a different one. Measured on a live profile: the same
+   * property URL opened without it landed on the other identity's Analytics,
+   * whose inlined account tree held 18 accounts and not one Chrome Web Store
+   * property. With it: 5 accounts and all 8 extensions.
+   *
+   * The settings page needs this when it has to open Analytics with no GA4 tab
+   * already open, which is exactly the cold start "Open GA4 and name all
+   * properties" performs. Local only, never transmitted, no hash so no account
+   * or property id is kept here (they have their own keys).
+   */
+  function persistGa4Base() {
+    const base = window.location.origin + window.location.pathname + window.location.search;
+    chrome.storage.local.get(['ga4Base'], (result) => {
+      if (chrome.runtime.lastError || result.ga4Base === base) return;
+      chrome.storage.local.set({ ga4Base: base });
+    });
+  }
+
   function persistAccountTree() {
     const pairs = accountToSlugs();
     if (pairs.size === 0) return;
@@ -1307,6 +1331,7 @@
           }
 
           rebuildMaps();
+          persistGa4Base();
           initObserver();
           if (slugMap.size > 0 || accountMap.size > 0) replaceAll();
 

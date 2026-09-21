@@ -300,6 +300,13 @@ New rows are appended as names land rather than re-rendering, so edits in progre
 No new permission: querying, creating, updating and removing a tab all work under the host
 permission already held. See ADR-018.
 
+On a profile where GA4 has never been opened, there is no property list to walk. The same
+button then runs a discovery pass first: it opens Analytics in the background tab, waits for
+the content script to file the inlined account tree, and walks what it finds. The base URL for
+that comes from `local.ga4Base`, remembered by the content script the last time a GA4 page was
+open, because it carries `authuser`: without it Analytics opens a different Google identity
+whose tree contains none of these properties.
+
 `WELCOME_VERSION` in `options/options.js` gates whether onboarding is shown. Bump it whenever a slide is added or materially rewritten, or existing users will never see the change; it was bumped to `2` when slide 2 was added, because they had never been told the one thing they must do.
 
 Shown when `sync.welcomeSeenVersion !== WELCOME_VERSION`. Bumping `WELCOME_VERSION` re-shows it after a redesign. Dismissal by any route (Done, close button, overlay click, Escape) records the version.

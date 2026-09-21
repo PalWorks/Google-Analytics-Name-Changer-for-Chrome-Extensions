@@ -769,11 +769,32 @@ function setFetchBusy(busy, text) {
   fetchNamesBtn.classList.toggle('is-running', busy);
   fetchNamesBtn.disabled = busy;
   fetchBtnLabel.textContent = busy ? text : FETCH_BTN_LABEL;
+  if (!busy) refreshFillButton();
+}
+
+/**
+ * Grey the button out when there is nothing for it to fill.
+ *
+ * It acts only on rows that carry an extension ID and no name, so on a fresh
+ * profile with an empty table it can do nothing at all. Offering it live and
+ * answering "no rows are waiting for a name" makes the user prove that for
+ * themselves; a disabled button with a reason on hover says it up front.
+ */
+function refreshFillButton() {
+  if (cycleRunning) return;          // the run owns this button while it lasts
+  const n = rowsAwaitingNames().length;
+  fetchNamesBtn.disabled = n === 0;
+  fetchNamesBtn.title = n === 0
+    ? 'Nothing to fill: no row here has an extension ID without a name yet.'
+    : `Fills ${n} row${n === 1 ? '' : 's'} from the names already read out of your GA4 `
+      + 'reports, and from the extensions installed in this profile if you turned that on.';
 }
 
 function setAutonameEnabled(on) {
   autonameToggle.checked = on;
-  fetchNamesBtn.disabled = false; // always usable; hints need no permission
+  // Availability is decided by whether there are rows to fill, not by this
+  // switch: filling from GA4's own reports needs no permission at all.
+  refreshFillButton();
 }
 
 /** Reflects the live permission state, not just the stored flag. */
@@ -972,8 +993,20 @@ const cycleStopBtn  = document.getElementById('cycle-stop-btn');
 
 const CYCLE_BTN_LABEL = 'Visit and name the rest';
 
-const CYCLE_TIMEOUT_MS = 30000;  // per property, then give up and move on
-const CYCLE_POLL_MS    = 750;
+// Shown before GA4 has told us anything: there is no count to put on the button
+// yet, and the first thing the run has to do is go and find out.
+const CYCLE_DISCOVER_LABEL = 'Open GA4 and name all properties';
+
+const CYCLE_TIMEOUT_MS  = 30000;  // per property, then give up and move on
+const CYCLE_POLL_MS     = 750;
+const CYCLE_DISCOVER_MS = 45000;  // waiting for GA4 to tell us what exists at all
+
+// Measured on a cold background tab: the property in the URL is filed about
+// 7.5s in, and the full account tree about 2.5s after that. Acting on the first
+// write would set off after one property and call the other seven absent, so
+// the list has to hold still, and for long enough to have covered that gap.
+const CYCLE_DISCOVER_MIN_MS = 12000;
+const CYCLE_DISCOVER_STABLE = 6;   // polls, so 4.5s at CYCLE_POLL_MS
 
 let cycleRunning   = false;
 let cycleCancelled = false;
@@ -1007,11 +1040,36 @@ function ga4Base(openTabUrl) {
   }
 }
 
+/**
+ * The base to use, in order of how much we trust it.
+ *
+ * A GA4 tab the user has open right now is best. Failing that, the base the
+ * content script remembered the last time they had one open, which is what
+ * makes a cold start work at all: without `authuser` Analytics opens a
+ * different Google identity, whose account tree does not contain these
+ * properties. Measured: 18 accounts and zero Chrome Web Store properties
+ * without it, 5 accounts and all 8 extensions with it.
+ */
+async function resolveGa4Base() {
+  const open = await pTabsQuery({ url: 'https://analytics.google.com/*' });
+  if (open.length) return ga4Base(open[0].url);
+
+  const local = await pLocal(['ga4Base']);
+  return ga4Base(local.ga4Base || null);
+}
+
 const ga4PropertyUrl = (base, t) =>
   `${base}#/a${t.accountId}p${t.propertyId}/reports/intelligenthome`;
 
-/** Properties GA4 has told us about, that we can address, and that have no name. */
-async function collectCycleTargets() {
+/**
+ * What there is to do, and whether we know anything at all yet.
+ *
+ * `known` is the reason this returns two numbers. On a fresh profile GA4 has
+ * never told us about a single property, so `targets` is empty for the same
+ * reason "everything is named" gives an empty `targets`. Those two states need
+ * opposite buttons, and only `known` separates them.
+ */
+async function collectCycleState() {
   const sync  = await pSync(['mappings']);
   const local = await pLocal(['autoMappings', 'propertyAccounts', 'propertyIds']);
   const user  = sync.mappings || {};
@@ -1019,9 +1077,50 @@ async function collectCycleTargets() {
   const pairs = local.propertyAccounts || {};
   const ids   = local.propertyIds || {};
 
-  return Object.keys(ids)
-    .filter(slug => pairs[slug] && ids[slug] && !user[slug] && !auto[slug])
-    .map(slug => ({ slug, accountId: pairs[slug], propertyId: ids[slug] }));
+  const addressable = Object.keys(ids).filter(slug => pairs[slug] && ids[slug]);
+
+  return {
+    known: addressable.length,
+    targets: addressable
+      .filter(slug => !user[slug] && !auto[slug])
+      .map(slug => ({ slug, accountId: pairs[slug], propertyId: ids[slug] }))
+  };
+}
+
+/** Properties GA4 has told us about, that we can address, and that have no name. */
+async function collectCycleTargets() {
+  return (await collectCycleState()).targets;
+}
+
+/**
+ * Wait for a GA4 page to file its account tree.
+ *
+ * Every GA4 page inlines the account tree, and the content script mirrors it
+ * into local storage, so opening any GA4 page is enough to learn the whole
+ * property list. Returns as soon as anything is known, including when the
+ * answer is "all of them are already named".
+ */
+async function waitForTargets(timeoutMs) {
+  const started  = Date.now();
+  const deadline = started + timeoutMs;
+  let lastKnown = -1;
+  let stable = 0;
+
+  while (Date.now() < deadline) {
+    if (cycleCancelled) return { known: 0, targets: [] };
+    await pSleep(CYCLE_POLL_MS);
+    const state = await collectCycleState();
+
+    if (state.known > 0 && state.known === lastKnown) stable++;
+    else stable = 0;
+    lastKnown = state.known;
+
+    // Settled, and not before the gap above could have closed.
+    if (stable >= CYCLE_DISCOVER_STABLE && Date.now() - started >= CYCLE_DISCOVER_MIN_MS) {
+      return state;
+    }
+  }
+  return { known: lastKnown > 0 ? lastKnown : 0, targets: (await collectCycleState()).targets };
 }
 
 /** Poll until the content script files a name for this slug, or we give up. */
@@ -1048,7 +1147,10 @@ function setCycleUi(running) {
   cycleStopBtn.hidden = !running;
   cycleStopBtn.disabled = false;
   fetchNamesBtn.disabled = running;
-  if (!running) cycleBtnLabel.textContent = CYCLE_BTN_LABEL;
+  if (!running) {
+    cycleBtnLabel.textContent = CYCLE_BTN_LABEL;
+    refreshFillButton();
+  }
 }
 
 /** Show a newly named property without re-rendering rows the user may be editing. */
@@ -1056,11 +1158,17 @@ function addNamedRow(slug, accountId, name) {
   propertyAccounts[slug] = accountId;
   addPropertyRow(ensureGroup(accountId || UNGROUPED), slug, name, { isAuto: true });
   markSharedAccounts();
+  refreshFillButton();
 }
 
 async function runCycle() {
-  const targets = await collectCycleTargets();
-  if (targets.length === 0) {
+  const state = await collectCycleState();
+  let targets = state.targets;
+
+  // Nothing known and nothing named: this is a cold start, so the run begins by
+  // opening Google Analytics and reading the property list out of it.
+  const discovering = targets.length === 0;
+  if (discovering && state.known > 0) {
     showAutonameStatus('Every property Google Analytics has told us about already has a name.');
     refreshCycleButton();
     return;
@@ -1070,8 +1178,7 @@ async function runCycle() {
   cycleCancelled = false;
   setCycleUi(true);
 
-  const open = await pTabsQuery({ url: 'https://analytics.google.com/*' });
-  const base = ga4Base(open.length ? open[0].url : null);
+  const base = await resolveGa4Base();
 
   let tab = null;
   let named = 0;
@@ -1079,10 +1186,37 @@ async function runCycle() {
   try {
     // Our own tab, opened in the background and closed at the end, so the
     // user's own GA4 tab is never navigated away from what they were reading.
-    tab = await pTabsCreate({ url: ga4PropertyUrl(base, targets[0]), active: false });
+    tab = await pTabsCreate({
+      url: discovering ? base : ga4PropertyUrl(base, targets[0]),
+      active: false
+    });
     if (!tab) {
       showAutonameStatus('Could not open a Google Analytics tab.', 'error');
       return;
+    }
+
+    if (discovering) {
+      cycleBtnLabel.textContent = 'Reading your property list\u2026';
+      const found = await waitForTargets(CYCLE_DISCOVER_MS);
+      targets = found.targets;
+
+      if (cycleCancelled) {
+        showAutonameStatus('Stopped.');
+        return;
+      }
+      if (found.known === 0) {
+        // Nearly always the multi-identity case: Analytics opened without the
+        // right `authuser` shows a different Google account's properties.
+        showAutonameStatus(
+          'Could not read your property list. Open Google Analytics yourself, on the account '
+          + 'holding your extensions, then press this again.', 'error');
+        return;
+      }
+      if (targets.length === 0) {
+        showAutonameStatus('Every property Google Analytics has told us about already has a name.');
+        return;
+      }
+      await pTabsUpdate(tab.id, { url: ga4PropertyUrl(base, targets[0]), active: false });
     }
 
     for (let i = 0; i < targets.length; i++) {
@@ -1116,18 +1250,41 @@ async function runCycle() {
     showAutonameStatus(
       `Named ${named} of ${targets.length}. The other ${missed} had no store-listing views to read a name from.`);
   } else {
-    showAutonameStatus(
-      'Could not read any names. Check you are signed in to Google Analytics in this browser.', 'error');
+    // Reaching here means the properties were found and visited, so this is
+    // not a sign-in problem: they simply have no store-listing views yet.
+    showAutonameStatus(targets.length === 1
+      ? 'Visited 1 property, and it had no store-listing views to read a name from. A '
+        + 'property with no traffic to its listing cannot be named this way.'
+      : `Visited ${targets.length} properties, and none of them had store-listing views to `
+        + 'read a name from. A property with no traffic to its listing cannot be named this way.');
   }
   refreshCycleButton();
 }
 
-/** Offer the button only when it has something to do, with the count on it. */
+/**
+ * Offer the button whenever it has something to do, with the count on it.
+ *
+ * Hidden in exactly one case: GA4 has told us about properties and every one of
+ * them is named. An empty count on a fresh profile is not that case — it means
+ * we have not looked yet, which is work, not the absence of work, and hiding
+ * the button there left a new user with no way to start anything at all.
+ */
 function refreshCycleButton() {
   if (!cycleBtn) return;
-  collectCycleTargets().then((targets) => {
+  collectCycleState().then(({ targets, known }) => {
     if (cycleRunning) return;
-    cycleBtn.hidden = targets.length === 0;
+
+    cycleBtn.hidden = targets.length === 0 && known > 0;
+
+    if (targets.length === 0) {
+      cycleBtnLabel.textContent = CYCLE_DISCOVER_LABEL;
+      cycleBtn.title =
+        'Opens Google Analytics in a background tab, reads your property list from it, then '
+        + 'visits each unnamed property in turn and reads its name from its own report. '
+        + 'Roughly 10 seconds each. You can keep working.';
+      return;
+    }
+
     cycleBtnLabel.textContent = targets.length === 1
       ? 'Visit and name 1 more'
       : `Visit and name ${targets.length} more`;
@@ -1301,6 +1458,13 @@ chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
 
       // Offered only when GA4 has told us about a property we cannot name yet.
       refreshCycleButton();
+      refreshFillButton();
+
+      // Typing a name, or typing an ID into a blank row, changes what there is
+      // to fill. Delegated, because rows come and go; deferred on click so the
+      // handler runs after the row it deleted or added is actually in the DOM.
+      groupsList.addEventListener('input', refreshFillButton);
+      groupsList.addEventListener('click', () => setTimeout(refreshFillButton, 0));
     }
   );
 });
