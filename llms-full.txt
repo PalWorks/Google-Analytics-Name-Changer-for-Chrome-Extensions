@@ -199,7 +199,9 @@ information about this extension only.
   Analytics tab elsewhere in the same window.
 - Cross-device sync of user-assigned names through `chrome.storage.sync`.
 - Import and export of all names as a single plain JSON file.
-- Guided two-slide onboarding on first install, reachable again at any time.
+- Guided three-slide onboarding on first install, reachable again at any time. The middle
+  slide teaches the only manual step there is: open each property once, because a name is read
+  from that property's own report and a property never opened cannot be named yet.
 - A per-row link to the public store listing for anything neither source could name.
 - Label health monitoring: warns if Google's "Chrome Web Store developer properties" label has
   not been matched in 90 days, which would signal that Google silently renamed that element.

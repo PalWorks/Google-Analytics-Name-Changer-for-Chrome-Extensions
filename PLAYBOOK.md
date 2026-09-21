@@ -156,11 +156,36 @@ Needs a live Chrome Web Store developer property with some traffic in the select
 
 ### Welcome modal
 
+Three slides: what it does, open each property once, the auto-naming opt-in.
+
 - [ ] Installing fresh opens the options page with the modal on slide 1
 - [ ] Next, Back, the dots, Escape, the close button, and an overlay click all behave
+- [ ] Three dots, and the third is active on the last slide
+- [ ] Slide 2's demo loops: each row's slug fades to a name with an "auto" badge, in sequence
+- [ ] With `prefers-reduced-motion: reduce` forced in devtools, slide 2 shows the names
+      statically rather than animating
 - [ ] Dismissing it and reloading the options page does not show it again
 - [ ] The popup's **?** button reopens it on demand
-- [ ] "Turn on auto-naming" on slide 2 requests the permission, then fills names
+- [ ] "Turn on auto-naming" on the **last** slide requests the permission, then fills names
+- [ ] The popup's auto-naming link (`#autoname`) lands on that last slide, not slide 2
+- [ ] Setting `chrome.storage.sync.set({welcomeSeenVersion: 1})` and reloading the options
+      page re-shows the modal. Bump `WELCOME_VERSION` whenever a slide is added or rewritten,
+      or existing users never see the change
+
+### Adopting tabs that were already open
+
+- [ ] Open a GA4 property, then reload the extension from `chrome://extensions` **without**
+      touching the GA4 tab. Names still work there, and no refresh was needed
+- [ ] The same after an update (bump `version` in the manifest and reload): the tab keeps
+      working, and the page does not end up with two observers fighting over the same text
+
+### Feedback relay
+
+- [ ] Submitting the form shows "Thanks. Your feedback has been sent." and clears the fields
+- [ ] The mail arrives from `GA4NameChanger.Support@palworks.ai` at `support@palworks.ai`
+- [ ] "What gets sent with this" lists counts and versions only: no slugs, names, account
+      numbers or URLs
+- [ ] With the endpoint unreachable, the form falls back to opening the mail client
 
 ### Automatic naming
 

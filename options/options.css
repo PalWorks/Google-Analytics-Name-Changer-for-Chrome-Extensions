@@ -522,6 +522,10 @@ summary:hover > .accordion-chevron { opacity: 1; }
   line-height: 1.6;
 }
 
+/* Scoped to consecutive paragraphs: the global reset zeroes margins, and until
+   slide 2 no slide had two paragraphs to separate. */
+.slide p + p { margin-top: 12px; }
+
 .slide-note {
   font-size: 12.5px !important;
   color: var(--text-3) !important;
@@ -529,6 +533,113 @@ summary:hover > .accordion-chevron { opacity: 1; }
 }
 
 /* Before/after preview block on slide 1 */
+
+/* ── Onboarding slide 2: the property-cycling demo ────────────────────────────
+   A looping illustration of the one thing the user has to do: open each
+   property once, and watch each slug turn into a name.
+
+   Rows share one set of keyframes and are offset with a per-row --d delay, so
+   this stays three keyframe blocks rather than three per row. The reset is
+   staggered like the reveal, which reads as a continuous cycle rather than as
+   a glitch. Decorative: the slide says the same thing in prose, and the demo
+   is aria-hidden. */
+
+.cycle-demo {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.cycle-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.cycle-list { list-style: none; margin: 0; padding: 0; }
+
+.cycle-row {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  animation: cycleScan 4.2s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+.cycle-row:last-child { border-bottom: none; }
+
+/* Both states occupy the same cell, so the row never changes height. */
+.cycle-row .cycle-slug,
+.cycle-row .cycle-name { grid-area: 1 / 1; }
+
+.cycle-slug {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  animation: cycleSlug 4.2s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+
+.cycle-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0;
+  animation: cycleName 4.2s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+
+.cycle-name b {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 20px;
+  padding: 1px 6px;
+}
+
+@keyframes cycleScan {
+  0%, 4%   { background: transparent; }
+  10%      { background: var(--accent-bg); }
+  26%, 84% { background: transparent; }
+  92%      { background: var(--accent-bg); }
+  100%     { background: transparent; }
+}
+@keyframes cycleSlug {
+  0%, 6%    { opacity: 1; }
+  16%, 86%  { opacity: 0; }
+  96%, 100% { opacity: 1; }
+}
+@keyframes cycleName {
+  0%, 6%    { opacity: 0; transform: translateY(3px); }
+  16%, 86%  { opacity: 1; transform: none; }
+  96%, 100% { opacity: 0; transform: translateY(3px); }
+}
+
+/* Motion is the whole point of this element, so when it is unwelcome the
+   element still has to make sense: settle on the end state, names shown. */
+@media (prefers-reduced-motion: reduce) {
+  .cycle-row, .cycle-slug, .cycle-name { animation: none; }
+  .cycle-slug { opacity: 0; }
+  .cycle-name { opacity: 1; transform: none; }
+}
 
 .preview {
   background: var(--bg);

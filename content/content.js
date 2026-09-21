@@ -588,8 +588,8 @@
   // renders those titles as "<Extension Name> - <localised store name>". So the
   // extension's real name is already on the page, for free, with no lookup:
   //
-  //   Gmail Labels and Search Queries as Tabs - Chrome Web Store        60
-  //   Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome  1
+  //   Bulk Bookmark Cleaner and Sorter - Chrome Web Store              60
+  //   Bulk Bookmark Cleaner and Sorter - Интернет-магазин Chrome         1
   //   Chrome Web Store - Extensions                                      0   <- generic
   //
   // Splitting on the LAST " - " strips the store suffix in any language while
@@ -896,7 +896,7 @@
   }
 
   /**
-   * The account this page belongs to, from the URL hash: #a376297388p515458307
+   * The account this page belongs to, from the URL hash: #a241067359p515458307
    * This is the only account visible unless the switcher panel is open.
    */
   function currentAccountId() {
@@ -933,7 +933,7 @@
 
   /**
    * Punctuation inside an extension name is noise once the name is cut down to
-   * a couple of words: "Flip, Rotate and Mirror" reads better as "Flip Rotate".
+   * a couple of words: "Tab Session Saver Pro" reads better as "Tab Session Saver".
    */
   function tidyForCombining(name) {
     return String(name).replace(/[,:;|]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -944,7 +944,7 @@
    *
    * One extension: its name, shortened, as before. Several: each cut harder and
    * joined with " + ", so a two-extension account reads
-   * "Amazon MyOrders + Flip Rotate" rather than sitting blank.
+   * "Tab Session Saver + Dark Mode" rather than sitting blank.
    *
    * Extensions we have not named yet are counted, not guessed at, so an account
    * we only half know says "… + 1 more" instead of quietly labelling itself
@@ -1128,7 +1128,7 @@
 
     if (msg.action !== 'getGA4Data') return false;
 
-    // Account ID sits in the URL hash as: #a376297388p515458307/...
+    // Account ID sits in the URL hash as: #a241067359p515458307/...
     // Check window.location.hash first (direct), then fall back to full href.
     // Use a permissive pattern: just 'a' followed by 7+ digits (account IDs are 9 digits).
     const urlForParsing = window.location.hash || window.location.href;

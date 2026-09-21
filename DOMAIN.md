@@ -13,10 +13,10 @@ alike.
 
 | Name in this repo | Format | Example | Where it appears | Used for |
 |---|---|---|---|---|
-| **Property slug** | exactly 32 chars, alphabet `a` to `p` | `egedbdckafdbomehjaihjhbcgmngmlah` | Rendered as the property *name* in the GA4 UI | Key of `mappings`; also the Chrome extension ID |
+| **Property slug** | exactly 32 chars, alphabet `a` to `p` | `aaomaanggjideicdjgoiohaodklelkjd` | Rendered as the property *name* in the GA4 UI | Key of `mappings`; also the Chrome extension ID |
 | **GA4 property ID** | 9 digit integer | `513919695` | URL hash, after `p` | Not used by this extension |
 | **GA4 account ID** | 9 digit integer | `375356834` | URL hash after `a`; also rendered under the account name | Key of `accountMappings` |
-| **Chrome extension ID** | exactly 32 chars, alphabet `a` to `p` | `egedbdckafdbomehjaihjhbcgmngmlah` | Chrome Web Store listing URL | Same string as the property slug |
+| **Chrome extension ID** | exactly 32 chars, alphabet `a` to `p` | `aaomaanggjideicdjgoiohaodklelkjd` | Chrome Web Store listing URL | Same string as the property slug |
 
 ### The one insight the whole auto naming feature rests on
 

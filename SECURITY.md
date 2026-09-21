@@ -113,8 +113,13 @@ If the relay is unreachable or returns an error, the form falls back to composin
 `mailto:` and handing it to the user's own mail client, so the feature degrades to sending
 nothing from the extension at all.
 
-The Resend API key is never in the extension. It is a Worker secret. See
-[DECISIONS.md](DECISIONS.md) ADR-011 and ADR-016.
+The Resend API key is never in the extension. It is a Worker secret, and it is scoped twice
+over: `sending_access` only, so it cannot read anything through the Resend API, and bound to
+the single domain `palworks.ai`, so it cannot send as any other domain on that account. A leak
+of it would allow sending mail as `palworks.ai` and nothing more. It is a dedicated key for
+this Worker, not one shared with another service, so it can be revoked on its own.
+
+See [DECISIONS.md](DECISIONS.md) ADR-011 and ADR-016.
 
 ### Data handling
 

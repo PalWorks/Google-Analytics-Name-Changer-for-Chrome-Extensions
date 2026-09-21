@@ -111,8 +111,8 @@ React fires many mutations in rapid succession during a render. An 80 ms debounc
 GA4's "Page title and screen class" report for a Chrome Web Store developer property lists the store listing pages that were viewed, and the store titles them `<Extension Name> - <localised store name>`. **The extension's real name is therefore already on the page**, with no lookup of any kind:
 
 ```
-Gmail Labels and Search Queries as Tabs - Chrome Web Store         60 views
-Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome   1
+Bulk Bookmark Cleaner and Sorter - Chrome Web Store         60 views
+Bulk Bookmark Cleaner and Sorter - Интернет-магазин Chrome   1
 Chrome Web Store - Extensions                                       0   <- generic, dropped
 ```
 
@@ -155,8 +155,8 @@ An account label is built from the extensions the account holds, which `property
 | Account holds | Label |
 |---|---|
 | one extension | that name, shortened to 24 chars |
-| several, all named | each cut harder and joined: `Amazon MyOrders + Flip Rotate` |
-| several, some unnamed | the known ones plus a count: `Amazon MyOrders Page Grid + 1 more` |
+| several, all named | each cut harder and joined: `Tab Session Saver + Dark Mode` |
+| several, some unnamed | the known ones plus a count: `Dark Mode Everywhere Page Grid + 1 more` |
 | none named yet | nothing written |
 
 Capped at 38 characters, because the label sits in GA4's breadcrumb beside the property name. Unnamed siblings are **counted, never guessed at**: labelling a two-extension account after the single extension we happen to have seen is exactly the arbitrary result the count avoids. The label is rewritten as the remaining names are learned, and is badged `auto`, so editing it and saving promotes it into the user's own `accountMappings`.
@@ -280,7 +280,9 @@ The handoff is consumed exactly once and cleared immediately, so it cannot repla
 
 ## Welcome modal
 
-Two slides in the options page, driven by `slideIndex` over `.slide[data-slide]` elements. Slide 1 explains the replacement with a before/after preview; slide 2 is the auto-naming opt-in and states exactly what the `management` permission is and is not used for.
+Three slides in the options page, driven by `slideIndex` over `.slide[data-slide]` elements. Slide 1 explains the replacement with a before/after preview. Slide 2 teaches the only manual step in the product: open each property once, because a name is read from that property's own report and GA4 renders only the property being viewed. It carries a CSS-only looping demo (`.cycle-demo`) of slugs turning into names; three rows share one set of keyframes, offset by a per-row `--d` delay, and `prefers-reduced-motion` settles it on the end state. Slide 3 is the auto-naming opt-in and states exactly what the `management` permission is and is not used for.
+
+`WELCOME_VERSION` in `options/options.js` gates whether onboarding is shown. Bump it whenever a slide is added or materially rewritten, or existing users will never see the change; it was bumped to `2` when slide 2 was added, because they had never been told the one thing they must do.
 
 Shown when `sync.welcomeSeenVersion !== WELCOME_VERSION`. Bumping `WELCOME_VERSION` re-shows it after a redesign. Dismissal by any route (Done, close button, overlay click, Escape) records the version.
 

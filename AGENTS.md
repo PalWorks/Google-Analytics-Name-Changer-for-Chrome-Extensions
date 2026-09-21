@@ -115,7 +115,7 @@ was a live bug, not a theoretical one.
 ### 10. Never guess which extension an account is named after
 
 An account holding several extensions is labelled from **all** of them
-(`Amazon MyOrders + Flip Rotate`). Extensions not yet named are **counted** (`+ 1 more`), never
+(`Tab Session Saver + Dark Mode`). Extensions not yet named are **counted** (`+ 1 more`), never
 skipped over so the label reads as if it were complete. See [DECISIONS.md](DECISIONS.md)
 ADR-015.
 

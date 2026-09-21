@@ -243,9 +243,9 @@ name is *already on the GA4 page*. The "Page title and screen class" report list
 listing pages that were viewed, and the store titles them `<Extension Name> - <store name>`:
 
 ```
-Gmail Labels and Search Queries as Tabs - Chrome Web Store         60 views
-Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome   1
-Gmail Labels and Search Queries as Tabs - Chrome ウェブストア          1
+Bulk Bookmark Cleaner and Sorter - Chrome Web Store         60 views
+Bulk Bookmark Cleaner and Sorter - Интернет-магазин Chrome   1
+Bulk Bookmark Cleaner and Sorter - Chrome ウェブストア          1
 Chrome Web Store - Extensions                                       0   <- generic
 Chrome Web Store - Search Results                                   0   <- generic
 ```
@@ -481,8 +481,8 @@ gap this record closes.
 
 **Decision.** An account label is built from **all** the extensions the account holds: one
 extension gives its own name shortened, several give each name cut harder and joined with
-`" + "` — `Amazon MyOrders + Flip Rotate` — capped at 38 characters. Extensions not yet named
-are **counted**, not guessed at, so a half-known account reads `Amazon MyOrders Page Grid +
+`" + "` — `Tab Session Saver + Dark Mode` — capped at 38 characters. Extensions not yet named
+are **counted**, not guessed at, so a half-known account reads `Dark Mode Everywhere Page Grid +
 1 more`. The label is rewritten as the remaining names are learned.
 
 **Why.** The previous rule left such accounts blank, on the grounds that naming an account
@@ -573,6 +573,26 @@ behaviour rather than breaking it.
 **Reversal.** Set `FEEDBACK_ENDPOINT` back to `''`. The form returns to `mailto:`, and the
 unconditional claim becomes true again. Then revert the privacy wording in `privacy.html`,
 `SECURITY.md`, `store/LISTING.md`, `index.html`, `llms.txt`, `llms-full.txt` and `README.md`.
+
+**Amended 2026-09-21 — sender and recipient.** Now
+`GA4 Name Changer Support <GA4NameChanger.Support@palworks.ai>` to `support@palworks.ai`.
+
+The first deployment could not use those addresses. Its key belonged to a Resend account with
+no verified domain, so sending from `palworks.ai` returned
+`403 "The palworks.ai domain is not verified"`; it ran on `onboarding@resend.dev`, Resend's
+shared sender, which measurably refuses every recipient but the account owner's own address.
+That worked only because `TO` happened to be that address, and would have broken the moment it
+changed.
+
+`palworks.ai` is verified on the `support@palworks.ai` account, so the Worker now holds a key
+from that account instead. The key is dedicated to this Worker rather than shared with another
+service, is `sending_access` only, and is scoped to the `palworks.ai` domain ID, so a leak of
+it could send as that domain and do nothing else. It is stored in the user's secrets folder
+under the same per-app naming convention as the others.
+
+**The rule this leaves behind:** the domain in `FROM` must be verified on the same Resend
+account as `RESEND_API_KEY`. Changing one without the other returns 403 at send time, not at
+deploy time, so it fails silently into the `mailto:` fallback.
 
 ---
 

@@ -165,7 +165,7 @@ function makePropertyRow(slug = '', name = '', opts = {}) {
     animate: opts.animate,
     isDetected: opts.isDetected,
     isAuto: opts.isAuto,
-    keyPlaceholder: 'egedbdckafdbomehjaihjhbcgmngmlah',
+    keyPlaceholder: 'inkkcgalfjninhfflfhkflidilkjmhof',
     keyAriaLabel: 'GA4 property slug',
     namePlaceholder: 'Property display name',
     nameAriaLabel: 'Property display name',
@@ -212,7 +212,7 @@ function makeAccountRow(accountId = '', name = '', opts = {}) {
     animate: opts.animate,
     isDetected: opts.isDetected,
     isAuto: opts.isAuto,
-    keyPlaceholder: '376297388',
+    keyPlaceholder: '241067359',
     keyAriaLabel: 'GA4 account number',
     namePlaceholder: 'Account display name',
     nameAriaLabel: 'Account display name',
@@ -952,7 +952,10 @@ function initAutoNameState(onReady) {
 
 // ── Welcome modal ─────────────────────────────────────────────────────────────
 
-const WELCOME_VERSION = 1; // bump to re-show onboarding after a redesign
+const WELCOME_VERSION = 2; // bump to re-show onboarding after a redesign
+// 2 (2026-09-21): added the "open each property once" slide. Existing users
+// have never been told the one thing they must actually do, so they are shown
+// the onboarding again rather than left to work it out.
 
 const overlay      = document.getElementById('welcome-overlay');
 const slides       = Array.from(document.querySelectorAll('.slide'));
@@ -1088,7 +1091,7 @@ chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
 // FEEDBACK_ENDPOINT back to '' returns the feature to mail-only.
 
 const FEEDBACK_ENDPOINT = 'https://ga4nc-feedback.sunmooncal.workers.dev/feedback';
-const FEEDBACK_TO       = 'palaniappan.tn2@gmail.com';
+const FEEDBACK_TO       = 'support@palworks.ai';
 
 const fbForm    = document.getElementById('feedback-form');
 const fbName    = document.getElementById('fb-name');

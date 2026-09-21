@@ -20,19 +20,16 @@
  * /feedback, and add that origin to optional_host_permissions in manifest.json.
  */
 
-// SENDER. The key this Worker holds belongs to the palaniappan.tn2@gmail.com
-// Resend account, which has no verified domain of its own: sending from
-// palworks.ai on it returns 403, because palworks.ai is verified on a different
-// account. `onboarding@resend.dev` is Resend's shared sender, which that account
-// may use, and which may only deliver to the account owner's own address. TO is
-// exactly that address, so this configuration works.
+// SENDER and RECIPIENT. Both are on palworks.ai, which is a verified sending
+// domain on the Resend account this Worker's key belongs to. The key is
+// send-only and scoped to that one domain, so a leak of it could not be used to
+// send as anything else, nor to read anything.
 //
-// To send from palworks.ai instead, either verify a domain on the
-// palaniappan.tn2 account and change FROM to it, or replace the RESEND_API_KEY
-// secret with the key from the support@palworks.ai account. Both are one change
-// here plus `npx wrangler deploy`. See DECISIONS.md ADR-016.
-const FROM = 'GA4 Name Changer Support <onboarding@resend.dev>';
-const TO = 'palaniappan.tn2@gmail.com';
+// If you change FROM, the domain in it must be verified on the same account as
+// RESEND_API_KEY, or Resend returns 403 "domain is not verified". See
+// DECISIONS.md ADR-016.
+const FROM = 'GA4 Name Changer Support <GA4NameChanger.Support@palworks.ai>';
+const TO = 'support@palworks.ai';
 
 // Only these origins may post. Replace with your published extension ID once
 // you know it; the unpacked ID differs from the Web Store one.

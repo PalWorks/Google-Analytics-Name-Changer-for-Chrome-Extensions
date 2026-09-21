@@ -223,5 +223,5 @@ backend is built yet.
 ### The account name shortener is a heuristic
 
 An account is labelled from its property's extension name, cut to roughly 24 characters on a
-word boundary with any dangling connector word trimmed. "Gmail Labels and Search Queries as
-Tabs" becomes "Gmail Labels and Search". It is a suggestion in an editable field, not a rule.
+word boundary with any dangling connector word trimmed. "Bulk Bookmark Cleaner Queries as
+Tabs" becomes "Bulk Bookmark Cleaner". It is a suggestion in an editable field, not a rule.

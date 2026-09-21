@@ -6,7 +6,7 @@
 
 ## The problem
 
-When Google shares GA4 analytics with Chrome Web Store developers, every property appears as an opaque 32-character slug (`egedbdckafdbomehjaihjhbcgmngmlah`) and every account carries the same generic label — "Chrome Web Store developer properties" — differentiated only by a 9-digit ID. Managing more than a handful of extensions means constant cross-referencing to figure out which property belongs to which extension.
+When Google shares GA4 analytics with Chrome Web Store developers, every property appears as an opaque 32-character slug (`aaomaanggjideicdjgoiohaodklelkjd`) and every account carries the same generic label — "Chrome Web Store developer properties" — differentiated only by a 9-digit ID. Managing more than a handful of extensions means constant cross-referencing to figure out which property belongs to which extension.
 
 ## The solution
 
@@ -24,10 +24,11 @@ This extension intercepts GA4's rendered text and swaps those identifiers for na
 - **Cross-device sync** — mappings stored in `chrome.storage.sync` and synced across your signed-in Chrome profiles automatically
 - **Import / Export** — back up or transfer all mappings as a single JSON file
 - **Automatic naming, no setup** — open a GA4 property and it names itself. The real extension name is read straight out of GA4's own reports and applied on the spot, with no save step and no network request. Anything you type overrides it. Extensions installed in your profile can also be named from Chrome itself (optional, off by default). Anything neither source covers gets a one-click link to its store listing. Every suggestion is reviewed before saving, and none of it touches the network
-- **Guided onboarding** — a two-slide welcome modal on first install explains the extension and the auto-naming opt-in; reachable again any time from the popup's **?** button
+- **Guided onboarding** — a three-slide welcome modal on first install: what the extension does, the one thing you have to do (open each property once, with a looping demo showing slugs turning into names), and the auto-naming opt-in; reachable again any time from the popup's **?** button
 - **Label health monitoring** — warns inside the popup if the "Chrome Web Store developer properties" label hasn't been matched in 90+ days, signalling that Google may have silently renamed that UI element
 - **One settings table** — accounts and the extensions they hold in a single grouped view, paired automatically from Google Analytics' own account tree
 - **Feedback form** — report a problem from the settings page, with installation details attached so support can reproduce it
+- **Two permissions, both narrow** — `storage` to save your names, and `scripting` so a Google Analytics tab that was already open when you installed or updated the extension starts working without a refresh. `scripting` is bounded by the single host permission for `analytics.google.com`, so it can reach nothing else. `management` is optional and off by default
 - **Zero data collection** — no analytics, no telemetry and no tracking. Nothing about your Google Analytics data is ever transmitted. The only request the extension ever makes is sending a support message you type and submit yourself in the feedback form
 
 ---
@@ -65,11 +66,11 @@ listed beneath it:
 
 ```
 ACCOUNT NUMBER / PROPERTY SLUG        DISPLAY NAME
-381439763                             Visual Bookmark                    +
-  └ egedbdckafdbomehjaihjhbcgmngmlah  Visual Bookmark Manager…      auto
-  └ mgijbhpkaeddnfbjglmlbkkcnaepmgmc  Gmail Labels as Tabs          auto
+241067359                             Quick Screenshot                    +
+  └ aaomaanggjideicdjgoiohaodklelkjd  Quick Screenshot…      auto
+  └ gdkmpfibhnoacledjjmpgnbpaikchbkm  Bulk Bookmark Cleaner          auto
 NOT LINKED TO AN ACCOUNT
-    nhhpkdpejegfbcgajapklajkhfnecnkk  Favicon Changer Ultimate      auto
+    nhhpkdpejegfbcgajapklajkhfnecnkk  Price History Tracker      auto
 ```
 
 The pairing comes from Google Analytics itself, so properties file themselves under the right
@@ -99,8 +100,8 @@ store titles them `<Extension Name> - Chrome Web Store`. So your extension's rea
 already on the page:
 
 ```
-Gmail Labels and Search Queries as Tabs - Chrome Web Store        60 views
-Gmail Labels and Search Queries as Tabs - Интернет-магазин Chrome  1
+Bulk Bookmark Cleaner and Sorter - Chrome Web Store        60 views
+Bulk Bookmark Cleaner and Sorter - Интернет-магазин Chrome  1
 Chrome Web Store - Extensions                                      0   ← generic, ignored
 ```
 
@@ -128,11 +129,11 @@ shortened. An account holding several has no single right name, so it gets a dra
 all of them:
 
 ```
-381439763   Amazon MyOrders + Flip Rotate
+241067359   Tab Session Saver + Dark Mode
 ```
 
 Extensions in that account that have not been named yet are counted rather than guessed at, so
-a half-known account reads `Amazon MyOrders Page Grid + 1 more` and is rewritten as the rest are
+a half-known account reads `Dark Mode Everywhere Page Grid + 1 more` and is rewritten as the rest are
 learned. Every draft is marked `auto` and is yours to rewrite.
 
 Nothing leaves your browser in any of this. Naming and replacement make no network request at all.
@@ -148,10 +149,10 @@ Click **Export** to download a JSON backup of all your mappings. Click **Import*
 ```json
 {
   "mappings": {
-    "egedbdckafdbomehjaihjhbcgmngmlah": "My Extension Name"
+    "aaomaanggjideicdjgoiohaodklelkjd": "My Extension Name"
   },
   "accountMappings": {
-    "376297388": "Main CWS Account"
+    "268430912": "Main CWS Account"
   }
 }
 ```

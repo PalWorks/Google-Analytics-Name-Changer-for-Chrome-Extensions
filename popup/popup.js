@@ -168,7 +168,7 @@ function createRow(slug = '', name = '', animate = false, isDetected = false, is
   return makeRow({
     slug, name, animate, isDetected, isAuto,
     parentList: list,
-    slugPlaceholder: 'egedbdckafdbomeh…',
+    slugPlaceholder: 'inkkcgalfjninhff…',
     slugAriaLabel: 'GA4 property slug',
   });
 }
@@ -177,7 +177,7 @@ function createAccountRow(slug = '', name = '', animate = false, isDetected = fa
   return makeRow({
     slug, name, animate, isDetected, isAuto,
     parentList: accountList,
-    slugPlaceholder: '376297388',
+    slugPlaceholder: '241067359',
     slugAriaLabel: 'GA4 account number',
   });
 }

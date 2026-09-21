@@ -96,9 +96,35 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   IP policy while implying an endorsement that does not exist. A puzzle piece and a bar chart
   carry the same meaning and belong to nobody
 
+- **A third onboarding slide: "Open each property once"** — the extension had never told users
+  the one thing they actually have to do. A name is read from each property's own "Page title
+  and screen class" report, and Google Analytics renders only the property being viewed, so a
+  property never opened cannot be named. The slide says so and carries a CSS-only looping demo
+  of three slugs turning into names, badge and all. Three rows share one set of keyframes offset
+  by a per-row `--d` delay rather than one set each, and `prefers-reduced-motion` settles it on
+  the end state instead of animating. It sits between the explainer and the opt-in, so the
+  opt-in stays last and the popup's `#autoname` deep link, which targets the last slide, still
+  lands correctly. `WELCOME_VERSION` bumped to `2` so existing users see it rather than missing
+  the instruction forever; verified by loading the options page with `welcomeSeenVersion: 1`
+  stored and watching onboarding reopen
+
 ### Changed
 
 - **The feedback form no longer asks for a phone number.** It was optional, never going to be used to answer anyone, and it added an entire personal-data category to the Chrome Web Store disclosure for no return. Email plus the attached diagnostics is enough to reproduce a problem and reply to it
+
+- **Feedback now sends from `GA4NameChanger.Support@palworks.ai` to `support@palworks.ai`.**
+  The first relay deployment ran on `onboarding@resend.dev`, because the key it held belonged to
+  a Resend account with no verified domain and sending from `palworks.ai` returned 403. That
+  shared sender only delivers to the account owner's own address, which was fragile. The Worker
+  now holds a key from the account where `palworks.ai` is verified, dedicated to this Worker,
+  `sending_access` only, and scoped to that one domain ID. Verified end to end: the relay
+  returns 200 and Resend reports the message sent from the new address to the new recipient
+
+- **Example data in the product is fictional too.** The settings and popup placeholder text, the
+  explainer card's combined-account example, the first onboarding slide's before/after preview
+  and several source comments all used our own real extension IDs, names and a real Google
+  Analytics account number. The repository and the shipped package are both public, so they now
+  use the same fictional cast as the store assets
 
 - **The feedback form's input fields had no visible border.** `.field-input` set `border-color`,
   but `.input` later in the same stylesheet sets the `border` shorthand, which resets the colour
