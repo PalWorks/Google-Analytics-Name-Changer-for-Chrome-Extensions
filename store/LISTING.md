@@ -321,14 +321,23 @@ request the user initiated is within the item's single purpose.
 
 ### Data types
 
-Declare **Personally identifiable information** only, and in the "how it is used" box state:
-name and email address, supplied voluntarily by the user in the feedback form, used only to
-reply to their support request.
+Declare **two**, not one:
+
+1. **Personally identifiable information** — name and email address, supplied voluntarily by
+   the user in the feedback form, used only to reply to their support request.
+2. **Personal communications** — the free-text message in that same form.
+
+**On declaring the second one.** It is tempting to declare PII alone and treat the message as
+part of it. Google's own example list for "Personal communications" is "emails, texts, or chat
+messages", and a support message the user writes and sends to the developer is an email in
+everything but transport. Declaring it costs nothing: the item is free, it is not sold, and
+the use is already disclosed. Under-declaring is a policy violation that can take a published
+item down, and the asymmetry is the whole argument.
 
 Everything else on the store's list is **not** collected: no health information, no financial
-information, no authentication information, no personal communications beyond the support
-message the user chose to send, no location, no web history, no user activity, and no website
-content. The names the user assigns stay in their own Chrome profile and are never transmitted.
+information, no authentication information, no location, no web history, no user activity, and
+no website content. The names the user assigns stay in their own Chrome profile and are never
+transmitted, and the extension never reads, sends or stores the analytics figures themselves.
 
 > This section is tied to `FEEDBACK_ENDPOINT` in `options/options.js`. If that is ever set
 > back to `''`, the form reverts to opening the user's own mail client, the extension
