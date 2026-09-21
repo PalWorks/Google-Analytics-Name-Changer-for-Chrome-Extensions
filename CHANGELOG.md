@@ -331,7 +331,7 @@ and tested over several days against a live Chrome Web Store developer account.
 
 ### Removed
 
-- The checked-in `dist/` directory and `dist.zip`. They were byte-identical hand-maintained copies of the source, gitignored so drift would have been invisible, and carried a real risk of shipping a stale build. Packaging now runs from the repository root against `.crxignore`; the exact command is in `PLAYBOOK.md`
+- The checked-in `dist/` directory and `dist.zip`. They were byte-identical hand-maintained copies of the source, gitignored so drift would have been invisible, and carried a real risk of shipping a stale build. Packaging now runs from the repository root against `.crxignore`; the exact command is in `PLAYBOOK.md`. The name `dist/` is used again, for the zip the command writes and nothing else: it is gitignored, excluded from the package, and holds build output rather than a second copy of the source
 
 ### Verified against live GA4
 
