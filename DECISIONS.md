@@ -872,3 +872,49 @@ opt-in rather than quietly offering again in the strip above.
 `collectCycleTargets()` in `options.js`. Two copies of one rule, which must stay in step; the
 alternative was a shared module, which this codebase does not have and which would be its
 first, for eight lines.
+
+---
+
+## ADR-021 — A finished run reloads the page, and nothing is ever saved on the user's behalf
+
+**Date.** 2026-09-21 · **Status.** Accepted
+
+**Context.** Two requests from UAT, which turn out to be one decision. A finished run should
+leave the page showing everything it changed. And a user who navigates away with unsaved
+work should not lose it silently: *"either we auto-save or ask for confirmation"*.
+
+**Decision, part one: a run that changed something reloads the page.**
+
+Rows are appended live while the run works, which is deliberate (ADR-018: an edit in progress
+must survive). But an account's label is built from **all** the extensions it holds, so naming
+one property rewrites the account row above it and the combined labels of its siblings. Those
+are rendered at load. Appending a row cannot show them, and re-rendering the table by hand
+would throw away whatever the user is typing.
+
+So: reload, under two conditions. Something must actually have changed, or the reload is pure
+churn. And the page must have no unsaved edits, because a reload would discard them; a run
+appends rows *without* marking the page dirty, so a dirty page at that moment means the user
+typed something while it ran, and their text wins over tidiness. In that case the result says
+so instead: "Save your changes to see the updated account names."
+
+The result message outlives the page in `sessionStorage`, scoped to that one tab and cleared
+when it closes. The hash is stripped first, with `history.replaceState`, because this page is
+reachable at `#cycle`, which *starts a run on load*: reloading with the hash still on would
+start another run, and another after that.
+
+**Decision, part two: never save on the user's behalf.**
+
+Auto-saving was rejected. `Save` on this page means "make this mine": it promotes derived
+drafts out of `local.autoMappings` into the user's own `sync.mappings`, where they stop being
+overwritable by better information and start syncing to their other machines. Saving drafts
+the user has never read would quietly commit them to exactly the thing every other decision
+here protects (ADR-015, invariant 6).
+
+The confirmation dialog stands instead, and Chrome decides when it is allowed: never in a
+frame that has had no user gesture. That is not a hole, because **anything the user typed
+needed a gesture to type**. What can be dirty without a gesture is only ever rows the
+extension carried over by itself, which are re-derived the moment the page opens again.
+
+**Consequence.** The dialog is invisible until you are already leaving, so the footer now
+carries an "Unsaved changes" pill driven by the same flag. It says what the dialog would say,
+early enough to act on, and it works in the tab the dialog cannot.

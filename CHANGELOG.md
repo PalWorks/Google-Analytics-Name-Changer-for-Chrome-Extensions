@@ -20,7 +20,7 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
 - **Welcome modal** — two-slide onboarding on the options page, opened automatically on first install via `chrome.runtime.onInstalled`, and reachable any time from the popup's new **?** button. Slide 2 is the auto-naming opt-in and states exactly what the permission is and is not used for
 - **Fill missing names** — options-page button that resolves every row holding a valid extension ID with no display name yet. Suggested names render italic until reviewed and saved
 - **Popup → options handoff** — the popup stashes its rows under `chrome.storage.local.pendingDetection` before navigating to Full Settings, and the options page merges them in once and clears the key. TTL 10 minutes
-- **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (twenty ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
+- **Documentation set** — `AGENTS.md` (hard invariants and contributor contract), `DOMAIN.md` (the four identifiers and storage keys), `DECISIONS.md` (twenty-one ADRs), `PLAYBOOK.md` (setup, manual test checklist, debugging, release, rollback), `LIMITATIONS.md` (known constraints and technical debt), `SECURITY.md` (threat model and reporting)
 
 - **Automatic naming with no save step** — derived names live in `chrome.storage.local.autoMappings` and are merged **under** the user's own `sync.mappings`, so they apply to the page immediately while anything the user typed still wins. The content script watches local storage, so a name lands the moment it is derived. `mappings` is never written to by the extension, so nothing the user owns is clobbered or synced without them asking. Auto rows show badged "auto" in both surfaces and are ordinary editable rows, so **Save** now means "make this mine". `autoNamingEnabled` (default on) turns the layer off without deleting anything
 - **GA4's own account tree as the authoritative source** — every GA4 page inlines `window.preload = JSON.parse(...)` carrying every account ID, property ID and property slug with exact pairing. A content script cannot read page JS variables but can read that script element's text. This gives the current property exactly (via the property ID in the URL), every account without opening the switcher, and every property slug. It fixed a real deadlock: on one live page the slug was rendered only inside a `<button>`, so scraping could not attribute it and nothing was ever named
@@ -139,6 +139,30 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   ADR-018 so it is not re-investigated
 
 ### Fixed after UAT
+
+- **A run now shows how long it is waiting.** "Visiting 1 of 1…" with a spinner and no number
+  reads as a hang, and the wait is real: up to 30 seconds per property, and a property with no
+  store-listing views uses all of it. The button now counts down, "Visiting 1 of 1… 18s", and
+  discovery counts down too. Nothing about the timing changed; it just stopped being invisible
+
+- **No chrome.\* call can hang a run any more.** The helpers already survived a call that
+  *throws* after the extension is replaced. The worse case is a callback that simply never
+  fires, which leaves the await pending for ever and the button spinning until the tab is
+  closed. Every call now has a five-second watchdog, and the whole run has a wall-clock
+  ceiling on top of the per-property timeout
+
+- **A finished run reloads the settings page**, so the account labels it changed are visible
+  rather than only the property rows it appended. Only when something actually changed, and
+  only when there is nothing unsaved to lose. The result message is carried across the reload
+  and the `#cycle` hash is stripped first, without which the reload would start another run.
+  See ADR-021
+
+- **An "Unsaved changes" pill in the footer.** The browser's confirmation dialog is the last
+  line of defence and Chrome will not show it in a tab the user has never touched, so the
+  state is now visible before they are halfway out of the page. Saving on the user's behalf
+  was rejected: Save means "make this mine", and auto-saving would promote drafts they have
+  never read into their own synced mappings
+
 
 - **The unsaved-changes guard was arming when nobody had touched the page, and Chrome was
   blocking it.** The popup opens the settings page with `chrome.tabs.create`, and

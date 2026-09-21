@@ -228,6 +228,17 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
 - [ ] Filling the last empty name greys it out again
 - [ ] Deleting the only named row's name enables it again
 
+### Finishing a run
+
+- [ ] The button counts down while it waits: "Visiting 1 of 2… 18s"
+- [ ] A run that named something reloads the page, and the result message is still on screen
+      afterwards
+- [ ] The URL after that reload has **no** `#cycle` on it, and no second run starts
+- [ ] With an unsaved edit on the page, the run does **not** reload, and says "Save your
+      changes to see the updated account names"
+- [ ] A run that named nothing does not reload
+- [ ] The footer shows "Unsaved changes" as soon as anything is edited, and it goes on Save
+
 ### Surviving a reload
 
 - [ ] Open the settings page from the popup's naming button and close the tab without

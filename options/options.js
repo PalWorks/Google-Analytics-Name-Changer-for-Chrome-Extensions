@@ -17,15 +17,22 @@ let isDirty = false;
 
 // ── Dirty tracking ────────────────────────────────────────────────────────────
 
+function showDirtyFlag(on) {
+  const flag = document.getElementById('dirty-flag');
+  if (flag) flag.hidden = !on;
+}
+
 function markDirty() {
   if (!isDirty) {
     isDirty = true;
     clearStatus();
   }
+  showDirtyFlag(true);
 }
 
 function markClean() {
   isDirty = false;
+  showDirtyFlag(false);
 }
 
 // Chrome refuses a beforeunload dialog in a frame that has never had a user
@@ -774,6 +781,25 @@ function showAutonameStatus(text, type = '') {
   }, type === 'error' ? 9000 : 5500);
 }
 
+// A result has to outlive the page that produced it, because a finished run
+// reloads the page to show what changed. sessionStorage is the right scope: one
+// tab, cleared when it closes, invisible to the rest of the extension.
+const TOAST_KEY = 'ga4nc.pendingToast';
+
+function stashToast(text, type) {
+  try { sessionStorage.setItem(TOAST_KEY, JSON.stringify({ text, type })); } catch (err) { /* private mode */ }
+}
+
+function showStashedToast() {
+  try {
+    const raw = sessionStorage.getItem(TOAST_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(TOAST_KEY);
+    const t = JSON.parse(raw);
+    if (t && t.text) showAutonameStatus(t.text, t.type || '');
+  } catch (err) { /* nothing to restore */ }
+}
+
 /** Put the work on the button doing it, instead of in a line of status text. */
 function setFetchBusy(busy, text) {
   fetchNamesBtn.classList.toggle('is-running', busy);
@@ -1043,17 +1069,38 @@ function contextAlive() {
  * it can stop deliberately and tell the user why.
  */
 let contextLost = false;
+const CHROME_CALL_TIMEOUT_MS = 5000;
+
 function pChrome(call, fallback) {
   return new Promise((resolve) => {
     if (!contextAlive()) { contextLost = true; resolve(fallback); return; }
+
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      resolve(value);
+    };
+
+    // A callback that never fires is the worse failure, and it happens: if the
+    // extension is replaced between the check above and the reply, there is no
+    // throw to catch and no callback to wait for, and a run that awaits it
+    // spins its button forever. Storage and tabs calls are local and answer in
+    // milliseconds, so five seconds of silence means it is not coming.
+    const watchdog = setTimeout(() => {
+      if (!contextAlive()) contextLost = true;
+      finish(fallback);
+    }, CHROME_CALL_TIMEOUT_MS);
+
     try {
       call((value) => {
         try { void chrome.runtime.lastError; } catch (err) { contextLost = true; }
-        resolve(value === undefined ? fallback : value);
+        finish(value === undefined ? fallback : value);
       });
     } catch (err) {
       contextLost = true;
-      resolve(fallback);
+      finish(fallback);
     }
   });
 }
@@ -1162,6 +1209,9 @@ async function waitForTargets(timeoutMs) {
     lastKnown = state.known;
 
     // Settled, and not before the gap above could have closed.
+    cycleBtnLabel.textContent =
+      `Reading your property list\u2026 ${Math.max(0, Math.ceil((deadline - Date.now()) / 1000))}s`;
+
     if (stable >= CYCLE_DISCOVER_STABLE && Date.now() - started >= CYCLE_DISCOVER_MIN_MS) {
       return state;
     }
@@ -1169,11 +1219,18 @@ async function waitForTargets(timeoutMs) {
   return { known: lastKnown > 0 ? lastKnown : 0, targets: (await collectCycleState()).targets };
 }
 
-/** Poll until the content script files a name for this slug, or we give up. */
-async function waitForName(slug, timeoutMs) {
+/**
+ * Poll until the content script files a name for this slug, or we give up.
+ *
+ * `onTick` gets the seconds left. A property whose report is slow, or that has
+ * no report at all, holds here for the full thirty seconds, and a spinner with
+ * no number on it reads as a hang rather than as waiting.
+ */
+async function waitForName(slug, timeoutMs, onTick) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (cycleCancelled || contextLost) return null;
+    if (onTick) onTick(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
     await pSleep(CYCLE_POLL_MS);
     const local = await pLocal(['autoMappings']);
     const name = (local.autoMappings || {})[slug];
@@ -1197,6 +1254,37 @@ function setCycleUi(running) {
     cycleBtnLabel.textContent = CYCLE_BTN_LABEL;
     refreshFillButton();
   }
+}
+
+/**
+ * End a run, and show the page as it now is.
+ *
+ * Rows are appended live while the run works, but an account's label is built
+ * from all the extensions it holds, so naming one property can change the row
+ * above it and the combined labels of its siblings. Those are rendered at load,
+ * so the honest way to show the finished state is to load it again.
+ *
+ * Two conditions. Something must have changed, or the reload is pure churn. And
+ * the page must have no unsaved edits, because a reload would throw them away:
+ * a run appends rows without marking the page dirty, so a dirty page here means
+ * the user typed something while it ran, and their text wins over tidiness.
+ *
+ * The hash goes first. This page is reachable at `#cycle`, which starts a run
+ * on load, so reloading with it still in the URL would start another one, and
+ * another after that.
+ */
+function settleRun(text, type, changed) {
+  if (changed && !isDirty) {
+    stashToast(text, type);
+    history.replaceState(null, '', window.location.pathname);
+    window.location.reload();
+    return;
+  }
+
+  showAutonameStatus(changed
+    ? text + ' Save your changes to see the updated account names.'
+    : text, type);
+  refreshCycleButton();
 }
 
 /** Show a newly named property without re-rendering rows the user may be editing. */
@@ -1229,6 +1317,12 @@ async function runCycle() {
   let tab = null;
   let named = 0;
 
+  // A ceiling on the whole run, on top of the per-property timeout. Nothing
+  // known should be able to reach it; it exists so that no combination of
+  // stalls can leave a button spinning in someone's tab all afternoon.
+  const runStartedAt = Date.now();
+  let cappedOut = false;
+
   // Set when the run cannot get as far as visiting anything. One sentinel
   // rather than a return per branch, because every exit has to pass the same
   // two places: the tab has to be closed, and the button has to be put back.
@@ -1259,17 +1353,24 @@ async function runCycle() {
       }
     }
 
+    const runCap = CYCLE_DISCOVER_MS + targets.length * (CYCLE_TIMEOUT_MS + 3000) + 15000;
+
     for (let i = 0; !outcome && i < targets.length; i++) {
       if (cycleCancelled || contextLost) break;
+      if (Date.now() - runStartedAt > runCap) { cappedOut = true; break; }
       const t = targets[i];
       cycleBtnLabel.textContent = `Visiting ${i + 1} of ${targets.length}\u2026`;
+      cycleBtn.title = 'Waiting for this property\u2019s report to load. Up to 30 seconds '
+        + 'each, and a property with no store-listing views uses all of it.';
 
       if (i > 0) {
         if (!(await pTabsGet(tab.id))) { tab = null; break; }  // user closed it
         await pTabsUpdate(tab.id, { url: ga4PropertyUrl(base, t), active: false });
       }
 
-      const name = await waitForName(t.slug, CYCLE_TIMEOUT_MS);
+      const name = await waitForName(t.slug, CYCLE_TIMEOUT_MS, (left) => {
+        cycleBtnLabel.textContent = `Visiting ${i + 1} of ${targets.length}\u2026 ${left}s`;
+      });
       if (name) {
         named++;
         addNamedRow(t.slug, t.accountId, name);
@@ -1302,33 +1403,44 @@ async function runCycle() {
   }
 
   const missed = targets.length - named;
+
   if (contextLost) {
     // The extension was updated, reloaded or disabled under this page. Nothing
-    // is lost: names already read are in storage. The page itself is finished,
-    // because every chrome.* call from here on fails the same way.
+    // is lost: names already read are in storage. No reload from here, because
+    // every chrome.* call this page makes from now on fails the same way.
     showAutonameStatus(
       `The extension was updated while this was running${named ? `, after naming ${named}` : ''}. `
       + 'Reload this page and press the button again.', 'error');
+    refreshCycleButton();
+    return;
+  }
+
+  if (cappedOut) {
+    settleRun(
+      `Stopped after ${Math.round((Date.now() - runStartedAt) / 60000)} minutes, which is `
+      + `longer than this should ever take. Named ${named} of ${targets.length}. `
+      + 'Press the button again to carry on.', 'error', named > 0);
   } else if (cycleCancelled) {
     // Stopped during discovery there is no denominator yet, so do not invent one.
-    showAutonameStatus(targets.length === 0
+    settleRun(targets.length === 0
       ? 'Stopped.'
-      : `Stopped. Named ${named} of ${targets.length}.`, named ? 'success' : '');
+      : `Stopped. Named ${named} of ${targets.length}.`, named ? 'success' : '', named > 0);
   } else if (missed === 0) {
-    showAutonameStatus(`Named all ${named}. Review them, then Save Changes.`, 'success');
+    settleRun(`Named all ${named}. Review them, then Save Changes.`, 'success', named > 0);
   } else if (named > 0) {
-    showAutonameStatus(
-      `Named ${named} of ${targets.length}. The other ${missed} had no store-listing views to read a name from.`);
+    settleRun(
+      `Named ${named} of ${targets.length}. The other ${missed} had no store-listing views `
+      + 'to read a name from.', '', true);
   } else {
     // Reaching here means the properties were found and visited, so this is
     // not a sign-in problem: they simply have no store-listing views yet.
-    showAutonameStatus(targets.length === 1
+    settleRun(targets.length === 1
       ? 'Visited 1 property, and it had no store-listing views to read a name from. A '
         + 'property with no traffic to its listing cannot be named this way.'
       : `Visited ${targets.length} properties, and none of them had store-listing views to `
-        + 'read a name from. A property with no traffic to its listing cannot be named this way.');
+        + 'read a name from. A property with no traffic to its listing cannot be named this way.',
+      '', false);
   }
-  refreshCycleButton();
 }
 
 /**
@@ -1525,6 +1637,9 @@ chrome.storage.sync.get(['mappings', 'accountMappings'], (result) => {
       // Strictly sequenced: the handoff rows must exist before initWelcome is
       // allowed to reach fillMissingNames(), or there is nothing for it to name.
       consumeHandoff(() => initAutoNameState(initWelcome));
+
+      // A result left behind by the run that reloaded this page.
+      showStashedToast();
 
       // Offered only when GA4 has told us about a property we cannot name yet.
       refreshCycleButton();

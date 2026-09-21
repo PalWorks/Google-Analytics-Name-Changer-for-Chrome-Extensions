@@ -1375,6 +1375,21 @@ footer {
   gap: 16px;
 }
 
+/* Says what the beforeunload dialog would say, before the user is halfway out
+   of the page. The dialog is the last line of defence, and Chrome will not let
+   us show it in a tab the user has not touched. */
+.dirty-flag {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: 100px;
+  padding: 4px 11px;
+  white-space: nowrap;
+}
+
+.dirty-flag[hidden] { display: none; }
+
 /* ── Status message ── */
 
 .status-msg {
