@@ -138,6 +138,34 @@ Auto-naming, onboarding, and a documentation set for contributors and agents.
   the user's own report rows, because the Chrome Web Store put it in a page title. Recorded in
   ADR-018 so it is not re-investigated
 
+### Fixed after UAT
+
+- **The unsaved-changes guard was arming when nobody had touched the page, and Chrome was
+  blocking it.** The popup opens the settings page with `chrome.tabs.create`, and
+  `consumeHandoff()` merges its rows and marks the page dirty straight away, so the page could
+  be dirty before the frame had ever had a user gesture. Chrome refuses a `beforeunload`
+  dialog in that state and logs *"Blocked attempt to show a 'beforeunload' confirmation
+  panel"*, which is what showed up in `chrome://extensions`. The practical cost was worse than
+  the log line: on a settings tab opened from the popup, the guard was not there at all. It
+  now arms on the first pointer or key event, which is also exactly when Chrome will allow the
+  dialog, and anything the user typed needed a gesture to type. Verified by dispatching the
+  event in all three states
+
+- **An orphaned content script could throw `Extension context invalidated` into the user's
+  error log.** A content script keeps running after the extension that injected it is
+  reloaded, updated or disabled: the DOM half is fine, every `chrome.*` call then throws
+  synchronously, and so does reading `chrome.runtime.lastError`. The shape that bit was a
+  write inside a read's callback, where the throw is uncaught. All content-script storage now
+  goes through `localGet()` / `localSet()`, which guard the call and the callback body.
+  Verified by clearing the error list, reloading the extension with a GA4 tab open, and
+  confirming it stayed empty. The settings page, which Chrome closes on reload, keeps a
+  lighter version of the same guard so a long run ends with "the extension was updated" rather
+  than in silence. Recorded as invariant 12 in AGENTS.md
+
+- **A run had four ways out and only some of them tidied up.** Every exit now passes one
+  place, so the temporary tab is always closed and the button always returns to a correct
+  label, including the "could not open a tab" path, which previously left the count stale
+
 ### Changed
 
 - **The naming button works from nothing.** Found in UAT on an empty profile: the button was

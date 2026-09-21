@@ -78,6 +78,30 @@
     ]);
   }
 
+  // ── Storage, for a script that may outlive its extension ───────────────────
+  //
+  // A content script keeps running after the extension that injected it is
+  // reloaded, updated or disabled. Its DOM half is fine; every chrome.* call
+  // throws "Extension context invalidated" synchronously from then on. The
+  // dangerous shape is a write inside a read's callback, because the callback
+  // can be the thing that outlives the context, and a throw there is uncaught:
+  // it lands in the user's extension error log saying nothing useful.
+  //
+  // Reading `chrome.runtime.lastError` throws in the same state, so the
+  // callback body is wrapped too, not just the call.
+
+  function localGet(keys, cb) {
+    try {
+      chrome.storage.local.get(keys, (result) => {
+        try { cb(result || {}); } catch (err) { /* orphaned mid-callback */ }
+      });
+    } catch (err) { /* orphaned before the call */ }
+  }
+
+  function localSet(items) {
+    try { chrome.storage.local.set(items); } catch (err) { /* orphaned */ }
+  }
+
   // ── Toolbar badge ──────────────────────────────────────────────────────────
   //
   // The page itself gives no sign the extension is alive: a name we substituted
@@ -254,7 +278,7 @@
     // Record a heartbeat so the popup can warn if this label stops being found
     // (e.g. Google renames the UI element in a future update).
     if (replaced > 0) {
-      chrome.storage.local.set({ accountLabelLastMatched: Date.now() });
+      localSet({ accountLabelLastMatched: Date.now() });
     }
   }
 
@@ -593,23 +617,6 @@
   }
 
   /**
-   * Mirror which account each property belongs to into local storage.
-   *
-   * The two name maps are deliberately flat (slug -> name, accountId -> name)
-   * because that is all the replacement engine needs. The settings page shows
-   * both in one table grouped by account, and nothing in the extension knows
-   * that pairing: only GA4's own inline tree does. So it is recorded here, as
-   * a plain slug -> accountId map, whenever a GA4 page is open.
-   *
-   * Merged, never replaced: one page's tree only carries the accounts that page
-   * can see, and dropping the rest on every navigation would make the settings
-   * table regroup itself at random.
-   *
-   * This is structure, not a name, so it is recorded even when automatic naming
-   * is switched off. It stays in `local` (derived, per-device) and is never
-   * sent anywhere.
-   */
-  /**
    * Record one property against its account.
    *
    * The tree above is the bulk source, but it is not complete: GA4 preloads a
@@ -622,8 +629,7 @@
   function persistPropertyAccount(slug, accountId, propertyId) {
     if (!slug || !accountId || !SLUG_RE.test(slug)) return;
 
-    chrome.storage.local.get(['propertyAccounts', 'propertyIds'], (result) => {
-      if (chrome.runtime.lastError) return;
+    localGet(['propertyAccounts', 'propertyIds'], (result) => {
       const known = result.propertyAccounts || {};
       const ids   = result.propertyIds || {};
 
@@ -637,7 +643,7 @@
       const write = {};
       if (pairChanged) write.propertyAccounts = known;
       if (idChanged)   write.propertyIds = ids;
-      chrome.storage.local.set(write);
+      localSet(write);
     });
   }
 
@@ -659,12 +665,29 @@
    */
   function persistGa4Base() {
     const base = window.location.origin + window.location.pathname + window.location.search;
-    chrome.storage.local.get(['ga4Base'], (result) => {
-      if (chrome.runtime.lastError || result.ga4Base === base) return;
-      chrome.storage.local.set({ ga4Base: base });
+    localGet(['ga4Base'], (result) => {
+      if (result.ga4Base === base) return;
+      localSet({ ga4Base: base });
     });
   }
 
+  /**
+   * Mirror which account each property belongs to into local storage.
+   *
+   * The two name maps are deliberately flat (slug -> name, accountId -> name)
+   * because that is all the replacement engine needs. The settings page shows
+   * both in one table grouped by account, and nothing in the extension knows
+   * that pairing: only GA4's own inline tree does. So it is recorded here, as
+   * a plain slug -> accountId map, whenever a GA4 page is open.
+   *
+   * Merged, never replaced: one page's tree only carries the accounts that page
+   * can see, and dropping the rest on every navigation would make the settings
+   * table regroup itself at random.
+   *
+   * This is structure, not a name, so it is recorded even when automatic naming
+   * is switched off. It stays in `local` (derived, per-device) and is never
+   * sent anywhere.
+   */
   function persistAccountTree() {
     const pairs = accountToSlugs();
     if (pairs.size === 0) return;
@@ -682,9 +705,7 @@
       }
     }
 
-    chrome.storage.local.get(['propertyAccounts', 'propertyIds'], (result) => {
-      if (chrome.runtime.lastError) return;
-
+    localGet(['propertyAccounts', 'propertyIds'], (result) => {
       const known = result.propertyAccounts || {};
       const ids   = result.propertyIds || {};
       let changed = false;
@@ -708,7 +729,7 @@
       const write = {};
       if (changed)    write.propertyAccounts = known;
       if (idsChanged) write.propertyIds = ids;
-      if (changed || idsChanged) chrome.storage.local.set(write);
+      if (changed || idsChanged) localSet(write);
     });
   }
 
@@ -1170,10 +1191,9 @@
     // settled read, so the pairing is exact.
     persistPropertyAccount(hint.slug, accountId, currentPropertyId());
 
-    chrome.storage.local.get(
+    localGet(
       ['nameHints', 'autoMappings', 'autoAccountMappings', 'propertyAccounts'],
       (result) => {
-        if (chrome.runtime.lastError) return;
 
         const hints    = result.nameHints || {};
         const autos    = result.autoMappings || {};
@@ -1228,7 +1248,7 @@
         if (!nameChanged && !accountChanged && !hintChanged) return;
         if (accountChanged) autoAccs[accountId] = label;
 
-        chrome.storage.local.set({
+        localSet({
           nameHints: hints,
           autoMappings: autos,
           autoAccountMappings: autoAccs
@@ -1308,7 +1328,7 @@
     const payload = { accountId, accounts, slugs, hint };
 
     // Cache detected context so the popup can show it on non-GA4 tabs
-    chrome.storage.local.set({ lastGA4Context: payload });
+    localSet({ lastGA4Context: payload });
 
     sendResponse(payload);
     return true;

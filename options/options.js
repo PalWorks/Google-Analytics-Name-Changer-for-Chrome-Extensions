@@ -28,11 +28,21 @@ function markClean() {
   isDirty = false;
 }
 
+// Chrome refuses a beforeunload dialog in a frame that has never had a user
+// gesture since it loaded, and logs a blocked-attempt error when one is tried.
+// This page can be dirty before the user has touched it: the popup opens it
+// with chrome.tabs.create and consumeHandoff() merges its rows straight in. So
+// the guard arms on the first gesture, which is also exactly when the dialog
+// becomes allowed. Anything the user typed needed a gesture to type.
+let hasUserGesture = false;
+const noteUserGesture = () => { hasUserGesture = true; };
+window.addEventListener('pointerdown', noteUserGesture, { capture: true, once: true });
+window.addEventListener('keydown',     noteUserGesture, { capture: true, once: true });
+
 window.addEventListener('beforeunload', (e) => {
-  if (isDirty) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
+  if (!isDirty || !hasUserGesture) return;
+  e.preventDefault();
+  e.returnValue = '';
 });
 
 // ── Status messages ───────────────────────────────────────────────────────────
@@ -1011,14 +1021,50 @@ const CYCLE_DISCOVER_STABLE = 6;   // polls, so 4.5s at CYCLE_POLL_MS
 let cycleRunning   = false;
 let cycleCancelled = false;
 
-const pSleep       = (ms)        => new Promise(r => setTimeout(r, ms));
-const pLocal       = (keys)      => new Promise(r => chrome.storage.local.get(keys, r));
-const pSync        = (keys)      => new Promise(r => chrome.storage.sync.get(keys, r));
-const pTabsQuery   = (q)         => new Promise(r => chrome.tabs.query(q, (x) => { void chrome.runtime.lastError; r(x || []); }));
-const pTabsCreate  = (props)     => new Promise(r => chrome.tabs.create(props, (x) => { void chrome.runtime.lastError; r(x || null); }));
-const pTabsUpdate  = (id, props) => new Promise(r => chrome.tabs.update(id, props, (x) => { void chrome.runtime.lastError; r(x || null); }));
-const pTabsRemove  = (id)        => new Promise(r => chrome.tabs.remove(id, () => { void chrome.runtime.lastError; r(); }));
-const pTabsGet     = (id)        => new Promise(r => chrome.tabs.get(id, (x) => { void chrome.runtime.lastError; r(x || null); }));
+const pSleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+/**
+ * Is the extension behind this page still the one that opened it?
+ *
+ * `chrome.runtime.id` reads as undefined once this page has been orphaned by an
+ * update, a reload or a disable, and every chrome.* call then throws
+ * "Extension context invalidated" synchronously. A run polls storage every
+ * 750ms for up to half a minute per property, so it is squarely in the way of
+ * a Web Store auto-update.
+ */
+function contextAlive() {
+  try { return !!(chrome.runtime && chrome.runtime.id); } catch (err) { return false; }
+}
+
+/**
+ * Wrap a chrome.* call so a dead context resolves to a safe empty value instead
+ * of throwing out of a promise executor, where it lands as an uncaught error
+ * and the run stops with nothing said. `contextLost` is what the run checks so
+ * it can stop deliberately and tell the user why.
+ */
+let contextLost = false;
+function pChrome(call, fallback) {
+  return new Promise((resolve) => {
+    if (!contextAlive()) { contextLost = true; resolve(fallback); return; }
+    try {
+      call((value) => {
+        try { void chrome.runtime.lastError; } catch (err) { contextLost = true; }
+        resolve(value === undefined ? fallback : value);
+      });
+    } catch (err) {
+      contextLost = true;
+      resolve(fallback);
+    }
+  });
+}
+
+const pLocal      = (keys)      => pChrome(cb => chrome.storage.local.get(keys, cb), {});
+const pSync       = (keys)      => pChrome(cb => chrome.storage.sync.get(keys, cb), {});
+const pTabsQuery  = (q)         => pChrome(cb => chrome.tabs.query(q, cb), []);
+const pTabsCreate = (props)     => pChrome(cb => chrome.tabs.create(props, cb), null);
+const pTabsUpdate = (id, props) => pChrome(cb => chrome.tabs.update(id, props, cb), null);
+const pTabsRemove = (id)        => pChrome(cb => chrome.tabs.remove(id, () => cb(true)), true);
+const pTabsGet    = (id)        => pChrome(cb => chrome.tabs.get(id, cb), null);
 
 /**
  * The origin, path and query to hang a property hash off.
@@ -1107,7 +1153,7 @@ async function waitForTargets(timeoutMs) {
   let stable = 0;
 
   while (Date.now() < deadline) {
-    if (cycleCancelled) return { known: 0, targets: [] };
+    if (cycleCancelled || contextLost) return { known: 0, targets: [] };
     await pSleep(CYCLE_POLL_MS);
     const state = await collectCycleState();
 
@@ -1127,7 +1173,7 @@ async function waitForTargets(timeoutMs) {
 async function waitForName(slug, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (cycleCancelled) return null;
+    if (cycleCancelled || contextLost) return null;
     await pSleep(CYCLE_POLL_MS);
     const local = await pLocal(['autoMappings']);
     const name = (local.autoMappings || {})[slug];
@@ -1183,6 +1229,11 @@ async function runCycle() {
   let tab = null;
   let named = 0;
 
+  // Set when the run cannot get as far as visiting anything. One sentinel
+  // rather than a return per branch, because every exit has to pass the same
+  // two places: the tab has to be closed, and the button has to be put back.
+  let outcome = null;
+
   try {
     // Our own tab, opened in the background and closed at the end, so the
     // user's own GA4 tab is never navigated away from what they were reading.
@@ -1190,37 +1241,26 @@ async function runCycle() {
       url: discovering ? base : ga4PropertyUrl(base, targets[0]),
       active: false
     });
-    if (!tab) {
-      showAutonameStatus('Could not open a Google Analytics tab.', 'error');
-      return;
-    }
+    if (!tab) outcome = 'no-tab';
 
-    if (discovering) {
+    if (!outcome && discovering) {
       cycleBtnLabel.textContent = 'Reading your property list\u2026';
       const found = await waitForTargets(CYCLE_DISCOVER_MS);
       targets = found.targets;
 
-      if (cycleCancelled) {
-        showAutonameStatus('Stopped.');
-        return;
+      // `contextLost` and `cycleCancelled` are answered by the tail below,
+      // which says the same thing for a run that got further than this one.
+      if (cycleCancelled || contextLost)  outcome = 'aborted';
+      else if (found.known === 0)         outcome = 'unreadable';
+      else if (targets.length === 0)      outcome = 'all-named';
+
+      if (!outcome) {
+        await pTabsUpdate(tab.id, { url: ga4PropertyUrl(base, targets[0]), active: false });
       }
-      if (found.known === 0) {
-        // Nearly always the multi-identity case: Analytics opened without the
-        // right `authuser` shows a different Google account's properties.
-        showAutonameStatus(
-          'Could not read your property list. Open Google Analytics yourself, on the account '
-          + 'holding your extensions, then press this again.', 'error');
-        return;
-      }
-      if (targets.length === 0) {
-        showAutonameStatus('Every property Google Analytics has told us about already has a name.');
-        return;
-      }
-      await pTabsUpdate(tab.id, { url: ga4PropertyUrl(base, targets[0]), active: false });
     }
 
-    for (let i = 0; i < targets.length; i++) {
-      if (cycleCancelled) break;
+    for (let i = 0; !outcome && i < targets.length; i++) {
+      if (cycleCancelled || contextLost) break;
       const t = targets[i];
       cycleBtnLabel.textContent = `Visiting ${i + 1} of ${targets.length}\u2026`;
 
@@ -1241,9 +1281,39 @@ async function runCycle() {
     setCycleUi(false);
   }
 
+  if (outcome === 'no-tab') {
+    showAutonameStatus('Could not open a Google Analytics tab.', 'error');
+    refreshCycleButton();
+    return;
+  }
+  if (outcome === 'unreadable') {
+    // Nearly always the multi-identity case: Analytics opened without the
+    // right `authuser` shows a different Google account's properties.
+    showAutonameStatus(
+      'Could not read your property list. Open Google Analytics yourself, on the account '
+      + 'holding your extensions, then press this again.', 'error');
+    refreshCycleButton();
+    return;
+  }
+  if (outcome === 'all-named') {
+    showAutonameStatus('Every property Google Analytics has told us about already has a name.');
+    refreshCycleButton();
+    return;
+  }
+
   const missed = targets.length - named;
-  if (cycleCancelled) {
-    showAutonameStatus(`Stopped. Named ${named} of ${targets.length}.`, named ? 'success' : '');
+  if (contextLost) {
+    // The extension was updated, reloaded or disabled under this page. Nothing
+    // is lost: names already read are in storage. The page itself is finished,
+    // because every chrome.* call from here on fails the same way.
+    showAutonameStatus(
+      `The extension was updated while this was running${named ? `, after naming ${named}` : ''}. `
+      + 'Reload this page and press the button again.', 'error');
+  } else if (cycleCancelled) {
+    // Stopped during discovery there is no denominator yet, so do not invent one.
+    showAutonameStatus(targets.length === 0
+      ? 'Stopped.'
+      : `Stopped. Named ${named} of ${targets.length}.`, named ? 'success' : '');
   } else if (missed === 0) {
     showAutonameStatus(`Named all ${named}. Review them, then Save Changes.`, 'success');
   } else if (named > 0) {

@@ -130,6 +130,24 @@ outside it, or by pressing Escape discards unsaved rows with no warning. The
 `pendingDetection` handoff covers only the Full Settings and auto naming paths, because
 those are the ones the extension itself initiates.
 
+### The settings page needs a gesture before it can warn about unsaved changes
+
+Chrome refuses a `beforeunload` dialog in a frame that has never had a user gesture since it
+loaded, so the settings page arms its guard on the first pointer or key event rather than
+attempting a dialog Chrome will block. That matters because the page can be dirty before the
+user touches it: opened from the popup, `consumeHandoff()` merges the carried rows and marks
+it dirty immediately. Close that tab having clicked nothing and the carried rows go without a
+prompt. They are not lost work in any real sense, since detection re-runs, and anything typed
+by hand needed a gesture to type, which arms the guard.
+
+### A property with no name has no row in the settings table
+
+The table is built from the names that exist, so a property Google Analytics has told us
+about but that has never been named appears in the popup's detected list and **not** in the
+settings table. "Fill missing names" therefore cannot act on it, which is why it greys out on
+a profile whose unnamed properties are all of that kind. "Visit and name the rest" is the path
+for those, and it works from `propertyIds` rather than from the table.
+
 ### The popup caps detection at three rows
 
 More detected slugs than that produce an overflow note. All of them are carried to the

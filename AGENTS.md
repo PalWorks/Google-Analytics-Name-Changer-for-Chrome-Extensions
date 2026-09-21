@@ -136,6 +136,27 @@ so nothing may read it for replacement.
 
 ---
 
+### 12. A content script may outlive the extension that injected it
+
+Reload, update or disable the extension and the injected copy keeps running. Its DOM half is
+untouched, so the MutationObserver still fires; its `chrome.*` half is gone, and every call
+throws `Extension context invalidated` **synchronously**. Reading `chrome.runtime.lastError`
+throws in that state too.
+
+So in `content/content.js`, storage goes through `localGet()` and `localSet()`, never
+`chrome.storage.local` directly. The shape that actually bites is a write inside a read's
+callback: the callback is the part that outlives the context, and a throw there is uncaught
+and lands in the user's `chrome://extensions` error log saying nothing useful. Both wrappers
+guard the call *and* the callback body.
+
+`init()` is the one exception, because it only ever runs in a fresh copy.
+
+The takeover guard at the top of the file (`globalThis.__GA4NC__.teardown()`) handles the
+other half of this: the service worker reinjects into open GA4 tabs on update, and the new
+copy stops the old one. See [DECISIONS.md](DECISIONS.md) ADR-017.
+
+---
+
 ## Coding conventions
 
 * `'use strict';` at the top of every JS file.

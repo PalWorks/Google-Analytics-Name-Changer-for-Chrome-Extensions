@@ -317,6 +317,22 @@ The popup links in with a hash: `#welcome` opens slide 1 on demand, `#autoname` 
 
 ---
 
+## Surviving being replaced
+
+An injected content script outlives the extension that injected it. After a reload, an update
+or a disable its DOM half still runs and every `chrome.*` call throws `Extension context
+invalidated`, including a read of `chrome.runtime.lastError`. All storage in the content script
+therefore goes through `localGet()` / `localSet()`, which guard the call and the callback body,
+because the dangerous shape is a write inside a read's callback: the callback is the part that
+outlives the context, and a throw there is uncaught and reaches the user's extension error log.
+
+The settings page is not exposed the same way, since Chrome closes extension pages when the
+extension reloads, but a run polls storage for up to half a minute per property, so its
+promise helpers resolve to empty values and set `contextLost`, which ends the run with an
+explanation instead of silence.
+
+---
+
 ## Telling the user it is running
 
 A display-only extension is invisible once it works: a name it substituted looks exactly like a

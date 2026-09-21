@@ -228,6 +228,17 @@ Three slides: what it does, open each property once, the auto-naming opt-in.
 - [ ] Filling the last empty name greys it out again
 - [ ] Deleting the only named row's name enables it again
 
+### Surviving a reload
+
+- [ ] Open the settings page from the popup's naming button and close the tab without
+      clicking anything on it: no "blocked beforeunload" entry appears in
+      `chrome://extensions`
+- [ ] Type a name, then close the tab: the unsaved-changes prompt **does** appear
+- [ ] Clear the error list, reload the extension from `chrome://extensions` with a Google
+      Analytics tab open, wait ten seconds: the list stays empty
+- [ ] Reload the extension while a naming run is going: the run stops and says the extension
+      was updated, rather than hanging or failing silently
+
 ### Toolbar badge
 
 - [ ] On a property that has a name, the toolbar icon carries a count and the tooltip reads
